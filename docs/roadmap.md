@@ -1,4 +1,4 @@
-# Historias de Usuario
+rias de Usuario
 
 | Campo                      | Descripción |
 |:---------------------------|:------------|
@@ -164,3 +164,20 @@
 | **Persona**                | Administrador |
 | **Descripción**            | Como administrador, quiero que el sistema calcule y facture solo el monto proporcional al tiempo efectivamente contratado dentro del mes, para evitar cobrar un mes completo cuando el cliente se da de alta a mitad del período. |
 | **Criterios de aceptación** | <ul><li>Si el cliente contrata un servicio luego del primer día del mes, el sistema calcula el valor proporcional en base a los días restantes del período.</li><li>El cálculo se aplica tanto en facturación individual como masiva.</li><li>El detalle de la factura debe mostrar el período parcial (ej. "15 al 31 de octubre").</li><li>Si el servicio se da de baja antes de fin de mes, el sistema también calcula el proporcional correspondiente.</li></ul> |
+
+| Campo                      | Descripción |
+|:---------------------------|:------------|
+| **ID**                     | HU - 21 |
+| **Título**                 | Asignar servicio a un cliente |
+| **Persona**                | Administrador |
+| **Descripción**            | Como administrador quiero poder asociar uno o varios servicios (previamente creados) a la cuenta de un cliente, para que el sistema sepa qué debe facturarle en cada período. |
+| **Criterios de aceptación** | <ul><li>Desde el perfil de un cliente, debo ver una opción para "Asignar Servicio".</li><li>Debo poder seleccionar un servicio de la lista de servicios activos (creados en HU anteriores).</li><li>El sistema debe permitir que un mismo cliente tenga múltiples servicios asignados.</li><li>El perfil del cliente debe mostrar una lista de los servicios que tiene contratados actualmente.</li></ul> |
+
+
+| Campo                      | Descripción |
+|:---------------------------|:------------|
+| **ID**                     | HU - 22 |
+| **Título**                 | Desvincular servicio a un cliente |
+| **Persona**                | Administrador |
+| **Descripción**            | Como administrador quiero poder quitar un servicio de la cuenta de un cliente, para que no se le facture más por ese concepto en futuros períodos. |
+| **Criterios de aceptación** | <ul><li>Al quitarlo, ese servicio no debe incluirse en la próxima facturación masiva para ese cliente.</li><li>El sistema debe pedir confirmación antes de desvincular el servicio.</li></ul> |

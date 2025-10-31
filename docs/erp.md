@@ -1,4 +1,27 @@
-# Historias de Usuario
+# Especificación de requisitos de software
+
+## Enunciado del problema
+
+Una empresa que gestiona la prestación de servicios a múltiples clientes necesita un sistema centralizado para administrar eficientemente todo el ciclo de facturación. Actualmente, la gestión de cuentas de clientes con diversas condiciones fiscales (IVA) , la facturación masiva mensual de múltiples servicios contratados , el registro detallado de pagos (que pueden ser parciales o adelantados ) y la anulación de facturas presenta una dificultad operativa.
+
+La falta de este sistema impide un seguimiento ágil del estado de cuenta de los clientes y requiere que un operador inicie manualmente procesos complejos, aumentando el riesgo de errores y la carga administrativa.
+
+## Clientes potenciales
+ 
+Los usuarios potenciales son los empleados administrativos y el personal de gestión de la empresa que utiliza el sistema. Estos usuarios serán los únicos responsables de interactuar con la plataforma
+
+Es fundamental aclarar que el cliente final (la persona o empresa que recibe la factura por el servicio) no es un actor ni un usuario del sistema. No puede crear su cuenta, iniciar sesión ni interactuar con la plataforma de ninguna manera.
+
+## Solución propuesta 
+
+Se propone desarrollar un sistema de gestión y facturación web que centralice y automatice las operaciones administrativas de la empresa. Esta aplicación permitirá a los operadores gestionar un registro detallado de clientes, sus servicios contratados y sus condiciones fiscales (IVA).
+
+La solución implementará un módulo para la facturación masiva, que será iniciado manualmente por un operador ("presionando un botón") para un período mensual , generando las facturas correspondientes a las cuentas activas. También permitirá la facturación individual. El sistema registrará pagos (incluyendo parciales y saldos a favor) y gestionará la anulación de facturas mediante la emisión de notas de crédito.
+
+
+ ## Requisitos
+
+ #### CUENTAS 
 
 | Campo                      | Descripción |
 |:---------------------------|:------------|
@@ -23,6 +46,10 @@
 | **Persona**                | Administrador |
 | **Descripción**            | Como administrador, quiero cambiar el estado de la cuenta de un cliente (activa, suspendida, dada de baja), para poder reflejar su situación actual. |
 | **Criterios de aceptación** | <ul><li>Solo se puede **facturar** clientes en estado **activa**.</li><li>Al pasar a “baja”, no se permiten nuevas facturas pero se mantiene el historial y deudas.</li><li>Al pasar a “suspendida”, se bloquea la facturación individual hasta reactivación.</li><li>El sistema registra usuario, fecha y motivo del cambio.</li></ul> |
+
+**FACTURAS**
+
+**Individual**
 
 
 | Campo                      | Descripción |
@@ -49,6 +76,7 @@
 | **Descripción**            | Como administrador, quiero ver el detalle completo de una factura para conocer sus detalles, impuestos y movimientos de pago. |
 | **Criterios de aceptación** | <ul><li>Se visualizan: encabezado (tipo A/B/C, número, cliente, período, emisión, vencimiento), ítems/servicios, alícuotas de IVA, descuentos, subtotal, impuestos y **total**.</li><li>**Historial de pagos** (totales y parciales), recibos y **saldo pendiente**.</li><li>**Enlaces a nota(s) de crédito/débito** asociadas.</li></ul> |
 
+**Masiva por periodo**
 
 | Campo                      | Descripción |
 |:---------------------------|:------------|
@@ -74,6 +102,7 @@
 | **Descripción**            | Como administrador, quiero consultar un lote de facturación masiva para verificar el período, la cantidad de facturas generadas y acceder a cada una. |
 | **Criterios de aceptación** | <ul><li>Se visualizan: período, fecha/hora de ejecución, **fecha de vencimiento aplicada**, cantidad de facturas generadas, **monto total** del lote y estado (exitoso/anulado/parcial).</li><li>Listado de facturas del lote con acceso a su detalle.</li><li>Si el proceso fue anulado, ver **referencias a notas de crédito emitidas** en bloque.</li></ul> |
 
+**BÚSQUEDA GENERAL DE AMBOS TIPOS DE FACTURAS**
 
 | Campo                      | Descripción |
 |:---------------------------|:------------|
@@ -83,6 +112,7 @@
 | **Descripción**            | Como administrador, quiero listar y buscar facturas para localizar rápidamente documentos por cliente, estado, tipo o período. |
 | **Criterios de aceptación** | <ul><li>Filtros por cliente, período, estado (pagada/impaga/vencida/anulada), tipo (A/B/C) y lote.</li><li>Orden por fecha de emisión o vencimiento.</li><li>Acciones: **ver detalle** de factura, **registrar pago** (si aplica), **anular factura (si no fue pagada parcialmente)**.</li></ul> |
 
+**PAGOS Y SALDO**
 
 | Campo                      | Descripción |
 |:---------------------------|:------------|
@@ -123,6 +153,8 @@
 | **Persona**                | Administrador |
 | **Descripción**            | Como administrador, quiero consultar todos los pagos registrados (totales, parciales o combinados) para verificar los movimientos financieros del sistema. |
 | **Criterios de aceptación** | <ul><li>Filtros: cliente, fecha, factura, método de pago, tipo (total/parcial).</li><li>Cada registro muestra: número de recibo, cliente, fecha, monto, método y facturas asociadas.</li><li>Permite abrir el recibo para ver el detalle del movimiento.</li></ul> |
+
+**Gestión de servicios**
 
 | Campo                      | Descripción |
 |:---------------------------|:------------|
@@ -181,3 +213,17 @@
 | **Persona**                | Administrador |
 | **Descripción**            | Como administrador quiero poder quitar un servicio de la cuenta de un cliente, para que no se le facture más por ese concepto en futuros períodos. |
 | **Criterios de aceptación** | <ul><li>Al quitarlo, ese servicio no debe incluirse en la próxima facturación masiva para ese cliente.</li><li>El sistema debe pedir confirmación antes de desvincular el servicio.</li></ul> |
+
+
+## Arquitectura de software
+**Tipo de Aplicación:** Será una aplicación web.
+**Arquitectura:** Se ajustará a una arquitectura Cliente-Servidor.
+
+**Stack tecnológico:**
+
+**Lenguaje:** Java.
+**Framework (Backend):** Spring Boot.
+**Base de Datos:** PostgreSQL.
+**Motor de Plantillas (Frontend):** Thymeleaf.
+**Gestión de Dependencias:** Maven.
+**Utilidades:** Lombok.

@@ -1,4 +1,4 @@
-# Proyecto Integrador POO II - Sistema de Facturación
+# Trabajo Integrador POO II - Sistema de Facturación
 
 Proyecto integrador para la materia **Programación Orientada a Objetos II**.
 

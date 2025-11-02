@@ -1,6 +1,6 @@
 # Trabajo Integrador POO II - Sistema de Facturación
 
-Proyecto integrador para la materia **Programación Orientada a Objetos II**.
+Trabajo integrador para la materia **Programación Orientada a Objetos II**.
 
 *Universidad Nacional de Misiones* - *Facultad de Ciencias Exactas, Químicas y Naturales.*
 

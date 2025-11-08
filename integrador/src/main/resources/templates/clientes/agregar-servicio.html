@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agregar Servicio al Cliente</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">ERP Facturación</a>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <h1>Agregar Servicio al Cliente</h1>
+        <p><strong>Cliente:</strong> <span th:text="${cliente.nombre}"></span></p>
+
+        <div class="row">
+            <div class="col-md-8">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Servicio</th>
+                            <th>Precio</th>
+                            <th>IVA</th>
+                            <th>Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="servicio : ${servicios}">
+                            <td th:text="${servicio.nombre}"></td>
+                            <td>$<span th:text="${#numbers.formatDecimal(servicio.precio, 1, 2)}"></span></td>
+                            <td th:text="${servicio.alicuotaIva.descripcion}"></td>
+                            <td>
+                                <form th:action="@{/clientes/{clienteId}/servicios/{servicioId}/asignar(clienteId=${cliente.id},servicioId=${servicio.id})}" 
+                                      method="post" style="display:inline;">
+                                    <button type="submit" class="btn btn-sm btn-success">Asignar</button>
+                                </form>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <a th:href="@{/clientes/{id}(id=${cliente.id})}" class="btn btn-secondary">Volver</a>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

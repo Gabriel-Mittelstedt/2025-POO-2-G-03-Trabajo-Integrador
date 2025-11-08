@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ERP - Sistema de Facturación</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">
+                <i class="bi bi-building"></i> ERP Sistema de Facturación
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/clientes"><i class="bi bi-people"></i> Clientes</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/servicios"><i class="bi bi-grid"></i> Servicios</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/facturas"><i class="bi bi-file-text"></i> Facturas</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/facturacion-masiva"><i class="bi bi-files"></i> Facturación Masiva</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/pagos"><i class="bi bi-cash-coin"></i> Pagos</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="hero-section text-center">
+            <h1 class="hero-title">
+                <i class="bi bi-speedometer2"></i> Sistema de Gestión ERP
+            </h1>
+            <p class="hero-subtitle">Gestión integral de clientes, servicios, facturación y pagos</p>
+        </div>
+        
+        <div class="row g-4 mb-5">
+            <div class="col-md-6 col-lg-4">
+                <div class="module-card clientes">
+                    <div class="card-header">
+                        <i class="bi bi-people-fill module-icon"></i>
+                        <h5 class="module-title">Clientes</h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <p class="module-description">Gestión completa de clientes, condiciones de IVA, estado de cuenta y servicios contratados</p>
+                        <a href="/clientes" class="module-btn clientes">
+                            <i class="bi bi-arrow-right-circle"></i> Administrar Clientes
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-4">
+                <div class="module-card servicios">
+                    <div class="card-header">
+                        <i class="bi bi-grid-3x3-gap-fill module-icon"></i>
+                        <h5 class="module-title">Servicios</h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <p class="module-description">Catálogo de servicios con precios, alícuotas de IVA y gestión de disponibilidad</p>
+                        <a href="/servicios" class="module-btn servicios">
+                            <i class="bi bi-arrow-right-circle"></i> Ver Servicios
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-4">
+                <div class="module-card facturas">
+                    <div class="card-header">
+                        <i class="bi bi-file-earmark-text-fill module-icon"></i>
+                        <h5 class="module-title">Facturación</h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <p class="module-description">Emisión de facturas individuales, proporcionales y gestión del estado de facturación</p>
+                        <a href="/facturas" class="module-btn facturas">
+                            <i class="bi bi-arrow-right-circle"></i> Gestionar Facturas
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-4">
+                <div class="module-card facturacion-masiva">
+                    <div class="card-header">
+                        <i class="bi bi-file-earmark-spreadsheet-fill module-icon"></i>
+                        <h5 class="module-title">Facturación Masiva</h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <p class="module-description">Procesamiento de lotes de facturación para múltiples clientes de forma automática</p>
+                        <a href="/facturacion-masiva" class="module-btn facturacion-masiva">
+                            <i class="bi bi-arrow-right-circle"></i> Lotes de Facturación
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-4">
+                <div class="module-card pagos">
+                    <div class="card-header">
+                        <i class="bi bi-cash-coin module-icon"></i>
+                        <h5 class="module-title">Pagos</h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <p class="module-description">Registro y seguimiento de pagos totales, parciales y combinados con generación de recibos</p>
+                        <a href="/pagos" class="module-btn pagos">
+                            <i class="bi bi-arrow-right-circle"></i> Registrar Pagos
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

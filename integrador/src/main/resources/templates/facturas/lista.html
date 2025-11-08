@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Listado de Facturas</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">
+                <i class="bi bi-building"></i> ERP Facturación
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="/clientes"><i class="bi bi-people"></i> Clientes</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/servicios"><i class="bi bi-grid"></i> Servicios</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="/facturas"><i class="bi bi-file-text"></i> Facturas</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/facturacion-masiva"><i class="bi bi-files"></i> Facturación Masiva</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/pagos"><i class="bi bi-cash-coin"></i> Pagos</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="page-header d-flex justify-content-between align-items-center">
+            <div>
+                <h1><i class="bi bi-file-earmark-text-fill text-primary"></i> Gestión de Facturas</h1>
+                <p class="text-muted mb-0">Administra y emite facturas individuales y proporcionales</p>
+            </div>
+            <div class="action-buttons">
+                <a href="/facturas/nueva-individual" class="btn btn-success">
+                    <i class="bi bi-plus-circle"></i> Nueva Factura
+                </a>
+                <a href="/facturas/nueva-proporcional" class="btn btn-primary">
+                    <i class="bi bi-calendar-range"></i> Factura Proporcional
+                </a>
+            </div>
+        </div>
+
+        <div th:if="${mensaje}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle-fill"></i> <span th:text="${mensaje}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle-fill"></i> <span th:text="${error}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <div class="search-box">
+            <form method="get" action="/facturas" class="row g-3">
+                <div class="col-md-3">
+                    <select name="estado" class="form-select">
+                        <option value="">Todos los estados</option>
+                        <option th:each="est : ${estados}" th:value="${est}" th:text="${est.descripcion}"></option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select name="tipoFactura" class="form-select">
+                        <option value="">Todos los tipos</option>
+                        <option th:each="tipo : ${tipos}" th:value="${tipo}" th:text="${tipo.descripcion}"></option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <input type="text" name="periodo" class="form-control" placeholder="Período (ej: Noviembre 2024)">
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-funnel"></i> Filtrar
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="card">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th><i class="bi bi-hash"></i> Número</th>
+                                <th><i class="bi bi-file-earmark"></i> Tipo</th>
+                                <th><i class="bi bi-person"></i> Cliente</th>
+                                <th><i class="bi bi-calendar"></i> Período</th>
+                                <th><i class="bi bi-calendar-event"></i> Emisión</th>
+                                <th><i class="bi bi-calendar-x"></i> Vencimiento</th>
+                                <th><i class="bi bi-currency-dollar"></i> Total</th>
+                                <th><i class="bi bi-info-circle"></i> Estado</th>
+                                <th class="text-center"><i class="bi bi-gear"></i> Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="factura : ${facturas}">
+                                <td><strong th:text="${factura.numeroFactura}"></strong></td>
+                                <td><span class="badge bg-secondary" th:text="${factura.tipoFactura.name()}"></span></td>
+                                <td th:text="${factura.cliente.nombre}"></td>
+                                <td><span class="badge bg-info" th:text="${factura.periodo}"></span></td>
+                                <td th:text="${#temporals.format(factura.fechaEmision, 'dd/MM/yyyy')}"></td>
+                                <td th:text="${#temporals.format(factura.fechaVencimiento, 'dd/MM/yyyy')}"></td>
+                                <td><strong>$<span th:text="${#numbers.formatDecimal(factura.total, 1, 2)}"></span></strong></td>
+                                <td>
+                                    <span th:class="${factura.estado.name() == 'PAGADA' ? 'badge bg-success' : 
+                                                    factura.estado.name() == 'PENDIENTE' ? 'badge bg-warning' :
+                                                    factura.estado.name() == 'VENCIDA' ? 'badge bg-danger' :
+                                                    factura.estado.name() == 'PARCIALMENTE_PAGADA' ? 'badge bg-info' :
+                                                    'badge bg-secondary'}"
+                                          th:text="${factura.estado.descripcion}"></span>
+                                </td>
+                                <td class="text-center">
+                                    <a th:href="@{/facturas/{id}(id=${factura.id})}" class="btn btn-sm btn-info" title="Ver detalle">
+                                        <i class="bi bi-eye"></i> Ver
+                                    </a>
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(facturas)}">
+                                <td colspan="9" class="text-center py-5">
+                                    <i class="bi bi-inbox" style="font-size: 3rem; color: #ccc;"></i>
+                                    <p class="text-muted mt-3">No se encontraron facturas</p>
+                                    <a href="/facturas/nueva-individual" class="btn btn-success">
+                                        <i class="bi bi-plus-circle"></i> Emitir Primera Factura
+                                    </a>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

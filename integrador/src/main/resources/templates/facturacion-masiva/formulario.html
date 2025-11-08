@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nueva Facturación Masiva</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-dark-custom">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/"><i class="bi bi-receipt-cutoff me-2"></i>ERP Facturación</a>
+            <div class="collapse navbar-collapse">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="/clientes"><i class="bi bi-people me-1"></i>Clientes</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/servicios"><i class="bi bi-wrench me-1"></i>Servicios</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/facturas"><i class="bi bi-file-earmark-text me-1"></i>Facturas</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/facturacion-masiva"><i class="bi bi-files me-1"></i>Facturación Masiva</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/pagos"><i class="bi bi-cash-coin me-1"></i>Pagos</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="page-header">
+            <h2><i class="bi bi-files me-2"></i>Nueva Facturación Masiva</h2>
+            <p class="text-muted mb-0">Se generarán facturas para todos los clientes activos con servicios contratados</p>
+        </div>
+
+        <div th:if="${error}" class="alert alert-danger mt-3" role="alert">
+            <i class="bi bi-exclamation-triangle me-2"></i><span th:text="${error}"></span>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-body">
+                <form method="post" action="/facturacion-masiva/nuevo" th:object="${facturacionDTO}" 
+                      onsubmit="return confirm('¿Está seguro de ejecutar la facturación masiva para este período? Esta acción generará facturas para todos los clientes activos.');">
+                    
+                    <div class="mb-3">
+                        <label for="periodo" class="form-label"><i class="bi bi-calendar-month me-1"></i>Período *</label>
+                        <input type="text" class="form-control" id="periodo" th:field="*{periodo}" 
+                               placeholder="Ej: Noviembre 2024" required>
+                        <small class="form-text text-muted">Ejemplo: "Noviembre 2024", "Diciembre 2024", etc.</small>
+                        <div th:if="${#fields.hasErrors('periodo')}" class="text-danger" th:errors="*{periodo}"></div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="fechaVencimiento" class="form-label"><i class="bi bi-calendar-check me-1"></i>Fecha de Vencimiento *</label>
+                        <input type="date" class="form-control" id="fechaVencimiento" th:field="*{fechaVencimiento}" required>
+                        <small class="text-muted">Fecha límite para el pago de todas las facturas</small>
+                        <div th:if="${#fields.hasErrors('fechaVencimiento')}" class="text-danger" th:errors="*{fechaVencimiento}"></div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="usuario" class="form-label"><i class="bi bi-person me-1"></i>Usuario que ejecuta *</label>
+                        <input type="text" class="form-control" id="usuario" th:field="*{usuario}" 
+                               placeholder="Nombre del usuario" required>
+                        <small class="text-muted">Ingrese su nombre de usuario</small>
+                        <div th:if="${#fields.hasErrors('usuario')}" class="text-danger" th:errors="*{usuario}"></div>
+                    </div>
+
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <strong>Atención:</strong> Esta operación generará una factura para cada cliente activo que tenga servicios contratados. 
+                        Asegúrese de revisar los datos antes de confirmar.
+                    </div>
+
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-lightning-charge me-1"></i>Ejecutar Facturación Masiva
+                        </button>
+                        <a href="/facturacion-masiva" class="btn btn-secondary">
+                            <i class="bi bi-x-circle me-1"></i>Cancelar
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

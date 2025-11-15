@@ -84,23 +84,23 @@
                         <tbody>
                             <tr th:each="servicio : ${servicios}">
                                 <td><strong th:text="${servicio.nombre}"></strong></td>
-                                <td th:text="${servicio.descripcion}"></td>
+                                <td th:text="${servicio.descripcion ?: '-'}"></td>
                                 <td>$<span th:text="${#numbers.formatDecimal(servicio.precio, 1, 2)}"></span></td>
-                                <td><span class="badge bg-secondary" th:text="${servicio.alicuotaIva.descripcion}"></span></td>
+                                <td><span class="badge bg-secondary" th:text="${servicio.alicuotaIVA.descripcion}"></span></td>
                                 <td>
                                     <span th:class="${servicio.activo ? 'badge bg-success' : 'badge bg-secondary'}"
                                           th:text="${servicio.activo ? 'Activo' : 'Inactivo'}"></span>
                                 </td>
                                 <td class="text-center">
                                     <div class="action-buttons justify-content-center">
-                                        <a th:href="@{/servicios/{id}(id=${servicio.id})}" class="btn btn-sm btn-info" title="Ver">
+                                        <a th:href="@{/servicios/{id}(id=${servicio.IDServicio})}" class="btn btn-sm btn-info" title="Ver">
                                             <i class="bi bi-eye"></i>
                                         </a>
-                                        <a th:href="@{/servicios/{id}/editar(id=${servicio.id})}" class="btn btn-sm btn-primary" title="Editar">
+                                        <a th:href="@{/servicios/{id}/editar(id=${servicio.IDServicio})}" class="btn btn-sm btn-primary" title="Editar">
                                             <i class="bi bi-pencil"></i>
                                         </a>
                                         <form th:if="${servicio.activo}" 
-                                              th:action="@{/servicios/{id}/desactivar(id=${servicio.id})}" 
+                                              th:action="@{/servicios/{id}/desactivar(id=${servicio.IDServicio})}" 
                                               method="post" style="display:inline;"
                                               onsubmit="return confirm('¿Desactivar este servicio?');">
                                             <button type="submit" class="btn btn-sm btn-warning" title="Desactivar">
@@ -108,7 +108,7 @@
                                             </button>
                                         </form>
                                         <form th:if="${!servicio.activo}" 
-                                              th:action="@{/servicios/{id}/activar(id=${servicio.id})}" 
+                                              th:action="@{/servicios/{id}/activar(id=${servicio.IDServicio})}" 
                                               method="post" style="display:inline;">
                                             <button type="submit" class="btn btn-sm btn-success" title="Activar">
                                                 <i class="bi bi-check-circle"></i>

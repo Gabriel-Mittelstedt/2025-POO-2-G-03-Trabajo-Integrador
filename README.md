@@ -15,3 +15,21 @@ Trabajo integrador para la materia **Programación Orientada a Objetos II**.
 * Escalada, Leandro Ezequiel
 * Limberger, Axel Agustín
 * Mittelstedt, Gabriel Leonardo
+
+
+## Instrucciones
+
+Ingrese sus credenciales de Postgres en `application.properties`
+
+### Compilacion
+
+```
+./mvnw clean package
+```
+
+### Ejecucón
+
+
+```
+./mvnw spring-boot:run
+```

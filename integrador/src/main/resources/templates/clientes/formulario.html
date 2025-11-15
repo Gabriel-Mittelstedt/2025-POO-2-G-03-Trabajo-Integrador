@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title th:text="${cliente.id != null ? 'Editar Cliente' : 'Nuevo Cliente'}">Formulario de Cliente</title>
+    <title th:text="${cliente?.id != null ? 'Editar Cliente' : 'Nuevo Cliente'}">Formulario de Cliente</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="/css/styles.css">
@@ -27,9 +27,9 @@
     <div class="container mt-4">
         <div class="page-header">
             <h2>
-                <i class="bi bi-person-plus me-2" th:if="${cliente.id == null}"></i>
-                <i class="bi bi-pencil me-2" th:if="${cliente.id != null}"></i>
-                <span th:text="${cliente.id != null ? 'Editar Cliente' : 'Nuevo Cliente'}">Formulario de Cliente</span>
+                <i class="bi bi-person-plus me-2" th:if="${cliente?.id == null}"></i>
+                <i class="bi bi-pencil me-2" th:if="${cliente?.id != null}"></i>
+                <span th:text="${cliente?.id != null ? 'Editar Cliente' : 'Nuevo Cliente'}">Formulario de Cliente</span>
             </h2>
             <p class="text-muted mb-0">Complete los datos del cliente</p>
         </div>
@@ -40,7 +40,7 @@
 
         <div class="card mt-3">
             <div class="card-body">
-                <form th:action="${cliente.id != null ? '/clientes/' + cliente.id + '/editar' : '/clientes/nuevo'}" 
+                <form th:action="${cliente?.id != null ? '/clientes/' + cliente.id + '/editar' : '/clientes/nuevo'}" 
                       th:object="${cliente}" method="post">
                 
             <div class="row">
@@ -92,6 +92,19 @@
                     </select>
                 </div>
             </div>
+            
+            <div class="row">
+                <div class="col-md-12 mb-3">
+                    <label for="estado" class="form-label"><i class="bi bi-toggle-on me-1"></i>Estado de Cuenta</label>
+                    <select class="form-select" id="estado" th:field="*{estado}">
+                        <option th:each="estadoCuenta : ${estadosCuenta}" 
+                                th:value="${estadoCuenta}" 
+                                th:text="${estadoCuenta.descripcion}"
+                                th:selected="${estadoCuenta.name() == 'ACTIVA'}"></option>
+                    </select>
+                    <small class="text-muted">Por defecto: Activa</small>
+                </div>
+            </div>
 
             <div class="mb-3">
                 <label for="domicilio" class="form-label"><i class="bi bi-geo-alt me-1"></i>Domicilio *</label>
@@ -114,5 +127,46 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Validación de CUIT/DNI en tiempo real
+        document.getElementById('cuitDni').addEventListener('input', function(e) {
+            let valor = e.target.value.replace(/[^0-9]/g, ''); // Solo números
+            e.target.value = valor;
+            
+            const feedback = document.getElementById('cuitDniFeedback');
+            if (!feedback) {
+                const feedbackDiv = document.createElement('div');
+                feedbackDiv.id = 'cuitDniFeedback';
+                feedbackDiv.className = 'form-text';
+                e.target.parentElement.appendChild(feedbackDiv);
+            }
+            
+            const feedbackElement = document.getElementById('cuitDniFeedback');
+            
+            if (valor.length === 0) {
+                feedbackElement.textContent = '';
+                feedbackElement.className = 'form-text';
+            } else if (valor.length === 11) {
+                feedbackElement.textContent = '✓ CUIT válido (11 dígitos)';
+                feedbackElement.className = 'form-text text-success';
+            } else if (valor.length === 7 || valor.length === 8) {
+                feedbackElement.textContent = '✓ DNI válido (' + valor.length + ' dígitos)';
+                feedbackElement.className = 'form-text text-success';
+            } else {
+                feedbackElement.textContent = 'CUIT: 11 dígitos, DNI: 7-8 dígitos (actual: ' + valor.length + ')';
+                feedbackElement.className = 'form-text text-warning';
+            }
+        });
+        
+        // Validación de email
+        document.getElementById('email').addEventListener('blur', function(e) {
+            const emailPattern = /^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+            if (e.target.value && !emailPattern.test(e.target.value)) {
+                e.target.classList.add('is-invalid');
+            } else {
+                e.target.classList.remove('is-invalid');
+            }
+        });
+    </script>
 </body>
 </html>

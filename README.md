@@ -29,7 +29,6 @@ Ingrese sus credenciales de Postgres en `application.properties`
 
 ### Ejecucón
 
-
 ```
 ./mvnw spring-boot:run
 ```

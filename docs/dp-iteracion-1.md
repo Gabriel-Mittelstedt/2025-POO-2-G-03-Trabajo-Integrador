@@ -22,8 +22,39 @@ Durante esta primera iteración, el equipo se distribuyó las historias de usuar
 - Implementó la **HU-10: Listado y búsqueda de facturas** (trabajo en progreso).
 
 **Axel Limberger:**
-- Implementó la **HU-11: Registrar pago total de factura** (trabajo en progreso).
-- Implementó la **HU-12: Registrar pago parcial de factura** (trabajo en progreso).
+
+
+  Diseñó y maquetó las vistas HTML y los estilos CSS necesarios para las funcionalidades del sistema. Los templates se encuentran en `integrador/src/main/resources/templates` y cubren los módulos principales:
+
+  Clientes
+
+  - `formulario.html`: alta y edición de clientes con bindings Thymeleaf (`th:field`), validación (`th:errors`), protección CSRF y estructura clara.
+  - `lista.html`: tabla con búsqueda, filtros y acciones rápidas (ver, editar, asignar servicio).
+  - `detalle.html`: ficha del cliente con resumen, saldo y accesos a acciones relacionadas.
+  - `agregar-servicio.html`: lista de servicios para asignar, con indicador visual cuando un servicio ya está contratado.
+  - `historico-servicios.html`: historial completo con columnas relevantes y contadores de activos/inactivos.
+
+  Servicios
+
+  - `formulario.html`: alta/edición con selector de alícuota y visualización del cálculo de IVA y total.
+  - `lista.html`: listado con búsqueda y acciones.
+  - `detalle.html`: vista detallada del servicio.
+
+  Facturación
+
+  - Facturas individuales y proporcionales: interfaces para componer y emitir facturas (`facturas/formulario-individual.html`, `facturas/formulario-proporcional.html`).
+  - Listado y detalle de facturas (`facturas/lista.html`, `facturas/detalle.html`).
+  - Emisión masiva: UI para generar facturación por período y confirmar/ anular procesos (`facturacion-masiva/*`).
+
+  Pagos
+
+  - Formularios para pago total, parcial y combinado con validaciones y resumen de saldo (`pagos/formulario-*.html`).
+  - Listado y detalle de pagos.
+
+Implementó la **HU-11: Registrar pago total de factura** (trabajo en progreso).
+Implementó la **HU-12: Registrar pago parcial de factura** (trabajo en progreso).
+
+En la primer iteracion no se logro implementar del todo las hu 11 y 12 debido a la falta de tiempo por los parciales y debido a que en esta iteracion mi enfoque estuvo mas en  en el desarrollo de las pantallas. 
 
 **Tareas compartidas del equipo:**
 - Definición de la arquitectura MVC del proyecto

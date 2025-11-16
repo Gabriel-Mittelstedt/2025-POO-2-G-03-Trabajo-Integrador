@@ -5,7 +5,9 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.unam.integrador.model.enums.EstadoCuenta;
 import com.unam.integrador.model.enums.EstadoFactura;
+import com.unam.integrador.model.enums.TipoCondicionIVA;
 import com.unam.integrador.model.enums.TipoFactura;
 
 import jakarta.persistence.*;
@@ -80,5 +82,164 @@ public class Factura {
         this.saldoPendiente = BigDecimal.ZERO;
         this.total = BigDecimal.ZERO;
         this.motivoDescuento = null;
+    }
+
+    // --- MÉTODOS DE NEGOCIO (Modelo RICO) ---
+
+    /**
+     * Agrega un item a la factura y recalcula los totales.
+     * Este método encapsula la lógica de agregar items manteniendo la consistencia.
+     * 
+     * @param item El item a agregar
+     */
+    public void agregarItem(ItemFactura item) {
+        if (item == null) {
+            throw new IllegalArgumentException("El item no puede ser nulo");
+        }
+        
+        // Calcular valores del item
+        item.calcular();
+        
+        // Asociar el item a esta factura
+        item.setFactura(this);
+        
+        // Agregar a la lista
+        this.detalleFactura.add(item);
+        
+        // Recalcular totales de la factura
+        calcularTotales();
+    }
+
+    /**
+     * Calcula el subtotal de la factura sumando todos los items.
+     * @return Subtotal antes de IVA y descuentos
+     */
+    public BigDecimal calcularSubtotal() {
+        //convierte la lista a un stream para procesarlo de manera funcional
+        this.subtotal = detalleFactura.stream()
+            //obtiene el subtotal de cada item
+            .map(ItemFactura::getSubtotal)
+            //suma todos los subtotales obtenidos
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+        return this.subtotal;
+    }
+
+    /**
+     * Calcula el total de IVA de la factura sumando el IVA de todos los items.
+     * @return Total de IVA
+     */
+    public BigDecimal calcularTotalIva() {
+        this.totalIva = detalleFactura.stream()
+            .map(ItemFactura::getMontoIva)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+        return this.totalIva;
+    }
+
+    /**
+     * Aplica un descuento porcentual a la factura.
+     * 
+     * @param porcentaje Porcentaje de descuento (0-100)
+     * @param motivo Motivo del descuento
+     * @throws IllegalArgumentException si el porcentaje es inválido
+     */
+    public void aplicarDescuento(double porcentaje, String motivo) {
+        if (porcentaje < 0 || porcentaje > 100) {
+            throw new IllegalArgumentException("El porcentaje debe estar entre 0 y 100");
+        }
+        if (motivo == null || motivo.trim().isEmpty()) {
+            throw new IllegalArgumentException("El motivo del descuento es obligatorio");
+        }
+        
+        this.descuento = porcentaje;
+        this.motivoDescuento = motivo;
+        
+        // Recalcular total con el nuevo descuento
+        calcularTotal();
+        calcularSaldoPendiente();
+    }
+
+    /**
+     * Calcula el total de la factura aplicando la fórmula:
+     * Total = Subtotal - Descuento + IVA
+     * 
+     * @return Total de la factura
+     */
+    public BigDecimal calcularTotal() {
+        // Calcular monto del descuento
+        BigDecimal montoDescuento = this.subtotal
+            .multiply(BigDecimal.valueOf(this.descuento))
+            .divide(BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
+        
+        // Total = (Subtotal - Descuento) + IVA
+        BigDecimal subtotalConDescuento = this.subtotal.subtract(montoDescuento);
+        this.total = subtotalConDescuento.add(this.totalIva);
+        
+        return this.total;
+    }
+
+    /**
+     * Calcula el saldo pendiente de pago.
+     * Inicialmente es igual al total de la factura.
+     * 
+     * @return Saldo pendiente
+     */
+    public BigDecimal calcularSaldoPendiente() {
+        this.saldoPendiente = this.total;
+        return this.saldoPendiente;
+    }
+
+    /**
+     * Ejecuta todos los cálculos en el orden correcto.
+     * Este es el método principal para actualizar todos los valores calculados.
+     */
+    public void calcularTotales() {
+        calcularSubtotal();
+        calcularTotalIva();
+        calcularTotal();
+        calcularSaldoPendiente();
+    }
+
+    /**
+     * Determina el tipo de factura (A, B o C) según las condiciones fiscales.
+     * Implementa la lógica de AFIP para determinar el tipo correcto.
+     * 
+     * @param condicionEmisor Condición de IVA del emisor
+     * @param condicionCliente Condición de IVA del cliente
+     * @return Tipo de factura a emitir
+     */
+    public static TipoFactura determinarTipoFactura(
+            TipoCondicionIVA condicionEmisor,
+            TipoCondicionIVA condicionCliente) {
+        
+        // Si el emisor es Responsable Inscripto
+        if (condicionEmisor == TipoCondicionIVA.RESPONSABLE_INSCRIPTO) {
+            // A cliente Responsable Inscripto → Factura A
+            if (condicionCliente == TipoCondicionIVA.RESPONSABLE_INSCRIPTO) {
+                return TipoFactura.A;
+            }
+            // A Consumidor Final, Monotributista o Exento → Factura B
+            else {
+                return TipoFactura.B;
+            }
+        }
+        // Si el emisor es Monotributista o Exento → Siempre Factura C
+        else {
+            return TipoFactura.C;
+        }
+    }
+
+    /**
+     * Valida que el cliente tenga una cuenta activa.
+     * Este método debe ser llamado antes de emitir una factura.
+     * 
+     * @throws IllegalStateException si la cuenta no está activa
+     */
+    public void validarClienteActivo() {
+        if (this.cliente.getEstado() != EstadoCuenta.ACTIVA) {
+            throw new IllegalStateException(
+                "No se puede emitir factura. El cliente no tiene cuenta activa. Estado actual: " 
+                + this.cliente.getEstado().getDescripcion()
+            );
+        }
     }
 }

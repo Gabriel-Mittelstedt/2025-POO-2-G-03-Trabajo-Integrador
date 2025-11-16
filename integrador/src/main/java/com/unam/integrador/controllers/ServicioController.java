@@ -1,4 +1,4 @@
-package com.unam.integrador.controller;
+package com.unam.integrador.controllers;
 
 import java.util.List;
 

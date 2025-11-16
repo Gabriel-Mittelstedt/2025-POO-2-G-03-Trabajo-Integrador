@@ -1,4 +1,4 @@
-package com.unam.integrador.service;
+package com.unam.integrador.services;
 
 import java.util.List;
 
@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.unam.integrador.model.Servicio;
-import com.unam.integrador.repository.ServicioRepository;
+import com.unam.integrador.repositories.ServicioRepository;
 
 /**
  * Servicio de aplicación para gestionar la lógica de negocio de Servicios.

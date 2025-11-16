@@ -1,4 +1,4 @@
-package com.unam.integrador.repository;
+package com.unam.integrador.repositories;
 
 import java.util.List;
 import java.util.Optional;

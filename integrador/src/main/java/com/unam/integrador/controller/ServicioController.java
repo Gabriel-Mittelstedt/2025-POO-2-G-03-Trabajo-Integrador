@@ -10,7 +10,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.unam.integrador.model.Servicio;
 import com.unam.integrador.model.enums.TipoAlicuotaIVA;
-import com.unam.integrador.service.ServicioService;
+import com.unam.integrador.services.ServicioService;
 
 /**
  * Controlador para gestionar operaciones sobre Servicios.

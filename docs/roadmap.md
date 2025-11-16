@@ -10,16 +10,16 @@ El objetivo de esta iteración es crear los clientes y servicios, generar factur
 
 **Historias de Usuario (Backlog de Iteración 1):**
 
-* **HU-01:** Alta de cliente
-* **HU-16:** Alta de servicio
-* **HU-17:** Listado de servicio
-* **HU-21:** Asignar servicio a un cliente
-* **HU-04:** Emisión de factura individual
-* **HU-07:** Emisión de facturación masiva por período
-* **HU-06:** Consulta de factura individual
-* **HU-10:** Listado y búsqueda de facturas
-* **HU-11:** Registrar pago total de factura
-* **HU-12:** Registrar pago parcial de factura
+* **HU-01:** Alta de cliente - Responsable: Axel Dos Santos 
+* **HU-16:** Alta de servicio - Responsable: Leandro Escalada
+* **HU-17:** Listado de servicio - Responsable: Leandro Escalada
+* **HU-21:** Asignar servicio a un cliente - Responsable: Axel Dos Santos
+* **HU-04:** Emisión de factura individual - Responsable: Gabriel Mittelstedt
+* **HU-07:** Emisión de facturación masiva por período - Responsable: Marcos Douberman
+* **HU-06:** Consulta de factura individual - Responsable: Gabriel Mittelstedt
+* **HU-10:** Listado y búsqueda de facturas - Responsable: Marcos Douberman
+* **HU-11:** Registrar pago total de factura - Responsable: Axel Limberger
+* **HU-12:** Registrar pago parcial de factura - Responsable: Axel Limberger
 
 ---
 

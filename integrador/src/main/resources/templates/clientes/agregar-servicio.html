@@ -32,9 +32,9 @@
                         <tr th:each="servicio : ${servicios}">
                             <td th:text="${servicio.nombre}"></td>
                             <td>$<span th:text="${#numbers.formatDecimal(servicio.precio, 1, 2)}"></span></td>
-                            <td th:text="${servicio.alicuotaIva.descripcion}"></td>
+                            <td th:text="${servicio.alicuotaIVA.descripcion}"></td>
                             <td>
-                                <form th:action="@{/clientes/{clienteId}/servicios/{servicioId}/asignar(clienteId=${cliente.id},servicioId=${servicio.id})}" 
+                                <form th:action="@{/clientes/{clienteId}/servicios/{servicioId}/asignar(clienteId=${cliente.id},servicioId=${servicio.IDServicio})}" 
                                       method="post" style="display:inline;">
                                     <button type="submit" class="btn btn-sm btn-success">Asignar</button>
                                 </form>

@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.unam.integrador.model.CuentaCliente;
 import com.unam.integrador.repositories.CuentaClienteRepositorie;
+import com.unam.integrador.repositories.ServicioRepository;
 
 /**
  * Servicio para la gestión de cuentas de clientes.
@@ -20,6 +21,9 @@ public class CuentaClienteService {
     
     @Autowired
     private CuentaClienteRepositorie clienteRepository;
+    
+    @Autowired
+    private ServicioRepository servicioRepository;
     
     /**
      * Crea un nuevo cliente validando todos los datos
@@ -44,6 +48,38 @@ public class CuentaClienteService {
     @Transactional(readOnly = true)
     public List<CuentaCliente> obtenerTodosLosClientes() {
         return clienteRepository.findAll();
+    }
+    
+    /**
+     * Obtiene un cliente por su ID
+     * @param id el identificador del cliente
+     * @return el cliente encontrado
+     * @throws IllegalArgumentException si el cliente no existe
+     */
+    @Transactional(readOnly = true)
+    public CuentaCliente obtenerClientePorId(Long id) {
+        return clienteRepository.findById(id)
+            .orElseThrow(() -> new IllegalArgumentException("Cliente no encontrado con ID: " + id));
+    }
+    
+    /**
+     * Asigna un servicio a un cliente.
+     * Registra la fecha actual y el precio actual del servicio.
+     * 
+     * @param clienteId el ID del cliente
+     * @param servicioId el ID del servicio a asignar
+     * @return el cliente actualizado
+     * @throws IllegalArgumentException si el cliente o servicio no existe, o si ya está asignado
+     */
+    public CuentaCliente asignarServicio(Long clienteId, Long servicioId) {
+        CuentaCliente cliente = obtenerClientePorId(clienteId);
+        com.unam.integrador.model.Servicio servicio = servicioRepository.findById(servicioId)
+            .orElseThrow(() -> new IllegalArgumentException("Servicio no encontrado con ID: " + servicioId));
+        
+        // El método contratarServicio ya valida duplicados
+        cliente.contratarServicio(servicio);
+        
+        return clienteRepository.save(cliente);
     }
     
 

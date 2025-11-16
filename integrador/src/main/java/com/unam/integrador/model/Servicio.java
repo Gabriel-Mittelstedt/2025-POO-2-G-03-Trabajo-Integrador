@@ -113,6 +113,23 @@ public class Servicio {
     }
     
     /**
+     * Calcula el precio total con IVA usando un precio específico.
+     * Útil para calcular el total de un servicio contratado con precio histórico.
+     * @param precioBase el precio base a usar para el cálculo
+     * @return Precio con IVA aplicado
+     */
+    public BigDecimal calcularPrecioConIva(BigDecimal precioBase) {
+        if (precioBase == null || alicuotaIVA == null) {
+            return BigDecimal.ZERO;
+        }
+        
+        BigDecimal porcentaje = obtenerPorcentajeIva();
+        BigDecimal iva = precioBase.multiply(porcentaje)
+                                   .divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
+        return precioBase.add(iva);
+    }
+    
+    /**
      * Obtiene el porcentaje numérico de la alícuota de IVA.
      * @return Porcentaje de IVA
      */

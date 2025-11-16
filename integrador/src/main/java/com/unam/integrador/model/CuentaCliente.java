@@ -1,10 +1,14 @@
 package com.unam.integrador.model;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.unam.integrador.model.enums.EstadoCuenta;
 import com.unam.integrador.model.enums.TipoCondicionIVA;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -12,6 +16,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -147,6 +152,14 @@ public class CuentaCliente {
     @Column(precision = 10, scale = 2)
     private BigDecimal saldo;
     
+    // --- Relaciones ---
+    
+    /**
+     * Lista de servicios contratados por este cliente.
+     */
+    @OneToMany(mappedBy = "cliente", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ServicioContratado> serviciosContratados = new ArrayList<>();
+    
     /**
      * Callback ejecutado antes de persistir la entidad en la base de datos.
      * 
@@ -166,5 +179,51 @@ public class CuentaCliente {
         if (saldo == null) {
             saldo = BigDecimal.ZERO;
         }
+    }
+    
+    // --- Métodos de negocio (Modelo Rico) ---
+    
+    /**
+     * Contrata un servicio para este cliente.
+     * Registra la fecha actual y el precio actual del servicio.
+     * 
+     * @param servicio el servicio a contratar
+     * @throws IllegalArgumentException si el servicio ya está contratado activamente
+     */
+    public void contratarServicio(Servicio servicio) {
+        if (tieneServicioContratadoActivo(servicio)) {
+            throw new IllegalArgumentException("El servicio '" + servicio.getNombre() + "' ya está contratado para este cliente.");
+        }
+        
+        ServicioContratado servicioContratado = new ServicioContratado();
+        servicioContratado.setCliente(this);
+        servicioContratado.setServicio(servicio);
+        servicioContratado.setFechaAlta(LocalDate.now());
+        servicioContratado.setPrecioContratado(servicio.getPrecio());
+        servicioContratado.setActivo(true);
+        
+        this.serviciosContratados.add(servicioContratado);
+    }
+    
+    /**
+     * Verifica si el servicio especificado está actualmente contratado y activo.
+     * 
+     * @param servicio el servicio a verificar
+     * @return true si el servicio está contratado y activo, false en caso contrario
+     */
+    public boolean tieneServicioContratadoActivo(Servicio servicio) {
+        return this.serviciosContratados.stream()
+            .anyMatch(sc -> sc.getServicio().equals(servicio) && sc.getActivo());
+    }
+    
+    /**
+     * Obtiene la lista de servicios contratados que están activos.
+     * 
+     * @return lista de servicios contratados activos
+     */
+    public List<ServicioContratado> getServiciosContratadosActivos() {
+        return this.serviciosContratados.stream()
+            .filter(ServicioContratado::getActivo)
+            .toList();
     }
 }

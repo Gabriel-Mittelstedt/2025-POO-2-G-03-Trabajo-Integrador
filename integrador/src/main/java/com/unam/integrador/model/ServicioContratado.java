@@ -11,6 +11,11 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import lombok.Data;
+
+/**
+ * Representa la contratación de un servicio por parte de un cliente.
+ * Registra el precio contratado y la fecha de alta, permitiendo históricos.
+ */
 @Data
 @Entity
 public class ServicioContratado {
@@ -24,6 +29,9 @@ public class ServicioContratado {
     
     @Column(precision = 10, scale = 2) 
     private BigDecimal precioContratado; 
+    
+    @Column(nullable = false)
+    private Boolean activo = true;
     
     // --- Relaciones ---
     

@@ -69,12 +69,12 @@
                         <p><strong><i class="bi bi-geo-alt me-2"></i>Domicilio:</strong> <span th:text="${cliente.domicilio}"></span></p>
                         <p><strong><i class="bi bi-receipt me-2"></i>Condición IVA:</strong> <span th:text="${cliente.condicionIva.descripcion}"></span></p>
                         <p><strong><i class="bi bi-toggle-on me-2"></i>Estado de Cuenta:</strong> 
-                            <span th:class="${cliente.estadoCuenta.name() == 'ACTIVA' ? 'badge bg-success' : 
-                                            cliente.estadoCuenta.name() == 'SUSPENDIDA' ? 'badge bg-warning' : 
+                            <span th:class="${cliente.estado.name() == 'ACTIVA' ? 'badge bg-success' : 
+                                            cliente.estado.name() == 'SUSPENDIDA' ? 'badge bg-warning' : 
                                             'badge bg-danger'}"
-                                  th:text="${cliente.estadoCuenta.descripcion}"></span>
+                                  th:text="${cliente.estado.descripcion}"></span>
                         </p>
-                        <p><strong><i class="bi bi-piggy-bank me-2"></i>Saldo a Favor:</strong> $<span th:text="${#numbers.formatDecimal(cliente.saldoAFavor, 1, 2)}"></span></p>
+                        <p><strong><i class="bi bi-piggy-bank me-2"></i>Saldo:</strong> $<span th:text="${#numbers.formatDecimal(cliente.saldo, 1, 2)}"></span></p>
                     </div>
                 </div>
             </div>
@@ -82,48 +82,51 @@
 
         <div class="card mt-3">
             <div class="card-header d-flex justify-content-between align-items-center bg-dark-header">
-                <h5 class="mb-0"><i class="bi bi-wrench me-2"></i>Servicios Contratados</h5>
-                <a th:href="@{/clientes/{id}/servicios/agregar(id=${cliente.id})}" class="btn btn-sm btn-light">
-                    <i class="bi bi-plus-circle me-1"></i>Agregar Servicio
-                </a>
+                <h5 class="mb-0"><i class="bi bi-wrench me-2"></i>Servicios Contratados Activos</h5>
+                <div>
+                    <a th:href="@{/clientes/{id}/servicios/asignar(id=${cliente.id})}" class="btn btn-sm btn-light me-2">
+                        <i class="bi bi-plus-circle me-1"></i>Asignar Servicio
+                    </a>
+                    <a th:href="@{/clientes/{id}/servicios/historico(id=${cliente.id})}" class="btn btn-sm btn-outline-light">
+                        <i class="bi bi-clock-history me-1"></i>Ver Histórico
+                    </a>
+                </div>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
-                    <table class="table" th:if="${!cliente.serviciosContratados.isEmpty()}">
+                    <table class="table" th:if="${!cliente.serviciosContratadosActivos.isEmpty()}">
                         <thead class="bg-dark-header">
                             <tr>
                                 <th><i class="bi bi-tag me-1"></i>Servicio</th>
-                                <th><i class="bi bi-currency-dollar me-1"></i>Precio</th>
+                                <th><i class="bi bi-calendar me-1"></i>Fecha Alta</th>
+                                <th><i class="bi bi-currency-dollar me-1"></i>Precio Contratado</th>
                                 <th><i class="bi bi-percent me-1"></i>IVA</th>
-                                <th><i class="bi bi-toggle-on me-1"></i>Estado</th>
-                                <th><i class="bi bi-gear me-1"></i>Acciones</th>
+                                <th><i class="bi bi-cash-stack me-1"></i>Total con IVA</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr th:each="servicio : ${cliente.serviciosContratados}">
-                                <td th:text="${servicio.nombre}"></td>
-                                <td>$<span th:text="${#numbers.formatDecimal(servicio.precio, 1, 2)}"></span></td>
-                                <td th:text="${servicio.alicuotaIva.descripcion}"></td>
+                            <tr th:each="sc : ${cliente.serviciosContratadosActivos}">
                                 <td>
-                                    <span th:class="${servicio.activo ? 'badge bg-success' : 'badge bg-secondary'}"
-                                          th:text="${servicio.activo ? 'Activo' : 'Inactivo'}"></span>
+                                    <strong th:text="${sc.servicio.nombre}"></strong>
+                                    <br>
+                                    <small class="text-muted" th:text="${sc.servicio.descripcion}"></small>
                                 </td>
+                                <td th:text="${#temporals.format(sc.fechaAlta, 'dd/MM/yyyy')}"></td>
+                                <td>$<span th:text="${#numbers.formatDecimal(sc.precioContratado, 1, 2)}"></span></td>
+                                <td th:text="${sc.servicio.alicuotaIVA.descripcion}"></td>
                                 <td>
-                                    <form th:action="@{/clientes/{clienteId}/servicios/{servicioId}/desvincular(clienteId=${cliente.id},servicioId=${servicio.id})}" 
-                                          method="post" style="display:inline;" 
-                                          onsubmit="return confirm('¿Está seguro de desvincular este servicio?');">
-                                        <button type="submit" class="btn btn-sm btn-danger">
-                                            <i class="bi bi-x-circle me-1"></i>Desvincular
-                                        </button>
-                                    </form>
+                                    <strong>$<span th:text="${#numbers.formatDecimal(sc.servicio.calcularPrecioConIva(sc.precioContratado), 1, 2)}"></span></strong>
                                 </td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
-                <div th:if="${cliente.serviciosContratados.isEmpty()}" class="text-center py-4">
+                <div th:if="${cliente.serviciosContratadosActivos.isEmpty()}" class="text-center py-4">
                     <i class="bi bi-inbox" style="font-size: 3rem; color: #ccc;"></i>
-                    <p class="text-muted mt-2">No hay servicios contratados</p>
+                    <p class="text-muted mt-2">No hay servicios contratados activos</p>
+                    <a th:href="@{/clientes/{id}/servicios/asignar(id=${cliente.id})}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle me-1"></i>Asignar Primer Servicio
+                    </a>
                 </div>
             </div>
         </div>

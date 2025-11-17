@@ -37,10 +37,7 @@
             </div>
             <div class="action-buttons">
                 <a href="/facturas/nueva-individual" class="btn btn-success">
-                    <i class="bi bi-plus-circle"></i> Nueva Factura
-                </a>
-                <a href="/facturas/nueva-proporcional" class="btn btn-primary">
-                    <i class="bi bi-calendar-range"></i> Factura Proporcional
+                    <i class="bi bi-plus-circle"></i> Nueva Factura Individual
                 </a>
             </div>
         </div>
@@ -99,23 +96,23 @@
                         </thead>
                         <tbody>
                             <tr th:each="factura : ${facturas}">
-                                <td><strong th:text="${factura.numeroFactura}"></strong></td>
-                                <td><span class="badge bg-secondary" th:text="${factura.tipoFactura.name()}"></span></td>
+                                <td><strong th:text="${'Serie: ' + factura.serie + ' - Nº ' + factura.nroFactura}"></strong></td>
+                                <td><span class="badge bg-secondary" th:text="${'Tipo ' + factura.tipo.name()}"></span></td>
                                 <td th:text="${factura.cliente.nombre}"></td>
                                 <td><span class="badge bg-info" th:text="${factura.periodo}"></span></td>
                                 <td th:text="${#temporals.format(factura.fechaEmision, 'dd/MM/yyyy')}"></td>
                                 <td th:text="${#temporals.format(factura.fechaVencimiento, 'dd/MM/yyyy')}"></td>
-                                <td><strong>$<span th:text="${#numbers.formatDecimal(factura.total, 1, 2)}"></span></strong></td>
+                                <td><strong th:text="${'$' + #numbers.formatDecimal(factura.total, 1, 'POINT', 2, 'COMMA')}"></strong></td>
                                 <td>
-                                    <span th:class="${factura.estado.name() == 'PAGADA' ? 'badge bg-success' : 
+                                    <span th:class="${factura.estado.name() == 'PAGADA_TOTALMENTE' ? 'badge bg-success' : 
                                                     factura.estado.name() == 'PENDIENTE' ? 'badge bg-warning' :
                                                     factura.estado.name() == 'VENCIDA' ? 'badge bg-danger' :
-                                                    factura.estado.name() == 'PARCIALMENTE_PAGADA' ? 'badge bg-info' :
+                                                    factura.estado.name() == 'PAGADA_PARCIALMENTE' ? 'badge bg-info' :
                                                     'badge bg-secondary'}"
                                           th:text="${factura.estado.descripcion}"></span>
                                 </td>
                                 <td class="text-center">
-                                    <a th:href="@{/facturas/{id}(id=${factura.id})}" class="btn btn-sm btn-info" title="Ver detalle">
+                                    <a th:href="@{/facturas/{id}(id=${factura.idFactura})}" class="btn btn-sm btn-info" title="Ver detalle">
                                         <i class="bi bi-eye"></i> Ver
                                     </a>
                                 </td>

@@ -46,54 +46,74 @@
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="clienteId" class="form-label"><i class="bi bi-person"></i> Cliente *</label>
-                            <select name="clienteId" id="clienteId" class="form-select" required>
+                            <select name="clienteId" id="clienteId" class="form-select" 
+                                    th:value="${clienteId}" required>
                                 <option value="">Seleccione un cliente...</option>
                                 <option th:each="cliente : ${clientes}" 
-                                        th:value="${cliente.id}" 
-                                        th:text="${cliente.nombre + ' - ' + cliente.cuitDni}"></option>
+                                        th:value="${cliente.id}"
+                                        th:selected="${cliente.id == clienteId}"
+                                        th:text="${cliente.nombre + ' - CUIT/DNI: ' + cliente.cuitDni}"></option>
                             </select>
-                            <small class="form-text text-muted">Se incluirán todos los servicios activos del cliente</small>
+                            <small class="form-text text-muted">Se incluirán automáticamente todos los servicios activos del cliente</small>
                         </div>
 
                         <div class="col-md-6 mb-3">
                             <label for="periodo" class="form-label"><i class="bi bi-calendar"></i> Período *</label>
                             <input type="text" name="periodo" id="periodo" class="form-control" 
-                                   placeholder="Ej: Noviembre 2024" required>
-                            <small class="form-text text-muted">Formato recomendado: Mes Año</small>
+                                   th:value="${periodo}"
+                                   placeholder="Ej: Noviembre 2025"
+                                   maxlength="50"
+                                   required>
+                            <small class="form-text text-muted">Descripción del período (ej: Noviembre 2025, 1er Trimestre 2025)</small>
                         </div>
                     </div>
 
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="fechaEmision" class="form-label"><i class="bi bi-calendar-event"></i> Fecha de Emisión *</label>
-                            <input type="date" name="fechaEmision" id="fechaEmision" class="form-control" required>
+                            <input type="date" name="fechaEmision" id="fechaEmision" class="form-control" 
+                                   th:value="${fechaEmision}" required>
                         </div>
 
                         <div class="col-md-6 mb-3">
                             <label for="fechaVencimiento" class="form-label"><i class="bi bi-calendar-x"></i> Fecha de Vencimiento *</label>
-                            <input type="date" name="fechaVencimiento" id="fechaVencimiento" class="form-control" required>
+                            <input type="date" name="fechaVencimiento" id="fechaVencimiento" class="form-control" 
+                                   th:value="${fechaVencimiento}" required>
                         </div>
                     </div>
 
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label for="descuento" class="form-label"><i class="bi bi-tag"></i> Descuento (opcional)</label>
+                            <label for="porcentajeDescuento" class="form-label"><i class="bi bi-tag"></i> Descuento (opcional)</label>
                             <div class="input-group">
-                                <span class="input-group-text">$</span>
-                                <input type="number" step="0.01" name="descuento" id="descuento" class="form-control" 
+                                <input type="number" step="0.01" min="0" max="100" 
+                                       name="porcentajeDescuento" id="porcentajeDescuento" 
+                                       class="form-control" 
+                                       th:value="${porcentajeDescuento}"
                                        placeholder="0.00">
+                                <span class="input-group-text">%</span>
                             </div>
+                            <small class="form-text text-muted">Porcentaje de descuento sobre el total</small>
                         </div>
 
-                        <div class="col-md-6 mb-3">
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
                             <label for="motivoDescuento" class="form-label"><i class="bi bi-chat-left-text"></i> Motivo del Descuento</label>
-                            <input type="text" name="motivoDescuento" id="motivoDescuento" class="form-control" 
-                                   placeholder="Ingrese el motivo si aplica descuento">
+                            <input type="text" name="motivoDescuento" id="motivoDescuento" 
+                                   class="form-control" 
+                                   th:value="${motivoDescuento}"
+                                   placeholder="Obligatorio si aplica descuento">
+                            <small class="form-text text-muted">Requerido si se aplica descuento</small>
                         </div>
                     </div>
 
                     <div class="alert alert-info">
-                        <i class="bi bi-info-circle"></i> <strong>Nota:</strong> El tipo de factura (A, B o C) se determinará automáticamente según la condición de IVA del cliente.
+                        <i class="bi bi-info-circle"></i> <strong>Información automática:</strong>
+                        <ul class="mb-0">
+                            <li>El tipo de factura (A, B o C) se determinará según la condición de IVA del cliente</li>
+                            <li>Los items se generarán automáticamente desde los servicios contratados activos</li>
+                            <li>El número de factura se asignará automáticamente</li>
+                        </ul>
                     </div>
 
                     <div class="mt-4">

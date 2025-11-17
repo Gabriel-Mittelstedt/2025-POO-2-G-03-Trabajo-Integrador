@@ -56,7 +56,7 @@
                             <td th:text="${pagoFactura.factura.numeroFactura}"></td>
                             <td>$<span th:text="${#numbers.formatDecimal(pagoFactura.montoPagado, 1, 2)}"></span></td>
                             <td>
-                                <a th:href="@{/facturas/{id}(id=${pagoFactura.factura.id})}" class="btn btn-sm btn-info">Ver Factura</a>
+                                <a th:href="@{/facturas/{id}(id=${pagoFactura.factura.idFactura})}" class="btn btn-sm btn-info">Ver Factura</a>
                             </td>
                         </tr>
                     </tbody>

@@ -80,15 +80,15 @@
                             <td th:text="${factura.cliente.nombre}"></td>
                             <td>$<span th:text="${#numbers.formatDecimal(factura.total, 1, 2)}"></span></td>
                             <td>
-                                <span th:class="${factura.estado.name() == 'PAGADA' ? 'badge bg-success' : 
+                                <span th:class="${factura.estado.name() == 'PAGADA_TOTALMENTE' ? 'badge bg-success' : 
                                                 factura.estado.name() == 'PENDIENTE' ? 'badge bg-warning' :
                                                 factura.estado.name() == 'VENCIDA' ? 'badge bg-danger' :
-                                                factura.estado.name() == 'PARCIALMENTE_PAGADA' ? 'badge bg-info' :
+                                                factura.estado.name() == 'PAGADA_PARCIALMENTE' ? 'badge bg-info' :
                                                 'badge bg-dark'}"
                                       th:text="${factura.estado.descripcion}"></span>
                             </td>
                             <td>
-                                <a th:href="@{/facturas/{id}(id=${factura.id})}" class="btn btn-sm btn-info">Ver</a>
+                                <a th:href="@{/facturas/{id}(id=${factura.idFactura})}" class="btn btn-sm btn-info">Ver</a>
                             </td>
                         </tr>
                     </tbody>

@@ -59,4 +59,58 @@ public class ItemFactura {
         this.montoIva = BigDecimal.ZERO;
         this.total = BigDecimal.ZERO;
     }
+
+    // --- MÉTODOS DE NEGOCIO (Modelo RICO) ---
+
+    /**
+     * Calcula el subtotal del item (precio × cantidad).
+     * @return Subtotal sin IVA
+     */
+    public BigDecimal calcularSubtotal() {
+        this.subtotal = precioUnitario.multiply(new BigDecimal(cantidad));
+        return this.subtotal;
+    }
+
+    /**
+     * Calcula el monto de IVA según la alícuota correspondiente.
+     * @return Monto del IVA a aplicar
+     */
+    public BigDecimal calcularMontoIva() {
+        BigDecimal alicuota = obtenerValorAlicuota();
+        this.montoIva = this.subtotal.multiply(alicuota);
+        return this.montoIva;
+    }
+
+    /**
+     * Calcula el total del item (subtotal + IVA).
+     * @return Total del item
+     */
+    public BigDecimal calcularTotal() {
+        this.total = this.subtotal.add(this.montoIva);
+        return this.total;
+    }
+
+    /**
+     * Ejecuta todos los cálculos en el orden correcto.
+     * Este método encapsula la lógica de cálculo completa del item.
+     */
+    public void calcular() {
+        calcularSubtotal();
+        calcularMontoIva();
+        calcularTotal();
+    }
+
+    /**
+     * Obtiene el valor decimal de la alícuota de IVA.
+     * @return Valor decimal de la alícuota (ej: 0.21 para IVA_21)
+     */
+    private BigDecimal obtenerValorAlicuota() {
+        return switch (this.alicuotaIVA) {
+            case IVA_21 -> new BigDecimal("0.21");
+            case IVA_10_5 -> new BigDecimal("0.105");
+            case IVA_27 -> new BigDecimal("0.27");
+            case IVA_2_5 -> new BigDecimal("0.025");
+            case EXENTO -> BigDecimal.ZERO;
+        };
+    }
 }

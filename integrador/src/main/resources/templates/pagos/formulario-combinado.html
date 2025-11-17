@@ -56,48 +56,60 @@
             Cliente seleccionado tiene <strong th:text="${facturas.size()}"></strong> factura(s) impaga(s)
         </div>
 
-        <div th:if="${facturas != null and !facturas.isEmpty()}" class="card mt-3">
-            <div class="card-header bg-dark-header">
-                <h5 class="mb-0"><i class="bi bi-file-earmark-text me-2"></i>Facturas Pendientes de Pago</h5>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="bg-medium-header">
-                            <tr>
-                                <th><i class="bi bi-hash me-1"></i>Número</th>
-                                <th><i class="bi bi-calendar me-1"></i>Período</th>
-                                <th class="text-end"><i class="bi bi-currency-dollar me-1"></i>Total</th>
-                                <th class="text-end"><i class="bi bi-exclamation-circle me-1"></i>Saldo Pendiente</th>
-                                <th class="text-center"><i class="bi bi-info-circle me-1"></i>Estado</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr th:each="factura : ${facturas}">
-                                <td><strong th:text="${factura.numeroFactura}"></strong></td>
-                                <td><span class="badge bg-info" th:text="${factura.periodo}"></span></td>
-                                <td class="text-end">$<span th:text="${#numbers.formatDecimal(factura.total, 1, 2)}"></span></td>
-                                <td class="text-end text-danger"><strong>$<span th:text="${#numbers.formatDecimal(factura.saldoPendiente, 1, 2)}"></span></strong></td>
-                                <td class="text-center">
-                                    <span th:class="${factura.estado.name() == 'PENDIENTE' ? 'badge bg-warning text-dark' : 
-                                                    factura.estado.name() == 'VENCIDA' ? 'badge bg-danger' : 
-                                                    'badge bg-info'}"
-                                          th:text="${factura.estado.descripcion}"></span>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+        <form method="post" action="/pagos/nuevo-combinado" th:object="${pagoDTO}">
+            <input type="hidden" th:field="*{clienteId}">
+
+            <div th:if="${facturas != null and !facturas.isEmpty()}" class="card mt-3">
+                <div class="card-header bg-dark-header">
+                    <h5 class="mb-0"><i class="bi bi-file-earmark-text me-2"></i>Facturas Pendientes de Pago</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="bg-medium-header">
+                                <tr>
+                                    <th style="width:48px; text-align:center;">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="selectAll" title="Seleccionar todas">
+                                        </div>
+                                    </th>
+                                    <th><i class="bi bi-hash me-1"></i>Número</th>
+                                    <th><i class="bi bi-calendar me-1"></i>Período</th>
+                                    <th class="text-end"><i class="bi bi-currency-dollar me-1"></i>Total</th>
+                                    <th class="text-end"><i class="bi bi-exclamation-circle me-1"></i>Saldo Pendiente</th>
+                                    <th class="text-center"><i class="bi bi-info-circle me-1"></i>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="factura : ${facturas}">
+                                    <td>
+                                        <div class="form-check text-center">
+                                            <input class="form-check-input invoice-checkbox" type="checkbox" name="facturaId" th:value="${factura.id}" th:id="${'chk-' + factura.id}">
+                                        </div>
+                                    </td>
+                                    <td><strong th:text="${factura.numeroFactura}"></strong></td>
+                                    <td><span class="badge bg-info" th:text="${factura.periodo}"></span></td>
+                                    <td class="text-end">$<span th:text="${#numbers.formatDecimal(factura.total, 1, 2)}"></span></td>
+                                    <td class="text-end text-danger"><strong>$<span th:text="${#numbers.formatDecimal(factura.saldoPendiente, 1, 2)}"></span></strong></td>
+                                    <td class="text-center">
+                                        <span th:class="${factura.estado.name() == 'PENDIENTE' ? 'badge bg-warning text-dark' : 
+                                                        factura.estado.name() == 'VENCIDA' ? 'badge bg-danger' : 
+                                                        'badge bg-info'}"
+                                              th:text="${factura.estado.descripcion}"></span>
+                                    </td>
+                                    
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
-        </div>
 
         <div class="card mt-3">
             <div class="card-header bg-dark-header">
                 <h5 class="mb-0"><i class="bi bi-cash-coin me-2"></i>Datos del Pago</h5>
             </div>
             <div class="card-body">
-                <form method="post" action="/pagos/nuevo-combinado" th:object="${pagoDTO}">
-                    <input type="hidden" th:field="*{clienteId}">
 
                     <div class="mb-3">
                         <label for="montoTotal" class="form-label"><i class="bi bi-currency-dollar me-1"></i>Monto Total Recibido *</label>
@@ -118,7 +130,7 @@
                         <label for="metodoPago" class="form-label"><i class="bi bi-credit-card me-1"></i>Método de Pago *</label>
                         <select th:field="*{metodoPago}" id="metodoPago" class="form-select" required>
                             <option value="">Seleccione...</option>
-                            <option th:each="metodo : ${metodosPago}" th:value="${metodo}" th:text="${metodo.descripcion}"></option>
+                            <option th:each="metodo : ${metodosPago}" th:value="${metodo.codigo}" th:text="${metodo.descripcion}"></option>
                         </select>
                     </div>
 
@@ -138,15 +150,25 @@
                         <button type="submit" class="btn btn-success">
                             <i class="bi bi-check-circle me-1"></i>Registrar Pago
                         </button>
-                        <a href="/pagos" class="btn btn-secondary">
-                            <i class="bi bi-x-circle me-1"></i>Cancelar
-                        </a>
                     </div>
-                </form>
-            </div>
-        </div>
-    </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
+        </form>
+
+        </div> <!-- /.container -->
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function(){
+                const selectAll = document.getElementById('selectAll');
+                const checkboxes = document.querySelectorAll('.invoice-checkbox');
+
+                if(selectAll){
+                    selectAll.addEventListener('change', function(){
+                        const checked = this.checked;
+                        checkboxes.forEach(cb => { cb.checked = checked; });
+                    });
+                }
+            });
+        </script>
+
+    </body>
 </html>

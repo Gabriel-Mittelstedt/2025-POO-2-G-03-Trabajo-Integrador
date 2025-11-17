@@ -28,7 +28,7 @@
                 <h1>Detalle de Servicio</h1>
             </div>
             <div class="col-md-4 text-end">
-                <a th:href="@{/servicios/{id}/editar(id=${servicio.id})}" class="btn btn-warning">Editar</a>
+                <a th:href="@{/servicios/{id}/editar(id=${servicio.IDServicio})}" class="btn btn-warning">Editar</a>
                 <a href="/servicios" class="btn btn-secondary">Volver</a>
             </div>
         </div>
@@ -50,7 +50,7 @@
                         <p><strong>Precio:</strong> $<span th:text="${#numbers.formatDecimal(servicio.precio, 1, 2)}"></span></p>
                     </div>
                     <div class="col-md-6">
-                        <p><strong>Alícuota IVA:</strong> <span th:text="${servicio.alicuotaIva.descripcion}"></span></p>
+                        <p><strong>Alícuota IVA:</strong> <span th:text="${servicio.alicuotaIVA.descripcion}"></span></p>
                         <p><strong>Monto IVA:</strong> $<span th:text="${#numbers.formatDecimal(servicio.calcularIva(), 1, 2)}"></span></p>
                         <p><strong>Precio con IVA:</strong> $<span th:text="${#numbers.formatDecimal(servicio.calcularPrecioConIva(), 1, 2)}"></span></p>
                         <p><strong>Estado:</strong> 
@@ -68,13 +68,13 @@
 
                 <div class="mt-3">
                     <form th:if="${servicio.activo}" 
-                          th:action="@{/servicios/{id}/desactivar(id=${servicio.id})}" 
+                          th:action="@{/servicios/{id}/desactivar(id=${servicio.IDServicio})}" 
                           method="post" 
                           onsubmit="return confirm('¿Está seguro de desactivar este servicio?');">
                         <button type="submit" class="btn btn-danger">Desactivar Servicio</button>
                     </form>
                     <form th:if="${!servicio.activo}" 
-                          th:action="@{/servicios/{id}/activar(id=${servicio.id})}" 
+                          th:action="@{/servicios/{id}/activar(id=${servicio.IDServicio})}" 
                           method="post">
                         <button type="submit" class="btn btn-success">Activar Servicio</button>
                     </form>

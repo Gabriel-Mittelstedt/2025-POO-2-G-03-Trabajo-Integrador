@@ -1,45 +1,32 @@
 package com.unam.integrador.model.enums;
 
 /**
- * Enumeración que representa las alícuotas de IVA aplicables en Argentina.
- * 
- * <p>Define los porcentajes de IVA vigentes según la normativa de AFIP
- * para diferentes tipos de bienes y servicios.</p>
- */
+ * Enumeración de las alícuotas de IVA.
+ * <p>Define los diferentes porcentajes de IVA que pueden aplicarse 
+ * a los servicios según la normativa fiscal vigente.</p>
+ * <p><b>Alícuotas disponibles:</b></p>
+ * <ul>
+ *   <li><b>IVA 21%:</b> Alícuota general (mayoría de servicios)</li>
+ *   <li><b>IVA 10.5%:</b> Alícuota reducida (servicios específicos)</li>
+ *   <li><b>IVA 27%:</b> Alícuota incrementada (servicios de lujo)</li>
+ *   <li><b>IVA 2.5%:</b> Alícuota mínima (casos especiales)</li>
+ *   <li><b>EXENTO:</b> Sin IVA (servicios exentos por ley)</li>
+ * </ul>
+ */ 
 public enum TipoAlicuotaIVA {
+    IVA_21("IVA 21%"),
+    IVA_10_5("IVA 10.5%"),
+    IVA_27("IVA 27%"),
+    IVA_2_5("IVA 2.5%"),
+    EXENTO("Exento");
     
-    /**
-     * Alícuota general del 21%.
-     * <p>Aplicable a la mayoría de bienes y servicios.
-     * Es la alícuota estándar más utilizada.</p>
-     */
-    IVA_21,
+    private final String descripcion;
     
-    /**
-     * Alícuota reducida del 10.5%.
-     * <p>Aplicable a productos de primera necesidad como:
-     * alimentos básicos, medicamentos, libros, periódicos.</p>
-     */
-    IVA_10_5,
+    TipoAlicuotaIVA(String descripcion) {
+        this.descripcion = descripcion;
+    }
     
-    /**
-     * Alícuota incrementada del 27%.
-     * <p>Aplicable a servicios específicos como:
-     * gas, electricidad, agua, telecomunicaciones.</p>
-     */
-    IVA_27,
-    
-    /**
-     * Alícuota mínima del 2.5%.
-     * <p>Aplicable a operaciones especiales como:
-     * venta de animales vivos, bienes de capital, cereales.</p>
-     */
-    IVA_2_5,
-    
-    /**
-     * Operación exenta de IVA.
-     * <p>No se aplica IVA. Utilizado para actividades exentas
-     * por ley (ej: servicios educativos, médicos).</p>
-     */
-    EXENTO
+    public String getDescripcion() {
+        return descripcion;
+    }
 }

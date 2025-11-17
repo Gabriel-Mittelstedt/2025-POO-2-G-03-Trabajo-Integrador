@@ -42,7 +42,7 @@ public interface FacturaRepository extends JpaRepository<Factura, Long> {
     
     /**
      * Busca facturas por período.
-     * @param periodo Período de facturación (ej: "2025-11")
+     * @param periodo Período de facturación (ej: "2025-11 o Noviembre 2025")
      * @return Lista de facturas de ese período
      */
     List<Factura> findByPeriodo(String periodo);

@@ -189,6 +189,21 @@ public class Factura {
     }
 
     /**
+     * Obtiene el monto del descuento aplicado.
+     * Se calcula como un porcentaje del subtotal.
+     * 
+     * @return Monto del descuento en pesos
+     */
+    public BigDecimal getMontoDescuento() {
+        if (this.descuento <= 0) {
+            return BigDecimal.ZERO;
+        }
+        return this.subtotal
+            .multiply(BigDecimal.valueOf(this.descuento))
+            .divide(BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
+    }
+
+    /**
      * Ejecuta todos los cálculos en el orden correcto.
      * Este es el método principal para actualizar todos los valores calculados.
      */

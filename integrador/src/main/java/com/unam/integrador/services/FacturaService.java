@@ -1,17 +1,17 @@
 package com.unam.integrador.services;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.unam.integrador.dto.EmitirFacturaRequest;
-import com.unam.integrador.dto.ItemFacturaRequest;
 import com.unam.integrador.model.CuentaCliente;
 import com.unam.integrador.model.Factura;
 import com.unam.integrador.model.ItemFactura;
-import com.unam.integrador.model.enums.EstadoCuenta;
+import com.unam.integrador.model.Servicio;
+import com.unam.integrador.model.ServicioContratado;
 import com.unam.integrador.model.enums.TipoCondicionIVA;
 import com.unam.integrador.model.enums.TipoFactura;
 import com.unam.integrador.repositories.CuentaClienteRepositorie;
@@ -38,40 +38,35 @@ public class FacturaService {
     private static final int SERIE_FACTURA_A = 1;
     private static final int SERIE_FACTURA_B = 2;
     private static final int SERIE_FACTURA_C = 3;
-    private static final int DIAS_VENCIMIENTO = 10;
     
     /**
-     * Emite una factura individual para un cliente.
-     * 
-     * La lógica de negocio está en las entidades Factura e ItemFactura,
-     * este método solo coordina el proceso.
-     * 
-     * @param request Datos de la factura a emitir (incluye items)
+     * Emite una factura individual usando los servicios contratados activos del cliente.
+     * Los items se generan automáticamente desde los servicios asignados.
+     * @param clienteId ID del cliente
+     * @param periodo Período de facturación (formato YYYYMM)
+     * @param fechaEmision Fecha de emisión
+     * @param fechaVencimiento Fecha de vencimiento
+     * @param porcentajeDescuento Descuento opcional (puede ser null)
+     * @param motivoDescuento Motivo del descuento (requerido si hay descuento)
      * @return Factura generada
-     * @throws IllegalArgumentException si los parámetros son inválidos
-     * @throws IllegalStateException si el cliente no está activo
      */
     @Transactional
-    public Factura emitirFacturaIndividual(EmitirFacturaRequest request) {
+    public Factura emitirFacturaDesdeServiciosContratados(
+            Long clienteId, 
+            String periodo, 
+            LocalDate fechaEmision,
+            LocalDate fechaVencimiento,
+            Double porcentajeDescuento,
+            String motivoDescuento) {
         
-        // 1. Obtener y validar cliente
-        CuentaCliente cliente = clienteRepository.findById(request.getClienteId())
-            .orElseThrow(() -> new IllegalArgumentException(
-                "Cliente no encontrado con ID: " + request.getClienteId()));
+        // 1. Obtener cliente
+        CuentaCliente cliente = clienteRepository.findById(clienteId)
+            .orElseThrow(() -> new IllegalArgumentException("Cliente no encontrado con ID: " + clienteId));
         
-        // Validar que el cliente esté activo
-        if (cliente.getEstado() != EstadoCuenta.ACTIVA) {
-            throw new IllegalStateException(
-                "No se puede emitir factura. El cliente no tiene cuenta activa. Estado actual: " 
-                + cliente.getEstado().getDescripcion()
-            );
-        }
-        
-        // 2. Validar que haya items
-        if (request.getItems() == null || request.getItems().isEmpty()) {
-            throw new IllegalArgumentException(
-                "No se puede emitir factura sin items."
-            );
+        // 2. Obtener servicios contratados activos
+        List<ServicioContratado> serviciosContratados = cliente.getServiciosContratadosActivos();
+        if (serviciosContratados.isEmpty()) {
+            throw new IllegalArgumentException("El cliente no tiene servicios contratados activos");
         }
         
         // 3. Determinar tipo de factura (delegar al dominio)
@@ -80,51 +75,50 @@ public class FacturaService {
             cliente.getCondicionIva()
         );
         
-        // 4. Obtener serie y número de factura
+        // 4. Obtener serie y número
         int serie = obtenerSerie(tipoFactura);
-        int numeroFactura = obtenerSiguienteNumeroFactura(serie);
+        int numero = obtenerSiguienteNumeroFactura(serie);
         
-        // 5. Calcular fecha de vencimiento
-        LocalDate fechaVencimiento = request.getFechaEmision().plusDays(DIAS_VENCIMIENTO);
-        
-        // 6. Crear la factura
+        // 5. Crear factura
         Factura factura = new Factura(
-            serie,
-            numeroFactura,
+            serie, 
+            numero, 
             cliente,
-            request.getFechaEmision(),
-            fechaVencimiento,
-            request.getPeriodo(),
+            fechaEmision, 
+            fechaVencimiento, 
+            periodo, 
             tipoFactura
         );
         
-        // 7. Agregar items desde el request (delegar al dominio)
-        for (ItemFacturaRequest itemRequest : request.getItems()) {
+        // 6. Validar cliente activo (delegar al dominio)
+        factura.validarClienteActivo();
+        
+        // 7. Agregar items desde servicios contratados
+        for (ServicioContratado servicioContratado : serviciosContratados) {
+            Servicio servicio = servicioContratado.getServicio();
+            
             ItemFactura item = new ItemFactura(
-                itemRequest.getDescripcion(),
-                itemRequest.getPrecioUnitario(),
-                itemRequest.getCantidad(),
-                itemRequest.getAlicuotaIVA()
+                servicio.getNombre(),                       // descripcion
+                servicioContratado.getPrecioContratado(),   // precioUnitario (precio específico del contrato)
+                1,                                          // cantidad (siempre 1 para servicios mensuales)
+                servicio.getAlicuotaIVA()                   // alicuotaIVA
             );
             
-            // Agregar item a la factura (esto calcula automáticamente)
             factura.agregarItem(item);
         }
         
-        // 8. Aplicar descuento si corresponde (delegar al dominio)
-        if (request.getPorcentajeDescuento() != null && request.getPorcentajeDescuento() > 0) {
-            if (request.getMotivoDescuento() == null || request.getMotivoDescuento().trim().isEmpty()) {
-                throw new IllegalArgumentException(
-                    "El motivo del descuento es obligatorio cuando se aplica un descuento"
-                );
+        // 8. Aplicar descuento si existe
+        if (porcentajeDescuento != null && porcentajeDescuento > 0) {
+            if (motivoDescuento == null || motivoDescuento.isBlank()) {
+                throw new IllegalArgumentException("El motivo del descuento es obligatorio");
             }
-            factura.aplicarDescuento(request.getPorcentajeDescuento(), request.getMotivoDescuento());
+            factura.aplicarDescuento(porcentajeDescuento, motivoDescuento);
         }
         
         // 9. Persistir factura
         return facturaRepository.save(factura);
     }
-    
+
     /**
      * Busca una factura por su ID.
      * @param id ID de la factura

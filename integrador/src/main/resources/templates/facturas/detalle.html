@@ -35,16 +35,16 @@
 
         <div class="card mt-3">
             <div class="card-header bg-primary text-white">
-                <h5>Factura <span th:text="${factura.tipoFactura.name()}"></span> - <span th:text="${factura.numeroFactura}"></span></h5>
+                <h5>Factura Tipo <span th:text="${factura.tipo.name()}"></span> - Serie: <span th:text="${factura.serie}"></span> Nº <span th:text="${factura.nroFactura}"></span></h5>
             </div>
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-6">
                         <h6>Datos del Cliente</h6>
                         <p><strong>Nombre:</strong> <span th:text="${factura.cliente.nombre}"></span></p>
-                        <p><strong>Razón Social:</strong> <span th:text="${factura.cliente.razonSocial}"></span></p>
                         <p><strong>CUIT/DNI:</strong> <span th:text="${factura.cliente.cuitDni}"></span></p>
                         <p><strong>Condición IVA:</strong> <span th:text="${factura.cliente.condicionIva.descripcion}"></span></p>
+                        <p><strong>Domicilio:</strong> <span th:text="${factura.cliente.domicilio}"></span></p>
                     </div>
                     <div class="col-md-6">
                         <h6>Datos de la Factura</h6>
@@ -52,10 +52,10 @@
                         <p><strong>Fecha Emisión:</strong> <span th:text="${#temporals.format(factura.fechaEmision, 'dd/MM/yyyy')}"></span></p>
                         <p><strong>Fecha Vencimiento:</strong> <span th:text="${#temporals.format(factura.fechaVencimiento, 'dd/MM/yyyy')}"></span></p>
                         <p><strong>Estado:</strong> 
-                            <span th:class="${factura.estado.name() == 'PAGADA' ? 'badge bg-success' : 
+                            <span th:class="${factura.estado.name() == 'PAGADA_TOTALMENTE' ? 'badge bg-success' : 
                                             factura.estado.name() == 'PENDIENTE' ? 'badge bg-warning' :
                                             factura.estado.name() == 'VENCIDA' ? 'badge bg-danger' :
-                                            factura.estado.name() == 'PARCIALMENTE_PAGADA' ? 'badge bg-info' :
+                                            factura.estado.name() == 'PAGADA_PARCIALMENTE' ? 'badge bg-info' :
                                             'badge bg-dark'}"
                                   th:text="${factura.estado.descripcion}"></span>
                         </p>
@@ -72,20 +72,20 @@
                             <th>Cantidad</th>
                             <th>Precio Unit.</th>
                             <th>Subtotal</th>
-                            <th>IVA %</th>
+                            <th>Alícuota IVA</th>
                             <th>IVA $</th>
                             <th>Total</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr th:each="item : ${factura.items}">
+                        <tr th:each="item : ${factura.detalleFactura}">
                             <td th:text="${item.descripcion}"></td>
                             <td th:text="${item.cantidad}"></td>
-                            <td>$<span th:text="${#numbers.formatDecimal(item.precioUnitario, 1, 2)}"></span></td>
-                            <td>$<span th:text="${#numbers.formatDecimal(item.subtotal, 1, 2)}"></span></td>
-                            <td th:text="${item.porcentajeIva + '%'}"></td>
-                            <td>$<span th:text="${#numbers.formatDecimal(item.montoIva, 1, 2)}"></span></td>
-                            <td>$<span th:text="${#numbers.formatDecimal(item.total, 1, 2)}"></span></td>
+                            <td>$<span th:text="${#numbers.formatDecimal(item.precioUnitario, 1, 'POINT', 2, 'COMMA')}"></span></td>
+                            <td>$<span th:text="${#numbers.formatDecimal(item.subtotal, 1, 'POINT', 2, 'COMMA')}"></span></td>
+                            <td><span th:text="${item.alicuotaIVA.descripcion}"></span></td>
+                            <td>$<span th:text="${#numbers.formatDecimal(item.montoIva, 1, 'POINT', 2, 'COMMA')}"></span></td>
+                            <td>$<span th:text="${#numbers.formatDecimal(item.total, 1, 'POINT', 2, 'COMMA')}"></span></td>
                         </tr>
                     </tbody>
                 </table>
@@ -96,38 +96,35 @@
                         <table class="table table-sm">
                             <tr>
                                 <td><strong>Subtotal:</strong></td>
-                                <td class="text-end">$<span th:text="${#numbers.formatDecimal(factura.subtotal, 1, 2)}"></span></td>
+                                <td class="text-end">$<span th:text="${#numbers.formatDecimal(factura.subtotal, 1, 'POINT', 2, 'COMMA')}"></span></td>
                             </tr>
                             <tr>
                                 <td><strong>IVA:</strong></td>
-                                <td class="text-end">$<span th:text="${#numbers.formatDecimal(factura.totalIva, 1, 2)}"></span></td>
+                                <td class="text-end">$<span th:text="${#numbers.formatDecimal(factura.totalIva, 1, 'POINT', 2, 'COMMA')}"></span></td>
                             </tr>
-                            <tr th:if="${factura.descuento > 0}">
-                                <td><strong>Descuento:</strong></td>
-                                <td class="text-end text-danger">-$<span th:text="${#numbers.formatDecimal(factura.descuento, 1, 2)}"></span></td>
+                            <tr th:if="${factura.descuento != null && factura.descuento > 0}">
+                                <td><strong>Descuento (<span th:text="${factura.descuento}"></span>%):</strong></td>
+                                <td class="text-end text-danger">-$<span th:text="${#numbers.formatDecimal(factura.montoDescuento, 1, 'POINT', 2, 'COMMA')}"></span></td>
                             </tr>
                             <tr class="table-primary">
                                 <td><strong>TOTAL:</strong></td>
-                                <td class="text-end"><strong>$<span th:text="${#numbers.formatDecimal(factura.total, 1, 2)}"></span></strong></td>
+                                <td class="text-end"><strong>$<span th:text="${#numbers.formatDecimal(factura.total, 1, 'POINT', 2, 'COMMA')}"></span></strong></td>
                             </tr>
-                            <tr th:if="${factura.saldoPendiente > 0}">
+                            <tr th:if="${factura.saldoPendiente != null && factura.saldoPendiente > 0}">
                                 <td><strong>Saldo Pendiente:</strong></td>
-                                <td class="text-end text-danger"><strong>$<span th:text="${#numbers.formatDecimal(factura.saldoPendiente, 1, 2)}"></span></strong></td>
+                                <td class="text-end text-danger"><strong>$<span th:text="${#numbers.formatDecimal(factura.saldoPendiente, 1, 'POINT', 2, 'COMMA')}"></span></strong></td>
                             </tr>
                         </table>
                     </div>
                 </div>
 
-                <div class="mt-3" th:if="${factura.estado != T(com.empresa.erp.model.enums.EstadoFactura).ANULADA and factura.saldoPendiente > 0}">
-                    <a th:href="@{/pagos/nuevo-total(facturaId=${factura.id})}" class="btn btn-success">Registrar Pago Total</a>
-                    <a th:href="@{/pagos/nuevo-parcial(facturaId=${factura.id})}" class="btn btn-info">Registrar Pago Parcial</a>
-                </div>
-
-                <div class="mt-3" th:if="${factura.puedeAnularse()}">
-                    <form th:action="@{/facturas/{id}/anular(id=${factura.id})}" method="post" style="display:inline;">
-                        <input type="text" name="motivo" class="form-control d-inline-block w-50" placeholder="Motivo de anulación" required>
-                        <button type="submit" class="btn btn-danger" onclick="return confirm('¿Está seguro de anular esta factura?');">Anular Factura</button>
-                    </form>
+                <div class="mt-3" th:if="${factura.estado.name() == 'PENDIENTE' and factura.saldoPendiente > 0}">
+                    <a th:href="@{/pagos/nuevo-total(facturaId=${factura.idFactura})}" class="btn btn-success">
+                        <i class="bi bi-cash-coin"></i> Registrar Pago Total
+                    </a>
+                    <a th:href="@{/pagos/nuevo-parcial(facturaId=${factura.idFactura})}" class="btn btn-info">
+                        <i class="bi bi-coin"></i> Registrar Pago Parcial
+                    </a>
                 </div>
             </div>
         </div>

@@ -35,36 +35,11 @@
                 <h1><i class="bi bi-cash-stack text-primary"></i> Gestión de Pagos</h1>
                 <p class="text-muted mb-0">Registra y administra pagos de facturas</p>
             </div>
-            <a href="/pagos/nuevo-combinado" class="btn btn-success btn-lg">
-                <i class="bi bi-plus-circle"></i> Registrar Pago
-            </a>
         </div>
 
         <div th:if="${mensaje}" class="alert alert-success alert-dismissible fade show" role="alert">
             <i class="bi bi-check-circle-fill"></i> <span th:text="${mensaje}"></span>
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-
-        <div class="search-box">
-            <form method="get" action="/pagos" class="row g-3">
-                <div class="col-md-4">
-                    <select name="metodoPago" class="form-select">
-                        <option value="">Todos los métodos de pago</option>
-                        <option th:each="metodo : ${metodosPago}" th:value="${metodo}" th:text="${metodo.descripcion}"></option>
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <input type="date" name="fechaInicio" class="form-control" placeholder="Desde">
-                </div>
-                <div class="col-md-3">
-                    <input type="date" name="fechaFin" class="form-control" placeholder="Hasta">
-                </div>
-                <div class="col-md-2">
-                    <button type="submit" class="btn btn-primary w-100">
-                        <i class="bi bi-funnel"></i> Filtrar
-                    </button>
-                </div>
-            </form>
         </div>
 
         <div class="card">
@@ -76,33 +51,32 @@
                                 <th><i class="bi bi-hash"></i> ID</th>
                                 <th><i class="bi bi-calendar"></i> Fecha</th>
                                 <th><i class="bi bi-person"></i> Cliente</th>
+                                <th><i class="bi bi-file-text"></i> Factura</th>
                                 <th><i class="bi bi-currency-dollar"></i> Monto</th>
                                 <th><i class="bi bi-credit-card"></i> Método</th>
-                                <th><i class="bi bi-file-text"></i> Referencia</th>
+                                <th><i class="bi bi-hash"></i> Referencia</th>
                                 <th class="text-center"><i class="bi bi-gear"></i> Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr th:each="pago : ${pagos}">
-                                <td><strong th:text="${pago.id}"></strong></td>
+                                <td><strong th:text="${pago.IDPago}"></strong></td>
                                 <td th:text="${#temporals.format(pago.fechaPago, 'dd/MM/yyyy')}"></td>
-                                <td th:text="${pago.cliente.nombre}"></td>
-                                <td><strong>$<span th:text="${#numbers.formatDecimal(pago.montoTotal, 1, 2)}"></span></strong></td>
-                                <td><span class="badge bg-info" th:text="${pago.metodoPago.descripcion}"></span></td>
-                                <td th:text="${pago.referencia ?: '-'}"></td>
+                                <td th:text="${pago.factura.cliente.nombre}"></td>
+                                <td th:text="${pago.factura.serie + '-' + #numbers.formatInteger(pago.factura.nroFactura, 8)}"></td>
+                                <td><strong>$<span th:text="${#numbers.formatDecimal(pago.monto, 1, 'POINT', 2, 'COMMA')}"></span></strong></td>
+                                <td><span class="badge bg-info" th:text="${pago.metodoPago}"></span></td>
+                                <td th:text="${pago.referencia != null and !#strings.isEmpty(pago.referencia)} ? ${pago.referencia} : '-'"></td>
                                 <td class="text-center">
-                                    <a th:href="@{/pagos/{id}(id=${pago.id})}" class="btn btn-sm btn-info" title="Ver detalle">
-                                        <i class="bi bi-eye"></i> Ver Detalle
+                                    <a th:href="@{/pagos/{id}(id=${pago.IDPago})}" class="btn btn-sm btn-info" title="Ver detalle">
+                                        <i class="bi bi-eye"></i> Ver
                                     </a>
                                 </td>
                             </tr>
                             <tr th:if="${#lists.isEmpty(pagos)}">
-                                <td colspan="7" class="text-center py-5">
+                                <td colspan="8" class="text-center py-5">
                                     <i class="bi bi-inbox" style="font-size: 3rem; color: #ccc;"></i>
-                                    <p class="text-muted mt-3">No se encontraron pagos</p>
-                                    <a href="/pagos/nuevo-combinado" class="btn btn-success">
-                                        <i class="bi bi-plus-circle"></i> Registrar Primer Pago
-                                    </a>
+                                    <p class="text-muted mt-3">No se encontraron pagos registrados</p>
                                 </td>
                             </tr>
                         </tbody>

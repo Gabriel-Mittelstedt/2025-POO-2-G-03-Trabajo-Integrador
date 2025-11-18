@@ -34,8 +34,20 @@ public class FacturaViewController {
      * Muestra la lista de todas las facturas.
      */
     @GetMapping
-    public String listarFacturas(Model model) {
-        model.addAttribute("facturas", facturaService.listarTodasLasFacturas());
+    public String listarFacturas(
+            @RequestParam(required = false) String estado,
+            @RequestParam(required = false) String tipoFactura,
+            @RequestParam(required = false) String periodo,
+            Model model) {
+
+        // Proveer opciones para los selects en la vista
+        model.addAttribute("estados", com.unam.integrador.model.enums.EstadoFactura.values());
+        model.addAttribute("tipos", com.unam.integrador.model.enums.TipoFactura.values());
+
+        model.addAttribute("facturas", facturaService.listarFacturasFiltradas(estado, tipoFactura, periodo));
+        model.addAttribute("periodo", periodo);
+        model.addAttribute("estado", estado);
+        model.addAttribute("tipoFactura", tipoFactura);
         return "facturas/lista";
     }
     

@@ -2,6 +2,8 @@ package com.unam.integrador.services;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -158,6 +160,42 @@ public class FacturaService {
     @Transactional(readOnly = true)
     public Iterable<Factura> listarFacturasPorPeriodo(String periodo) {
         return facturaRepository.findByPeriodo(periodo);
+    }
+
+    /**
+     * Lista facturas usando filtros opcionales.
+     * Si un parámetro es null o vacío se ignora ese criterio.
+     * @param estado Nombre del enum EstadoFactura (ej: PENDIENTE)
+     * @param tipo Nombre del enum TipoFactura (ej: A)
+     * @param periodo Texto del periodo a buscar (coincidencia parcial)
+     * @return Lista filtrada de facturas
+     */
+    @Transactional(readOnly = true)
+    public Iterable<Factura> listarFacturasFiltradas(String estado, String tipo, String periodo) {
+        Iterable<Factura> all = facturaRepository.findAll();
+
+        return StreamSupport.stream(all.spliterator(), false)
+                .filter(f -> {
+                    if (estado == null || estado.isBlank()) return true;
+                    try {
+                        return f.getEstado() != null && f.getEstado().name().equalsIgnoreCase(estado);
+                    } catch (Exception ex) {
+                        return true;
+                    }
+                })
+                .filter(f -> {
+                    if (tipo == null || tipo.isBlank()) return true;
+                    try {
+                        return f.getTipo() != null && f.getTipo().name().equalsIgnoreCase(tipo);
+                    } catch (Exception ex) {
+                        return true;
+                    }
+                })
+                .filter(f -> {
+                    if (periodo == null || periodo.isBlank()) return true;
+                    return f.getPeriodo() != null && f.getPeriodo().toLowerCase().contains(periodo.toLowerCase());
+                })
+                .collect(Collectors.toList());
     }
     
     // --- Métodos privados auxiliares ---

@@ -57,17 +57,23 @@
                 <div class="col-md-3">
                     <select name="estado" class="form-select">
                         <option value="">Todos los estados</option>
-                        <option th:each="est : ${estados}" th:value="${est}" th:text="${est.descripcion}"></option>
+                        <option th:each="est : ${estados}"
+                                th:value="${est}"
+                                th:text="${est.descripcion}"
+                                th:selected="${est.name() == estado}"></option>
                     </select>
                 </div>
                 <div class="col-md-3">
                     <select name="tipoFactura" class="form-select">
                         <option value="">Todos los tipos</option>
-                        <option th:each="tipo : ${tipos}" th:value="${tipo}" th:text="${tipo.descripcion}"></option>
+                        <option th:each="tipo : ${tipos}"
+                                th:value="${tipo}"
+                                th:text="${tipo.descripcion}"
+                                th:selected="${tipo.name() == tipoFactura}"></option>
                     </select>
                 </div>
                 <div class="col-md-3">
-                    <input type="text" name="periodo" class="form-control" placeholder="Período (ej: Noviembre 2024)">
+                    <input type="text" name="periodo" class="form-control" placeholder="Período (ej: Noviembre 2024)" th:value="${periodo}">
                 </div>
                 <div class="col-md-3">
                     <button type="submit" class="btn btn-primary w-100">

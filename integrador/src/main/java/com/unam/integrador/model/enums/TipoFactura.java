@@ -6,5 +6,12 @@ package com.unam.integrador.model.enums;
 public enum TipoFactura {
     A,
     B,
-    C
+    C;
+
+    public String getDescripcion() {
+        return this.name();
+    }
+
 }
+
+

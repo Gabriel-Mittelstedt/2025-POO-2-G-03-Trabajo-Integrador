@@ -46,7 +46,7 @@ Durante esta primera iteración, el equipo se distribuyó las historias de usuar
 ### Wireframe: Alta de Cliente
 
 **Vista: formulario.html**
-![a](imagenes/Wireframe_Alta_Cliente.png)
+![a](imagenes/DC_Iteracion1.png)
 
 
 **Caso de Uso: Alta de Cliente**

@@ -119,3 +119,33 @@ Tuve que dedicar más horas de las planificadas, especialmente en la fase de dep
 ## Conclusiones finales
 
 Esta primera iteración fue un gran desafío de aprendizaje. Aunque cumplí con las dos historias de usuario asignadas, el proceso me tomó más tiempo del planificado debido a la curva de aprendizaje de las tecnologías.
+
+---
+
+## Integrante: Gabriel Mittelstedt
+
+### HU-04: Emisión de Factura Individual y HU-06: Consulta de Factura Individual
+
+**¿Qué se logró?**
+- ✅ Implementé el patrón RICO con lógica de negocio en las entidades `Factura` e `ItemFactura`
+- ✅ Generación automática de ítems desde servicios contratados del cliente
+- ✅ Determinación automática del tipo de factura según reglas AFIP
+- ✅ Sistema de numeración correlativa por serie
+- ✅ Vistas completas: formulario de emisión, listado con filtros y detalle de factura
+- ✅ Integración exitosa con el módulo de clientes/servicios
+
+**Desafíos encontrados:**
+- **Primera vez con Spring Boot y JPA:** Tuve que aprender simultáneamente las anotaciones, el ciclo de vida de entidades, las relaciones bidireccionales y cómo funciona Thymeleaf.
+- **Dependencia de otros módulos:** Inicialmente tuve que hardcodear servicios asignados a clientes porque el módulo de `ServicioContratado` no estaba disponible. Una vez que mi compañero lo completó, pude refactorizar para usar la integración real.
+- **Errores en templates:** Múltiples correcciones en referencias de campos, nombres inconsistentes entre modelo y vistas, enum sin método `getDescripcion()`.
+- **Simplificación tardía:** Creé una API REST completa con DTOs que luego eliminé. Debí planificar mejor desde el inicio qué se necesitaba realmente.
+
+**Lecciones aprendidas:**
+- Importancia de coordinar dependencias entre módulos del equipo
+- Los errores en templates Thymeleaf no se detectan en compilación, requieren pruebas manuales
+
+**Mejoras para próxima iteración:**
+- Implementar pruebas unitarias desde el inicio
+- Planificar mejor la arquitectura antes de codificar (evitar trabajo innecesario)
+- Coordinar con el equipo qué módulos están listos para integrarse
+- Crear excepciones personalizadas para casos de negocio

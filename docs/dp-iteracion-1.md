@@ -24,38 +24,9 @@ Durante esta primera iteración, el equipo se distribuyó las historias de usuar
 
 **Axel Limberger:**
 
+- Implementó la **HU-11: Registrar pago total de factura** (trabajo en progreso).
+- Implementó la **HU-12: Registrar pago parcial de factura** (trabajo en progreso).
 
-  Diseñó y maquetó las vistas HTML y los estilos CSS necesarios para las funcionalidades del sistema. Los templates se encuentran en `integrador/src/main/resources/templates` y cubren los módulos principales:
-
-  Clientes
-
-  - `formulario.html`: alta y edición de clientes con bindings Thymeleaf (`th:field`), validación (`th:errors`), protección CSRF y estructura clara.
-  - `lista.html`: tabla con búsqueda, filtros y acciones rápidas (ver, editar, asignar servicio).
-  - `detalle.html`: ficha del cliente con resumen, saldo y accesos a acciones relacionadas.
-  - `agregar-servicio.html`: lista de servicios para asignar, con indicador visual cuando un servicio ya está contratado.
-  - `historico-servicios.html`: historial completo con columnas relevantes y contadores de activos/inactivos.
-
-  Servicios
-
-  - `formulario.html`: alta/edición con selector de alícuota y visualización del cálculo de IVA y total.
-  - `lista.html`: listado con búsqueda y acciones.
-  - `detalle.html`: vista detallada del servicio.
-
-  Facturación
-
-  - Facturas individuales y proporcionales: interfaces para componer y emitir facturas (`facturas/formulario-individual.html`, `facturas/formulario-proporcional.html`).
-  - Listado y detalle de facturas (`facturas/lista.html`, `facturas/detalle.html`).
-  - Emisión masiva: UI para generar facturación por período y confirmar/ anular procesos (`facturacion-masiva/*`).
-
-  Pagos
-
-  - Formularios para pago total, parcial y combinado con validaciones y resumen de saldo (`pagos/formulario-*.html`).
-  - Listado y detalle de pagos.
-
-Implementó la **HU-11: Registrar pago total de factura** (trabajo en progreso).
-Implementó la **HU-12: Registrar pago parcial de factura** (trabajo en progreso).
-
-En la primer iteracion no se logro implementar del todo las hu 11 y 12 debido a la falta de tiempo por los parciales y debido a que en esta iteracion mi enfoque estuvo mas en  en el desarrollo de las pantallas. 
 
 **Tareas compartidas del equipo:**
 - Definición de la arquitectura MVC del proyecto
@@ -140,6 +111,18 @@ En la primer iteracion no se logro implementar del todo las hu 11 y 12 debido a 
 
 ![Wireframe Detalle Factura](imagenes/Wireframe_Detalle_Factura.png)
 
+
+### Wireframe: Pago de Factura total y Parcial
+
+
+**Vista: formulario-total (HU-11)**
+
+![Wireframe Pago Total](imagenes/Wireframe_Pago-Total.png) 
+
+**Vista: formulario-parcial (HU-12)** 
+
+![Wireframe Pago Parcial](imagenes/Wireframe_Pago-Parcial.png) 
+
 **Caso de Uso: Emisión de Factura Individual (HU-04)**
 
 | Elemento | Descripción |
@@ -177,7 +160,7 @@ Las siguientes historias de usuario fueron seleccionadas para implementarse en e
 7. **HU-06:** Consulta de factura individual - *Responsable: Gabriel Mittelstedt*
 8. **HU-10:** Listado y búsqueda de facturas - *Responsable: Marcos Douberman*
 9. **HU-11:** Registrar pago total de factura - *Responsable: Axel Limberger*
-10. **HU-12:** Registrar pago parcial de factura - *Responsable: Axel Limberger*
+10. **HU-12:** Registrar pago parcial de factura - *Responsable: Axel Limberger* 
 
 ---
 
@@ -296,3 +279,26 @@ Las siguientes historias de usuario fueron seleccionadas para implementarse en e
   - Datos del cliente y factura
   - Tabla de ítems con cálculos
   - Resumen de totales (subtotal, IVA, descuento, total, saldo pendiente)
+
+
+### Tareas para HU-11 y HU-12: Registrar pagos (Total y Parcial)
+
+**Análisis y Diseño:**
+- [x] Analizar requisitos de las historias HU-11 y HU-12
+- [x] Definir flujo simple de pago (total y parcial) y efectos sobre la factura
+
+**Modelo (Entidades) y Repositorios:**
+- [x] Crear entidad `Pago` y `Recibo` (persistencia JPA)
+- [x] Crear `PagoRepository` y `ReciboRepository`
+
+**Servicio:**
+- [x] Crear `PagoService` con métodos `registrarPagoTotal` y `registrarPagoParcial`
+- [x] Generar `Recibo` automáticamente al registrar pagos
+
+**Controlador y Vistas:**
+- [x] `PagoController` con endpoints para mostrar formularios y procesar pagos
+- [x] Templates Thymeleaf: `pagos/formulario-total.html`, `pagos/formulario-parcial.html`, `pagos/detalle.html`, `pagos/lista.html`
+
+**Resultados / Observaciones:**
+- Implementación básica y funcional: registra pagos, actualiza saldo, cambia estado de la factura y genera recibos.
+- No se añadieron validaciones avanzadas (ej.: límites, centros de costos, conciliaciones bancarias).

@@ -126,6 +126,42 @@ En la primer iteracion no se logro implementar del todo las hu 11 y 12 debido a 
 
 ---
 
+### Wireframe: Alta de Servicio (HU-16)
+
+**Vista: formulario.html**
+
+![b](imagenes/Wireframe_AltaServicio.png)
+
+**Caso de Uso: Alta de Servicio (HU-16)**
+
+| Elemento | Descripción |
+|----------|-------------|
+| **Actor** | Administrador |
+| **Precondición** | El administrador ha iniciado sesión y accedió a la sección de servicios |
+| **Flujo Principal** | 1. El administrador hace clic en "Nuevo Servicio"<br>2. El sistema muestra el formulario con campos: nombre, descripción (opcional), precio, alícuota IVA y estado<br>3. El administrador completa los campos obligatorios (nombre, precio, alícuota IVA)<br>4. El administrador opcionalmente ingresa la descripción<br>5. El sistema marca por defecto el estado como "Activo"<br>6. El administrador hace clic en "Crear Servicio"<br>7. El sistema verifica que los datos ingresados sean validos<br>8. El sistema verifica que no exista otro servicio con el mismo nombre<br>9. El sistema persiste el servicio <br>10. El sistema muestra mensaje "Servicio '[Nombre]' creado exitosamente"<br>11. El sistema redirige al listado de servicios |
+| **Flujos Alternativos** | **7a.** Si el nombre está vacío:<br>&nbsp;&nbsp;1. El sistema muestra una ventana de error con el mensaje ("El nombre del servicio es obligatorio")<br>&nbsp;&nbsp;2. Vuelve al paso 3<br><br>**7b.** Si el precio no es mayor a cero:<br>&nbsp;&nbsp;1. El sistema muestra una ventana de error con el mensaje ("El precio debe ser mayor a cero")<br>&nbsp;&nbsp;;2. Vuelve al paso 3<br><br>**7c.** Si no se seleccionó alícuota IVA:<br>&nbsp;&nbsp;1. El sistema muestra una ventana de error con el mensaje ("La alícuota de IVA es obligatoria")<br>&nbsp;&nbsp;2. Vuelve al paso 3<br><br>**8a.** Si el nombre ya existe:<br>&nbsp;&nbsp;1. El sistema muestra una ventana de error con el mensaje  ("Ya existe un servicio con el nombre: [Nombre]")`<br>&nbsp;&nbsp;2. Vuelve al paso 3 |
+| **Postcondición** | Se crea un nuevo servicio activo con:<br>- Métodos de cálculo de IVA disponibles<br>- Precio histórico para contratos futuros<br>- Disponible para asignar a clientes |
+
+---
+
+### Wireframe: Listado de Servicios (HU-17)
+
+**Vista: lista.html**
+
+![b](imagenes/Wireframe_Lista_Servicio2.png)
+
+**Caso de Uso: Listado de Servicios (HU-17)**
+
+| Elemento | Descripción |
+|----------|-------------|
+| **Actor** | Administrador |
+| **Precondición** | El administrador ha iniciado sesión |
+| **Flujo Principal** | 1. El administrador accede a la sección "Servicios"<br>2. El sistema muestra una tabla con todos los servicios:<br>&nbsp;&nbsp;- Nombre<br>&nbsp;&nbsp;- Descripción<br>&nbsp;&nbsp;- Precio<br>&nbsp;&nbsp;- Alícuota IVA (porcentaje)<br>&nbsp;&nbsp;- Estado representado con colores (verde=Activo, gris=Inactivo)<br>&nbsp;&nbsp;- Botones de acción: "Ver" y "Editar"<br>3. El sistema muestra contador de totales y activos/inactivos<br>4. El administrador puede hacer clic en "Ver" para ver detalles<br>5. El administrador puede hacer clic en "Editar" para modificar |
+| **Flujos Alternativos** | **3a.** Búsqueda por nombre o descripción:<br>&nbsp;&nbsp;1. El administrador ingresa un término en el campo "Buscar"<br>&nbsp;&nbsp;2. El administrador hace clic en "Buscar"<br>&nbsp;&nbsp;3. El sistema filtra servicios (sin distinguir mayúsculas/minúsculas)<br>&nbsp;&nbsp;4. El sistema muestra solo resultados coincidentes<br>&nbsp;&nbsp;5. El sistema muestra el término buscado para referencia<br>&nbsp;&nbsp;6. El administrador puede hacer clic en "Limpiar" para ver todos nuevamente<br><br>**2a.** Si no hay servicios registrados:<br>&nbsp;&nbsp;1. El sistema muestra mensaje "No hay servicios registrados"<br>&nbsp;&nbsp;2. Muestra botón destacado "Crear primer servicio"<br>&nbsp;&nbsp;3. Fin del caso de uso<br><br>**3b.** Si la búsqueda no devuelve resultados:<br>&nbsp;&nbsp;1. El sistema muestra mensaje "No se encontraron servicios con '[término]'"<br>&nbsp;&nbsp;2. Muestra botón "Limpiar búsqueda"<br>&nbsp;&nbsp;3. Mantiene el formulario de búsqueda visible |
+| **Postcondición** | El administrador visualiza el listado completo o filtrado de servicios sin modificar datos |
+
+---
+
 ### Wireframe: Emisión y Consulta de Factura Individual
 
 **Vista: formulario-individual.html (HU-04)**
@@ -249,6 +285,246 @@ Las siguientes historias de usuario fueron seleccionadas para implementarse en e
 **Vista (Templates Thymeleaf):**
 - [x] Crear `agregar-servicio.html`:
 - [x] Crear `historico-servicios.html`:
+
+---
+
+### Tareas para HU-16: Alta de Servicio
+
+**Análisis y Diseño:**
+- [x] Analizar requisitos de la historia de usuario
+- [x] Identificar validaciones necesarias (nombre único, precio positivo, alícuota IVA obligatoria)
+- [x] Definir modelo de datos con atributos y restricciones JPA
+- [x] Diseñar enumeración `TipoAlicuotaIVA` con valores según AFIP
+
+**Modelo (Entidades):**
+- [x] Crear clase `Servicio` con anotaciones JPA:
+  - `@Entity`, `@Data` (Lombok)
+  - `@Id` + `@GeneratedValue(strategy = IDENTITY)` para `IDServicio`
+- [x] Agregar campo `nombre` con `@Column(nullable=false, unique=true)`
+- [x] Agregar campo `descripcion` opcional (sin restricciones)
+- [x] Agregar campo `precio` con `@Column(nullable=false, precision=10, scale=2)`
+- [x] Agregar campo `alicuotaIVA` con `@Enumerated(EnumType.STRING)` y `@Column(nullable=false)`
+- [x] Agregar campo `activo` con valor por defecto `true`
+- [x] Agregar relación `@OneToMany(mappedBy="servicio")` hacia `ServicioContratado`
+- [x] Implementar método rico `validar()` con lógica de validación:
+  - Nombre no vacío
+  - Precio > 0
+  - Alícuota IVA no nula
+- [x] Implementar método `calcularIva()` que:
+  - Obtiene porcentaje según enum (21%, 10.5%, 27%, 2.5%, 0%)
+  - Calcula: `precio * porcentaje / 100`
+  - Usa `RoundingMode.HALF_UP` con 2 decimales
+- [x] Implementar método `calcularPrecioConIva()` que retorna `precio + calcularIva()`
+- [x] Implementar método sobrecargado `calcularPrecioConIva(BigDecimal precioBase)` para precios históricos
+- [x] Implementar métodos `activar()` y `desactivar()` para gestión de estado
+- [x] Documentar con JavaDoc todos los campos y métodos públicos
+
+**Enumeraciones:**
+- [x] Crear enum `TipoAlicuotaIVA` en paquete `model.enums` con valores:
+  - `IVA_21` → 21%
+  - `IVA_10_5` → 10.5%
+  - `IVA_27` → 27%
+  - `IVA_2_5` → 2.5%
+  - `EXENTO` → 0%
+- [x] Agregar método `getPorcentaje()` o descripción para cada valor
+- [x] Documentar cada constante con su uso según normativa AFIP
+
+**Repositorio:**
+- [x] Crear interfaz `ServicioRepository` en paquete `repositories`
+- [x] Extender `JpaRepository<Servicio, Long>`
+- [x] Agregar método `Optional<Servicio> findByNombre(String nombre)` para verificar duplicados
+- [x] Agregar método `List<Servicio> findByActivoTrue()` para listar solo activos
+- [x] Agregar método de búsqueda:
+  - `List<Servicio> findByNombreContainingIgnoreCaseOrDescripcionContainingIgnoreCase(String nombre, String descripcion)`
+- [x] Anotar con `@Repository`
+
+**Servicio:**
+- [x] Crear clase `ServicioService` en paquete `services`
+- [x] Anotar con `@Service`
+- [x] Inyectar `ServicioRepository` con `@Autowired`
+- [x] Implementar método `crearServicio(Servicio servicio)`:
+  - Anotar con `@Transactional`
+  - Llamar a `servicio.validar()` (delega al modelo rico)
+  - Verificar nombre duplicado: `if (repository.findByNombre().isPresent())`
+  - Lanzar `IllegalArgumentException` si existe
+  - Persistir con `repository.save(servicio)`
+  - Retornar servicio guardado
+- [x] Implementar método `listarTodos()` que retorna `repository.findAll()`
+- [x] Implementar método `listarActivos()` que retorna `repository.findByActivoTrue()`
+- [x] Implementar método `buscarPorId(Long id)`:
+  - Usar `repository.findById(id).orElseThrow()`
+  - Lanzar `IllegalArgumentException` con mensaje descriptivo si no existe
+- [x] Implementar método `buscar(String termino)`:
+  - Llamar al query method del repositorio
+  - Pasar el mismo término para nombre y descripción
+- [x] Documentar con JavaDoc todos los métodos públicos
+
+**Controlador:**
+- [x] Crear clase `ServicioController` en paquete `controllers`
+- [x] Anotar con `@Controller` y `@RequestMapping("/servicios")`
+- [x] Inyectar `ServicioService` con `@Autowired`
+- [x] Implementar endpoint GET `/servicios/nuevo`:
+  - Anotar con `@GetMapping("/nuevo")`
+  - Agregar `new Servicio()` al modelo
+  - Agregar `TipoAlicuotaIVA.values()` al modelo para el select
+  - Agregar atributo `"accion"` = `"Crear"` para el título del formulario
+  - Retornar vista `"servicios/formulario"`
+- [x] Implementar endpoint POST `/servicios/nuevo`:
+  - Anotar con `@PostMapping("/nuevo")`
+  - Recibir `@ModelAttribute Servicio servicio`
+  - Usar `RedirectAttributes` para mensajes flash
+  - Try-catch para capturar `IllegalArgumentException`
+  - En éxito:
+    - Llamar a `servicioService.crearServicio(servicio)`
+    - Agregar mensaje: `"Servicio '" + nombre + "' creado exitosamente"`
+    - Agregar `"tipoMensaje"` = `"success"` para CSS
+    - Redirigir a `"redirect:/servicios"`
+  - En error:
+    - Agregar mensaje de error
+    - Agregar `"tipoMensaje"` = `"danger"`
+    - Redirigir a `"redirect:/servicios/nuevo"`
+- [x] Documentar con JavaDoc incluyendo descripción de HU-16
+
+**Vista (Templates Thymeleaf):**
+- [x] Crear `servicios/formulario.html` con:
+  - Formulario con `th:action` dinámico (usa atributo "accion")
+  - Campo nombre: `<input th:field="*{nombre}" type="text" required>`
+  - Campo descripción: `<textarea th:field="*{descripcion}">`
+  - Campo precio: `<input th:field="*{precio}" type="number" step="0.01" min="0.01" required>`
+  - Select de alícuotas: `<select th:field="*{alicuotaIVA}" required>`
+    - Iterar con `th:each="alicuota : ${alicuotas}"`
+    - Usar `th:value="${alicuota}"` y `th:text` para descripción
+  - Checkbox activo: `<input th:field="*{activo}" type="checkbox">`
+  - Botón "Cancelar" que vuelve a `/servicios`
+  - Botón submit con texto dinámico según `${accion}`
+  - Div para mostrar mensajes de error con `th:if="${error}"`
+  - Incluir `<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>`
+  - Aplicar clases CSS/Bootstrap para diseño responsive
+  - Validaciones HTML5 (required, min, step)
+
+**Testing:**
+- [ ] Crear test unitario `ServicioTest.java`:
+  - Probar `validar()` con nombre vacío (debe lanzar excepción)
+  - Probar `validar()` con precio cero o negativo
+  - Probar `validar()` con alícuota IVA nula
+  - Probar `calcularIva()` con cada tipo de alícuota
+  - Probar `calcularPrecioConIva()` con diferentes precios
+- [ ] Crear test de integración `ServicioServiceTest.java`:
+  - Probar `crearServicio()` exitoso
+  - Probar `crearServicio()` con nombre duplicado (debe lanzar excepción)
+  - Verificar que se persiste correctamente en BD H2
+- [ ] Crear test de controlador `ServicioControllerTest.java`:
+  - Probar POST `/servicios/nuevo` con datos válidos (debe redirigir con mensaje)
+  - Probar POST con nombre duplicado (debe mostrar error)
+  - Verificar manejo de excepciones
+
+---
+
+### Tareas para HU-17: Listado de Servicios
+
+**Análisis y Diseño:**
+- [x] Analizar requisitos de listado y búsqueda
+- [x] Planificar flujo de búsqueda por nombre/descripción (case-insensitive)
+- [x] Definir formato de visualización en tabla con badges de estado
+
+**Repositorio:**
+- [x] Verificar que `findAll()` esté disponible (heredado de JpaRepository)
+- [x] Verificar método de búsqueda creado en HU-16:
+  - `findByNombreContainingIgnoreCaseOrDescripcionContainingIgnoreCase()`
+  - Query derivado automático de Spring Data JPA
+  - Búsqueda parcial (LIKE '%termino%')
+  - Case-insensitive en ambos campos
+
+**Servicio:**
+- [x] Implementar método `listarTodos()` en `ServicioService`:
+  - Anotar con `@Transactional(readOnly=true)` para optimización
+  - Retornar `servicioRepository.findAll()`
+  - Documentar que retorna lista completa sin filtros
+- [x] Implementar método `buscar(String termino)`:
+  - Anotar con `@Transactional(readOnly=true)`
+  - Llamar al método de búsqueda del repositorio
+  - Pasar el mismo término para búsqueda en nombre y descripción
+  - Retornar lista de servicios coincidentes
+- [x] Documentar métodos con JavaDoc especificando comportamiento de búsqueda
+
+**Controlador:**
+- [x] Implementar endpoint GET `/servicios` en `ServicioController`:
+  - Anotar con `@GetMapping`
+  - Recibir parámetro opcional: `@RequestParam(required=false) String busqueda`
+  - Lógica condicional:
+    - Si `busqueda != null && !busqueda.trim().isEmpty()`:
+      - Llamar a `servicioService.buscar(busqueda)`
+      - Agregar término al modelo: `model.addAttribute("busqueda", busqueda)`
+    - Si no hay búsqueda:
+      - Llamar a `servicioService.listarTodos()`
+  - Agregar lista al modelo: `model.addAttribute("servicios", servicios)`
+  - Retornar vista `"servicios/lista"`
+- [x] Implementar endpoint GET `/servicios/{id}` para detalle:
+  - Anotar con `@GetMapping("/{id}")`
+  - Recibir `@PathVariable Long id`
+  - Try-catch para capturar `IllegalArgumentException`
+  - Llamar a `servicioService.buscarPorId(id)`
+  - Agregar servicio al modelo
+  - Retornar vista `"servicios/detalle"`
+  - En error: agregar mensaje y redirigir a listado
+- [x] Documentar endpoints con JavaDoc referenciando HU-17
+
+**Vista (Templates Thymeleaf):**
+- [x] Crear `servicios/lista.html` con:
+  - **Cabecera:**
+    - Título "Listado de Servicios"
+    - Botón destacado "Nuevo Servicio" con `th:href="@{/servicios/nuevo}"`
+  - **Formulario de búsqueda:**
+    - `<form th:action="@{/servicios}" method="get">`
+    - Input text con `name="busqueda"` y `th:value="${busqueda}"`
+    - Botón submit "Buscar"
+    - Botón "Limpiar" con `th:href="@{/servicios}"` (solo si hay búsqueda activa)
+    - Mostrar mensaje "Buscando: [término]" con `th:if="${busqueda}"`
+  - **Tabla de servicios:**
+    - Columnas: Nombre | Descripción | Precio | IVA | Estado | Acciones
+    - Iterar con `th:each="servicio : ${servicios}"`
+    - Nombre: `<td th:text="${servicio.nombre}"></td>`
+    - Descripción: truncada si es muy larga (CSS: `text-overflow: ellipsis`)
+    - Precio: formateado con `th:text="'$' + ${#numbers.formatDecimal(servicio.precio, 1, 2)}"`
+    - IVA: mostrar porcentaje del enum
+    - Estado: badge con color condicional:
+      - `<span th:classappend="${servicio.activo} ? 'badge-success' : 'badge-secondary'"`
+      - Texto: "Activo" o "Inactivo"
+    - Acciones: 
+      - Botón "Ver" con `th:href="@{/servicios/{id}(id=${servicio.IDServicio})}"`
+      - Botón "Editar" (preparado para HU futura)
+  - **Mensajes condicionales:**
+    - Si no hay servicios: `<div th:if="${#lists.isEmpty(servicios)}">No hay servicios</div>`
+    - Si búsqueda sin resultados: mensaje específico
+  - **Contador de totales:**
+    - "Total: X servicios (Y activos, Z inactivos)"
+    - Calcular con `th:with` o con Thymeleaf expressions
+  - Aplicar estilos CSS/Bootstrap para tabla responsive
+  - Agregar iconos para botones (ej: 👁️ Ver, ✏️ Editar)
+- [x] Crear `servicios/detalle.html` con:
+  - **Información completa:**
+    - Nombre (título grande)
+    - Descripción (párrafo completo)
+    - Precio sin IVA: formateado
+    - Alícuota IVA: porcentaje y descripción
+    - Monto IVA: calculado con `servicio.calcularIva()`
+    - Precio total con IVA: calculado con `servicio.calcularPrecioConIva()`
+    - Estado: badge visual grande
+  - **Botones de acción:**
+    - "Volver al listado" con `th:href="@{/servicios}"`
+    - "Editar servicio" (para HU futura)
+  - Aplicar diseño de tarjeta/card con CSS
+  - Mostrar datos en formato legible y profesional
+
+**Testing:**
+- [ ] Crear test de integración `ServicioListadoTest.java`:
+  - Probar GET `/servicios` retorna todos los servicios
+  - Probar búsqueda exitosa con término existente
+  - Probar búsqueda case-insensitive ("INTERNET" debe encontrar "internet")
+  - Probar búsqueda en descripción
+  - Probar búsqueda sin resultados
+- [ ] Verificar respuesta cuando base de datos está vacía
+- [ ] Probar GET `/servicios/{id}` con ID válido e inválido
 
 ---
 

@@ -201,3 +201,33 @@ Pensé que un formulario de uno pocos campos y una tabla simple serían rápidos
 - Mejorar los mensajes y el manejo de errores para que sean claros tanto para el usuario como para quien depura.  
 - Ser más realista al estimar tiempos cuando hay tecnologías nuevas: reservar tiempo para aprendizaje. 
 - Mejorar la comunicación con el equipo: avisar bloqueos temprano en lugar de trabajar solo mucho tiempo.
+
+
+### Historias HU-11 y HU-12: Gestión de Pagos (Pago Total / Pago Parcial)
+
+**Logros principales:**
+- Implementé el módulo de pagos integrando las opciones de pago total, pago parcial y pago combinado.
+- Desarrollé controladores y servicios que aplican pagos a facturas y actualizan el `saldo` de la `CuentaCliente` correctamente.
+- Creé vistas Thymeleaf para los formularios de pago: `formulario-total.html`, `formulario-parcial.html` y `formulario-combinado.html` con validaciones de entrada claras.
+- Implementé la lógica para generar los movimientos de caja y registrar la relación entre pagos e ítems de factura (ajuste proporcional en pagos parciales).
+- Añadí validaciones de negocio para evitar pagos duplicados y para comprobar que el monto no exceda el saldo pendiente.
+
+**Desafíos encontrados:**
+- Manejar pagos parciales fue más complejo de lo esperado: hubo que distribuir el importe correctamente entre varios ítems y facturas relacionadas.
+- Coordinar la actualización del `saldo` del cliente y el estado de las facturas (parcialmente pagada / pagada) requirió varias iteraciones para evitar condiciones de carrera.
+- Las pruebas manuales en la interfaz revelaron casos límite (por ejemplo, pagos que cierran múltiples facturas) que no se detectaron inicialmente.
+
+**Cómo lo resolví:**
+- Implementé la lógica de aplicación de pagos en el dominio (servicios) con transacciones para asegurar consistencia.
+- Añadí validaciones y checks antes de persistir pagos (monto positivo, saldo suficiente, facturas abiertas).
+- Probé casos complejos manualmente y documenté ejemplos en el código para facilitar futuras pruebas automatizadas.
+
+**Aprendizajes:**
+- La lógica de cobros requiere pensar en invariantes (saldo cliente = sum(facturas pendientes) - sum(pagos)).
+- Es importante centralizar la lógica de aplicación de pagos en el dominio para evitar duplicación y errores en los controladores.
+- Las pruebas automatizadas son especialmente útiles para pagos parciales y escenarios de cierre múltiple de facturas.
+
+**Mejoras propuestas para la Iteración 2:**
+- Implementar pruebas unitarias y de integración para los casos de pago parcial y combinado.
+- Crear excepciones de negocio específicas (`PagoInvalidoException`, `SaldoInsuficienteException`).
+- Añadir indicadores en la UI que muestren el detalle de cómo se distribuirá un pago parcial entre ítems/facturas antes de confirmar.

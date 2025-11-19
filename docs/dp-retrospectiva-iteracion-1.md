@@ -232,3 +232,23 @@ Pensé que un formulario de uno pocos campos y una tabla simple serían rápidos
 - Implementar pruebas unitarias y de integración para los casos de pago parcial y combinado.
 - Crear excepciones de negocio específicas (`PagoInvalidoException`, `SaldoInsuficienteException`).
 - Añadir indicadores en la UI que muestren el detalle de cómo se distribuirá un pago parcial entre ítems/facturas antes de confirmar.
+
+## Integrante: Daubermann Marcos
+
+### HU-07: Emisión de facturación masiva por período y HU-10: Listado y búsqueda de facturas
+
+**¿Qué se logró?**
+- ✅ Completé la **HU-10 (Listado y búsqueda)**. El sistema permite visualizar las facturas generadas y aplicar filtros de búsqueda correctamente. La funcionalidad está operativa y cumple con lo requerido para la visualización de datos.
+
+**Desafíos y dificultades encontradas:**
+
+**Gestión de tiempos y carga académica**
+La coincidencia de fechas con los exámenes y la exigencia de la materia **Ingeniería 1** consumieron la mayor parte de mi tiempo disponible.
+
+**Impacto en el proyecto:**
+Debido a priorizar eso, **no pude comenzar con la implementación de la HU-07 (Facturación Masiva)**. Es una funcionalidad compleja que requería una dedicación que no pude darle en estas semanas, por lo que quedó completamente pendiente para la siguiente etapa.
+
+**Plan de mejoras para la Iteración 2:**
+
+1.  **Saldar la deuda técnica funcional:** Mi objetivo principal es implementar la lógica de **Emisión de facturación masiva por período** inmediatamente al comenzar la iteración.
+2.  **Mejor organización:** Coordinar mejor los tiempos de desarrollo con el calendario académico para no bloquear funcionalidades críticas del equipo.

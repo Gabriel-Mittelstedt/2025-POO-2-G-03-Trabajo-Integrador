@@ -214,6 +214,18 @@ La solución implementará un módulo para la facturación masiva, que será ini
 | **Descripción**            | Como administrador quiero poder quitar un servicio de la cuenta de un cliente, para que no se le facture más por ese concepto en futuros períodos. |
 | **Criterios de aceptación** | <ul><li>Al quitarlo, ese servicio no debe incluirse en la próxima facturación masiva para ese cliente.</li><li>El sistema debe pedir confirmación antes de desvincular el servicio.</li></ul> |
 
+| Campo                      | Descripción |
+|:---------------------------|:------------|
+| **ID**                     | HU - 23 |
+| **Título**                 | Configuración de datos de la empresa emisora |
+| **Persona**                | Administrador |
+| **Descripción**            | Como administrador, quiero configurar los datos fiscales de mi empresa (razón social, CUIT, condición de IVA, domicilio, puntos de venta), para que aparezcan correctamente en todas las facturas emitidas. |
+| **Criterios de aceptación** | <ul><li>Debo poder ingresar: razón social, CUIT, condición de IVA (Responsable Inscripto, Monotributista, Exento), domicilio fiscal, email, teléfono.</li><li>Debo poder configurar uno o varios Puntos de Venta.</li><li>El sistema valida formato de CUIT.</li><li>Esta información se usa automáticamente en el encabezado de todas las facturas.</li><li>Solo puede haber una empresa emisora configurada en el sistema.</li></ul>|
+
+
+
+
+
 
 ## Arquitectura de software
 **Tipo de Aplicación:** Será una aplicación web.
@@ -227,3 +239,4 @@ La solución implementará un módulo para la facturación masiva, que será ini
 **Motor de Plantillas (Frontend):** Thymeleaf.
 **Gestión de Dependencias:** Maven.
 **Utilidades:** Lombok.
+

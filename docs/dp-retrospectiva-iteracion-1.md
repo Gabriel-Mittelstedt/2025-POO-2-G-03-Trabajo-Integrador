@@ -202,6 +202,7 @@ Pensé que un formulario de uno pocos campos y una tabla simple serían rápidos
 - Ser más realista al estimar tiempos cuando hay tecnologías nuevas: reservar tiempo para aprendizaje. 
 - Mejorar la comunicación con el equipo: avisar bloqueos temprano en lugar de trabajar solo mucho tiempo.
 
+## Integrante: Limberger Axel Agustin
 
 ### Historias HU-11 y HU-12: Gestión de Pagos (Pago Total / Pago Parcial)
 

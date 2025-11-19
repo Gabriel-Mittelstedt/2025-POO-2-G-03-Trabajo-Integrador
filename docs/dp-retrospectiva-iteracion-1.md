@@ -149,3 +149,55 @@ Esta primera iteración fue un gran desafío de aprendizaje. Aunque cumplí con 
 - Planificar mejor la arquitectura antes de codificar (evitar trabajo innecesario)
 - Coordinar con el equipo qué módulos están listos para integrarse
 - Crear excepciones personalizadas para casos de negocio
+
+---
+
+## Integrante: Leandro Escalada
+
+Esta retrospectiva documenta mi experiencia implementando las historias de usuario **HU-16: Alta de servicio** y **HU-17: Listado de servicios** durante la primera iteración del proyecto.
+
+### ¿Qué se logró?
+
+- ✅ Implementé el modelo `Servicio` con validaciones y métodos de cálculo de IVA
+- ✅ Creé la enumeración `TipoAlicuotaIVA` con los 5 tipos según ARCA (AFIP)
+- ✅ Implementé el controlador con endpoints para crear, listar y buscar servicios
+- ✅ Diseñé las vistas Thymeleaf (formulario, lista con búsqueda, detalle)
+
+## Desafíos encontrados
+
+### Transición al concepto de modelo rico
+
+Al principio me costó pasar del enfoque anémico (lógica en los services) a pensar en entidades con comportamiento propio. Aprendí a mover validaciones y cálculos al dominio (por ejemplo validar(), calcularPrecioConIVA()) mediante lectura y varios refactors. Fue más trabajo al principio, pero dejó el diseño más claro.
+
+### Primera vez con Spring Boot, Thymeleaf, JPA y Lombok
+
+**Problema:**
+Fue mi primera vez trabajando con Spring Boot, JPA, Thymeleaf y Lombok. Aprender todas esas herramientas en paralelo fue desafiante: me obligó a replantear cómo organizar el código y a rehacer partes varias veces. Aunque esto me consumió más tiempo del previsto, al final quedó un diseño más claro y una comprensión que acelerará las próximas entregas.
+
+**Impacto:**
+Pasé mucho tiempo corrigiendo errores confusos que no sabía cómo solucionar; lo que pensé que sería rápido terminó llevándome varios días.
+
+**Cómo lo resolví:**
+- Leí la documentación oficial y busque en github repositorios con ejemplos de código
+
+### Subestimación del tiempo necesario de desarrollo
+
+**Problema:**
+Pensé que un formulario de uno pocos campos y una tabla simple serían rápidos de implementar. No consideré:
+- Tiempo de aprendizaje de tecnologías nuevas
+- Correcciones y ajustes finales
+
+**Resultado:**
+- Estrés por no avanzar al ritmo esperado
+
+## Lecciones aprendidas
+
+- Ahora tengo una base en Spring Boot
+- Importancia de centralizar validaciones en el dominio (modelo rico)
+- Para la próxima: multiplicar estimaciones de tiempo por 2x cuando no tengo bases en la tecnológica
+
+## Aspectos a mejorar
+  
+- Mejorar los mensajes y el manejo de errores para que sean claros tanto para el usuario como para quien depura.  
+- Ser más realista al estimar tiempos cuando hay tecnologías nuevas: reservar tiempo para aprendizaje. 
+- Mejorar la comunicación con el equipo: avisar bloqueos temprano en lugar de trabajar solo mucho tiempo.

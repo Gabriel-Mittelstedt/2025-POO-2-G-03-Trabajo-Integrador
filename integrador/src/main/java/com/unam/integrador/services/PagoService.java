@@ -1,8 +1,6 @@
 package com.unam.integrador.services;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,13 +48,8 @@ public class PagoService {
         Factura factura = facturaRepository.findById(facturaId)
             .orElseThrow(() -> new IllegalArgumentException("Factura no encontrada con ID: " + facturaId));
         
-        // 2. Crear pago
-        Pago pago = new Pago();
-        pago.setFechaPago(LocalDate.now());
-        pago.setFechaHoraRegistro(LocalDateTime.now());
-        pago.setMonto(factura.getTotal());
-        pago.setMetodoPago(metodoPago);
-        pago.setReferencia(referencia);
+        // 2. Crear pago usando el factory method (modelo RICO)
+        Pago pago = Pago.crearPago(factura.getTotal(), metodoPago, referencia);
         
         // 3. Registrar pago en la factura (delegar al dominio)
         factura.registrarPagoTotal(pago);
@@ -90,13 +83,8 @@ public class PagoService {
         Factura factura = facturaRepository.findById(facturaId)
             .orElseThrow(() -> new IllegalArgumentException("Factura no encontrada con ID: " + facturaId));
         
-        // 2. Crear pago
-        Pago pago = new Pago();
-        pago.setFechaPago(LocalDate.now());
-        pago.setFechaHoraRegistro(LocalDateTime.now());
-        pago.setMonto(monto);
-        pago.setMetodoPago(metodoPago);
-        pago.setReferencia(referencia);
+        // 2. Crear pago usando el factory method (modelo RICO)
+        Pago pago = Pago.crearPago(monto, metodoPago, referencia);
         
         // 3. Registrar pago parcial en la factura (delegar al dominio)
         factura.registrarPagoParcial(pago);
@@ -150,24 +138,20 @@ public class PagoService {
      * Genera un recibo para un pago.
      */
     private Recibo generarRecibo(Pago pago, Factura factura) {
-        Recibo recibo = new Recibo();
-        
         // Generar número de recibo
         int ultimoNumero = reciboRepository.findUltimoNumeroRecibo();
-        recibo.setNumero(String.format("%08d", ultimoNumero + 1));
-        
-        recibo.setFecha(LocalDate.now());
-        recibo.setMonto(pago.getMonto());
-        recibo.setMetodoPago(pago.getMetodoPago());
-        recibo.setReferencia(pago.getReferencia());
-        
+        String numero = String.format("%08d", ultimoNumero + 1);
+
         // Asociar facturas
         String facturaInfo = String.format("Factura %d-%08d", 
             factura.getSerie(), factura.getNroFactura());
-        recibo.setFacturasAsociadas(facturaInfo);
-        
-        recibo.setPago(pago);
-        
+
+        // Crear recibo a través del factory del modelo rico
+        Recibo recibo = Recibo.crearRecibo(numero, pago.getMonto(), pago.getMetodoPago(), pago.getReferencia(), facturaInfo);
+
+        // Asociar pago y mantener consistencia bidireccional
+        recibo.asociarPago(pago);
+
         return recibo;
     }
 }

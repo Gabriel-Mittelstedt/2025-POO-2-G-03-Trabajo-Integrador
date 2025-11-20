@@ -71,13 +71,8 @@ public class PagoController {
             redirectAttributes.addFlashAttribute("clienteNombre", clienteNombre.trim());
             return "redirect:/facturas#buscar-cliente-modal";
         }
-        if (clientes.size() == 1) {
-            // Redirigir directamente a la pantalla de selección de facturas
-            return "redirect:/pagos/seleccionar-facturas/" + clientes.get(0).getId();
-        }
-
-        // Si hay múltiples coincidencias, redirigir a la lista de facturas
-        // y abrir la ventana modal con las coincidencias (usando flash attributes)
+        // Mostrar coincidencias en el modal (incluso si sólo hay una) para
+        // que el usuario pueda seleccionar explícitamente el cliente.
         redirectAttributes.addFlashAttribute("modalClients", clientes);
         redirectAttributes.addFlashAttribute("clienteNombre", clienteNombre.trim());
         return "redirect:/facturas#buscar-cliente-modal";
@@ -122,10 +117,17 @@ public class PagoController {
      */
     @GetMapping("/nuevo-total/{facturaId}")
     public String mostrarFormularioPagoTotal(@PathVariable Long facturaId, Model model) {
-        Factura factura = facturaService.obtenerFacturaPorId(facturaId);
-        model.addAttribute("factura", factura);
-        model.addAttribute("metodosPago", MetodoPago.values());
-        return "pagos/formulario-total";
+        // Redirigir al flujo unificado de Registrar Pago (selección de facturas)
+        try {
+            Factura factura = facturaService.obtenerFacturaPorId(facturaId);
+            if (factura != null && factura.getCliente() != null) {
+                Long clienteId = factura.getCliente().getId();
+                return "redirect:/pagos/seleccionar-facturas/" + clienteId + "?facturaId=" + facturaId;
+            }
+        } catch (Exception e) {
+            // Si hay algún problema, volver al detalle de la factura
+        }
+        return "redirect:/facturas/" + facturaId;
     }
     
     // Nota: Los endpoints y vistas de pago total/parcial fueron removidos

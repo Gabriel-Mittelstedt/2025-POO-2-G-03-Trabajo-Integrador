@@ -37,7 +37,7 @@ La solución implementará un módulo para la facturación masiva, que será ini
 | **Título**                 | Modificación de cliente |
 | **Persona**                | Administrador |
 | **Descripción**            | Como administrador, quiero modificar los datos de la cuenta de un cliente, para poder mantener su información actualizada. |
-| **Criterios de aceptación** | <ul><li>Puedo modificar cualquier campo, incluyendo condición de IVA (registrando fecha de cambio).</li><li>Si cambia la condición de IVA, el sistema guarda el historial.</li><li>Validaciones iguales al alta.</li></ul> |
+| **Criterios de aceptación** | <ul><li>Puedo modificar cualquier campo, incluyendo condición de IVA.</li><li>Validaciones iguales al alta.</li></ul> |
 
 | Campo                      | Descripción |
 |:---------------------------|:------------|

@@ -50,6 +50,7 @@ public class CuentaClienteController {
         model.addAttribute("cliente", new CuentaCliente());
         model.addAttribute("condicionesIva", TipoCondicionIVA.values());
         model.addAttribute("estadosCuenta", EstadoCuenta.values());
+        model.addAttribute("esEdicion", false);
         return "clientes/formulario";
     }
     
@@ -67,6 +68,7 @@ public class CuentaClienteController {
             model.addAttribute("cliente", cliente);
             model.addAttribute("condicionesIva", TipoCondicionIVA.values());
             model.addAttribute("estadosCuenta", EstadoCuenta.values());
+            model.addAttribute("esEdicion", false);
             return "clientes/formulario";
         }
         
@@ -80,6 +82,7 @@ public class CuentaClienteController {
             model.addAttribute("cliente", cliente);
             model.addAttribute("condicionesIva", TipoCondicionIVA.values());
             model.addAttribute("estadosCuenta", EstadoCuenta.values());
+            model.addAttribute("esEdicion", false);
             return "clientes/formulario";
         }
     }
@@ -92,6 +95,53 @@ public class CuentaClienteController {
         CuentaCliente cliente = clienteService.obtenerClientePorId(id);
         model.addAttribute("cliente", cliente);
         return "clientes/detalle";
+    }
+    
+    /**
+     * Muestra el formulario para editar un cliente existente.
+     */
+    @GetMapping("/{id}/editar")
+    public String mostrarFormularioEditar(@PathVariable Long id, Model model) {
+        CuentaCliente cliente = clienteService.obtenerClientePorId(id);
+        model.addAttribute("cliente", cliente);
+        model.addAttribute("condicionesIva", TipoCondicionIVA.values());
+        model.addAttribute("estadosCuenta", EstadoCuenta.values());
+        model.addAttribute("esEdicion", true);
+        return "clientes/formulario";
+    }
+    
+    /**
+     * Procesa la modificación de un cliente.
+     * Bean Validation valida automáticamente los campos.
+     */
+    @PostMapping("/{id}/editar")
+    public String modificarCliente(@PathVariable Long id,
+                                   @Valid @ModelAttribute("cliente") CuentaCliente cliente,
+                                   BindingResult result,
+                                   RedirectAttributes redirectAttributes,
+                                   Model model) {
+        // Si hay errores de validación, volver al formulario
+        if (result.hasErrors()) {
+            model.addAttribute("cliente", cliente);
+            model.addAttribute("condicionesIva", TipoCondicionIVA.values());
+            model.addAttribute("estadosCuenta", EstadoCuenta.values());
+            model.addAttribute("esEdicion", true);
+            return "clientes/formulario";
+        }
+        
+        try {
+            CuentaCliente clienteModificado = clienteService.modificarCliente(id, cliente);
+            redirectAttributes.addFlashAttribute("mensaje", 
+                "Cliente modificado exitosamente: " + clienteModificado.getNombre());
+            return "redirect:/clientes/" + id;
+        } catch (IllegalArgumentException e) {
+            model.addAttribute("error", e.getMessage());
+            model.addAttribute("cliente", cliente);
+            model.addAttribute("condicionesIva", TipoCondicionIVA.values());
+            model.addAttribute("estadosCuenta", EstadoCuenta.values());
+            model.addAttribute("esEdicion", true);
+            return "clientes/formulario";
+        }
     }
     
     /**

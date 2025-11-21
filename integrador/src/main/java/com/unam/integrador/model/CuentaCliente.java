@@ -243,4 +243,45 @@ public class CuentaCliente {
         
         contrato.desvincular();
     }
+    
+    /**
+     * Actualiza los datos modificables del cliente.
+     * 
+     * <p>Este método permite modificar todos los campos del cliente excepto el CUIT/DNI,
+     * que es inmutable por ser el identificador fiscal único.</p>
+     * 
+     * @param nombre nuevo nombre del cliente
+     * @param razonSocial nueva razón social
+     * @param domicilio nuevo domicilio
+     * @param email nuevo email
+     * @param telefono nuevo teléfono (puede ser null)
+     * @param condicionIva nueva condición de IVA
+     * @throws IllegalArgumentException si algún dato es inválido
+     */
+    public void actualizarDatos(String nombre, String razonSocial, String domicilio, 
+                                String email, String telefono, TipoCondicionIVA condicionIva) {
+        // Validaciones básicas (Bean Validation ya valida en el controller, pero reforzamos)
+        if (nombre == null || nombre.trim().isEmpty()) {
+            throw new IllegalArgumentException("El nombre es obligatorio");
+        }
+        if (razonSocial == null || razonSocial.trim().isEmpty()) {
+            throw new IllegalArgumentException("La razón social es obligatoria");
+        }
+        if (domicilio == null || domicilio.trim().isEmpty()) {
+            throw new IllegalArgumentException("El domicilio es obligatorio");
+        }
+        if (email == null || email.trim().isEmpty()) {
+            throw new IllegalArgumentException("El email es obligatorio");
+        }
+        if (condicionIva == null) {
+            throw new IllegalArgumentException("La condición de IVA es obligatoria");
+        }
+        
+        this.nombre = nombre.trim();
+        this.razonSocial = razonSocial.trim();
+        this.domicilio = domicilio.trim();
+        this.email = email.trim();
+        this.telefono = telefono != null ? telefono.trim() : null;
+        this.condicionIva = condicionIva;
+    }
 }

@@ -40,7 +40,7 @@
 
         <div class="card mt-3">
             <div class="card-body">
-                <form th:action="${cliente?.id != null ? '/clientes/' + cliente.id + '/editar' : '/clientes/nuevo'}" 
+                <form th:action="${esEdicion ? '/clientes/' + cliente.id + '/editar' : '/clientes/nuevo'}" 
                       th:object="${cliente}" method="post">
                 
             <div class="row">
@@ -62,8 +62,14 @@
             <div class="row">
                 <div class="col-md-6 mb-3">
                     <label for="cuitDni" class="form-label"><i class="bi bi-card-text me-1"></i>CUIT/DNI *</label>
-                    <input type="text" class="form-control" id="cuitDni" th:field="*{cuitDni}" required>
-                    <small class="form-text text-muted">CUIT: 11 dígitos, DNI: 8 dígitos</small>
+                    <input type="text" class="form-control" id="cuitDni" th:field="*{cuitDni}" 
+                           th:readonly="${esEdicion}" 
+                           th:classappend="${esEdicion ? 'bg-light' : ''}"
+                           required>
+                    <small class="form-text text-muted" th:if="${!esEdicion}">CUIT: 11 dígitos, DNI: 8 dígitos</small>
+                    <small class="form-text text-muted" th:if="${esEdicion}">
+                        <i class="bi bi-lock me-1"></i>El CUIT/DNI no se puede modificar (identificador fiscal único)
+                    </small>
                     <div th:if="${#fields.hasErrors('cuitDni')}" class="text-danger" th:errors="*{cuitDni}"></div>
                 </div>
 
@@ -93,7 +99,8 @@
                 </div>
             </div>
             
-            <div class="row">
+            <!-- Campo Estado solo visible en alta de cliente, no en edición -->
+            <div class="row" th:if="${!esEdicion}">
                 <div class="col-md-12 mb-3">
                     <label for="estado" class="form-label"><i class="bi bi-toggle-on me-1"></i>Estado de Cuenta</label>
                     <select class="form-select" id="estado" th:field="*{estado}">
@@ -102,9 +109,12 @@
                                 th:text="${estadoCuenta.descripcion}"
                                 th:selected="${estadoCuenta.name() == 'ACTIVA'}"></option>
                     </select>
-                    <small class="text-muted">Por defecto: Activa</small>
+                    <small class="text-muted">Estado inicial de la cuenta</small>
                 </div>
             </div>
+            
+            <!-- En modo edición, enviar el estado como campo oculto para evitar errores de validación -->
+            <input type="hidden" th:if="${esEdicion}" th:field="*{estado}" />
 
             <div class="mb-3">
                 <label for="domicilio" class="form-label"><i class="bi bi-geo-alt me-1"></i>Domicilio *</label>
@@ -115,9 +125,10 @@
 
             <div class="mt-4">
                 <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-check-circle me-1"></i>Guardar
+                    <i class="bi bi-check-circle me-1"></i>
+                    <span th:text="${esEdicion ? 'Actualizar Cliente' : 'Guardar Cliente'}">Guardar</span>
                 </button>
-                <a href="/clientes" class="btn btn-secondary">
+                <a th:href="${esEdicion ? '/clientes/' + cliente.id : '/clientes'}" class="btn btn-secondary">
                     <i class="bi bi-x-circle me-1"></i>Cancelar
                 </a>
             </div>

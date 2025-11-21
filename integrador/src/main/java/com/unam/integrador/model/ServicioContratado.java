@@ -33,6 +33,12 @@ public class ServicioContratado {
     @Column(nullable = false)
     private Boolean activo = true;
     
+    /**
+     * Fecha en que se desvinculó el servicio del cliente.
+     * Null si el servicio sigue activo.
+     */
+    private LocalDate fechaBaja;
+    
     // --- Relaciones ---
     
     @ManyToOne(fetch = FetchType.LAZY)
@@ -42,4 +48,17 @@ public class ServicioContratado {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "servicio_id", nullable = false)
     private Servicio servicio;
+    
+    // --- Métodos de negocio ---
+    
+    /**
+     * Desvincula el servicio del cliente (baja lógica).
+     * Marca el servicio como inactivo y registra la fecha de baja.
+     * 
+     * <p>Este servicio no se incluirá en futuras facturaciones masivas.</p>
+     */
+    public void desvincular() {
+        this.activo = false;
+        this.fechaBaja = LocalDate.now();
+    }
 }

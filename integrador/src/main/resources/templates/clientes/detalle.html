@@ -102,6 +102,7 @@
                                 <th><i class="bi bi-currency-dollar me-1"></i>Precio Contratado</th>
                                 <th><i class="bi bi-percent me-1"></i>IVA</th>
                                 <th><i class="bi bi-cash-stack me-1"></i>Total con IVA</th>
+                                <th><i class="bi bi-gear me-1"></i>Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -116,6 +117,12 @@
                                 <td th:text="${sc.servicio.alicuotaIVA.descripcion}"></td>
                                 <td>
                                     <strong>$<span th:text="${#numbers.formatDecimal(sc.servicio.calcularPrecioConIva(sc.precioContratado), 1, 2)}"></span></strong>
+                                </td>
+                                <td>
+                                    <a th:href="@{/clientes/{clienteId}/servicios/{servicioId}/desvincular(clienteId=${cliente.id}, servicioId=${sc.servicio.IDServicio})}" 
+                                       class="btn btn-sm btn-danger">
+                                        <i class="bi bi-x-circle me-1"></i>Quitar
+                                    </a>
                                 </td>
                             </tr>
                         </tbody>

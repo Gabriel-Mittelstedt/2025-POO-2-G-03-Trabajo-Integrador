@@ -49,7 +49,8 @@
                         <thead class="bg-dark-header">
                             <tr>
                                 <th><i class="bi bi-tag me-1"></i>Servicio</th>
-                                <th><i class="bi bi-calendar me-1"></i>Fecha Alta</th>
+                                <th><i class="bi bi-calendar-check me-1"></i>Fecha Alta</th>
+                                <th><i class="bi bi-calendar-x me-1"></i>Fecha Baja</th>
                                 <th><i class="bi bi-currency-dollar me-1"></i>Precio Contratado</th>
                                 <th><i class="bi bi-percent me-1"></i>Alícuota IVA</th>
                                 <th><i class="bi bi-cash-stack me-1"></i>Total con IVA</th>
@@ -64,6 +65,10 @@
                                     <small class="text-muted" th:text="${sc.servicio.descripcion}"></small>
                                 </td>
                                 <td th:text="${#temporals.format(sc.fechaAlta, 'dd/MM/yyyy')}"></td>
+                                <td>
+                                    <span th:if="${sc.fechaBaja != null}" th:text="${#temporals.format(sc.fechaBaja, 'dd/MM/yyyy')}"></span>
+                                    <span th:if="${sc.fechaBaja == null}" class="text-muted">-</span>
+                                </td>
                                 <td>$<span th:text="${#numbers.formatDecimal(sc.precioContratado, 1, 2)}"></span></td>
                                 <td th:text="${sc.servicio.alicuotaIVA.descripcion}"></td>
                                 <td>

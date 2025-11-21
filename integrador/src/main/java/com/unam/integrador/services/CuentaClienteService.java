@@ -82,5 +82,24 @@ public class CuentaClienteService {
         return clienteRepository.save(cliente);
     }
     
+    /**
+     * Desvincula un servicio de un cliente.
+     * Realiza una baja lógica, el servicio no se incluirá en futuras facturaciones.
+     * 
+     * @param clienteId el ID del cliente
+     * @param servicioId el ID del servicio a desvincular
+     * @return el cliente actualizado
+     * @throws IllegalArgumentException si el cliente o servicio no existe, o si el servicio no está contratado
+     */
+    public CuentaCliente desvincularServicio(Long clienteId, Long servicioId) {
+        CuentaCliente cliente = obtenerClientePorId(clienteId);
+        com.unam.integrador.model.Servicio servicio = servicioRepository.findById(servicioId)
+            .orElseThrow(() -> new IllegalArgumentException("Servicio no encontrado con ID: " + servicioId));
+        
+        // El método desvincularServicio valida que esté activo
+        cliente.desvincularServicio(servicio);
+        
+        return clienteRepository.save(cliente);
+    }
 
 }

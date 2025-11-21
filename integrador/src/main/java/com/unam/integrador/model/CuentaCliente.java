@@ -226,4 +226,21 @@ public class CuentaCliente {
             .filter(ServicioContratado::getActivo)
             .toList();
     }
+    
+    /**
+     * Desvincula un servicio del cliente (baja lógica).
+     * El servicio no se facturará en futuros períodos.
+     * 
+     * @param servicio el servicio a desvincular
+     * @throws IllegalArgumentException si el servicio no está contratado activamente
+     */
+    public void desvincularServicio(Servicio servicio) {
+        ServicioContratado contrato = this.serviciosContratados.stream()
+            .filter(sc -> sc.getServicio().equals(servicio) && sc.getActivo())
+            .findFirst()
+            .orElseThrow(() -> new IllegalArgumentException(
+                "El servicio '" + servicio.getNombre() + "' no está contratado activamente"));
+        
+        contrato.desvincular();
+    }
 }

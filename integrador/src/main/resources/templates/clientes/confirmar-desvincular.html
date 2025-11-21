@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirmar Desvinculación de Servicio</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-dark-custom">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/"><i class="bi bi-receipt-cutoff me-2"></i>ERP Facturación</a>
+            <div class="collapse navbar-collapse">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="/clientes"><i class="bi bi-people me-1"></i>Clientes</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/servicios"><i class="bi bi-wrench me-1"></i>Servicios</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/facturas"><i class="bi bi-file-earmark-text me-1"></i>Facturas</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/facturacion-masiva"><i class="bi bi-files me-1"></i>Facturación Masiva</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/pagos"><i class="bi bi-cash-coin me-1"></i>Pagos</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="page-header">
+            <h2><i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>Confirmar Desvinculación de Servicio</h2>
+            <p class="text-muted">Esta acción marcará el servicio como inactivo y no se incluirá en futuras facturaciones</p>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Información de la Desvinculación</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning" role="alert">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    <strong>Atención:</strong> Al desvincular este servicio, el cliente dejará de ser facturado por él en futuros períodos. 
+                    El histórico se conservará para trazabilidad.
+                </div>
+
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <h6 class="text-muted mb-3"><i class="bi bi-person me-2"></i>Datos del Cliente</h6>
+                        <p><strong>Nombre:</strong> <span th:text="${cliente.nombre}"></span></p>
+                        <p><strong>Razón Social:</strong> <span th:text="${cliente.razonSocial}"></span></p>
+                        <p><strong>CUIT/DNI:</strong> <span th:text="${cliente.cuitDni}"></span></p>
+                        <p><strong>Estado:</strong> 
+                            <span th:class="${cliente.estado.name() == 'ACTIVA' ? 'badge bg-success' : 
+                                            cliente.estado.name() == 'SUSPENDIDA' ? 'badge bg-warning' : 
+                                            'badge bg-danger'}"
+                                  th:text="${cliente.estado.descripcion}"></span>
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-muted mb-3"><i class="bi bi-wrench me-2"></i>Servicio a Desvincular</h6>
+                        <p><strong>Servicio:</strong> <span th:text="${servicio.nombre}"></span></p>
+                        <p><strong>Descripción:</strong> <span th:text="${servicio.descripcion}"></span></p>
+                        <p><strong>Precio Actual:</strong> $<span th:text="${#numbers.formatDecimal(servicio.precio, 1, 2)}"></span></p>
+                        <p><strong>IVA:</strong> <span th:text="${servicio.alicuotaIVA.descripcion}"></span></p>
+                        <p><strong>Total con IVA:</strong> 
+                            <strong class="text-primary">$<span th:text="${#numbers.formatDecimal(servicio.calcularPrecioConIva(), 1, 2)}"></span></strong>
+                        </p>
+                    </div>
+                </div>
+
+                <hr class="my-4">
+
+                <div class="alert alert-info" role="alert">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <strong>Nota:</strong> Esta operación realiza una <strong>baja lógica</strong>. 
+                    El registro del servicio contratado se conservará en el histórico con la fecha de baja, 
+                    pero el servicio no se facturará en el próximo período de facturación masiva.
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <a th:href="@{/clientes/{id}(id=${cliente.id})}" class="btn btn-secondary">
+                        <i class="bi bi-x-circle me-1"></i>Cancelar
+                    </a>
+                    <form method="post" 
+                          th:action="@{/clientes/{clienteId}/servicios/{servicioId}/desvincular(clienteId=${cliente.id}, servicioId=${servicio.IDServicio})}"
+                          style="display: inline;">
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-trash me-1"></i>Confirmar Desvinculación
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header bg-dark-header">
+                <h6 class="mb-0"><i class="bi bi-clock-history me-2"></i>¿Qué sucederá después?</h6>
+            </div>
+            <div class="card-body">
+                <ul class="mb-0">
+                    <li>El servicio se marcará como <strong>inactivo</strong> en la cuenta del cliente</li>
+                    <li>Se registrará la <strong>fecha de baja</strong> automáticamente</li>
+                    <li>El servicio <strong>NO se incluirá</strong> en la próxima facturación masiva</li>
+                    <li>El histórico del servicio se mantendrá visible en "Ver Histórico de Servicios"</li>
+                    <li>Podrá volver a asignarlo posteriormente si fuera necesario</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

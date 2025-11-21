@@ -114,6 +114,7 @@ public class CuentaClienteController {
     
     /**
      * Procesa la asignación de un servicio a un cliente.
+     * Redirige de vuelta a la pantalla de asignación para poder asignar más servicios.
      */
     @PostMapping("/{clienteId}/servicios/{servicioId}/asignar")
     public String asignarServicio(@PathVariable Long clienteId,
@@ -122,7 +123,8 @@ public class CuentaClienteController {
         try {
             clienteService.asignarServicio(clienteId, servicioId);
             redirectAttributes.addFlashAttribute("mensaje", "Servicio asignado exitosamente");
-            return "redirect:/clientes/" + clienteId;
+            // Redirigir a la pantalla de asignación para poder agregar más servicios
+            return "redirect:/clientes/" + clienteId + "/servicios/asignar";
         } catch (IllegalArgumentException e) {
             redirectAttributes.addFlashAttribute("error", e.getMessage());
             return "redirect:/clientes/" + clienteId + "/servicios/asignar";
@@ -138,6 +140,38 @@ public class CuentaClienteController {
         model.addAttribute("cliente", cliente);
         model.addAttribute("serviciosContratados", cliente.getServiciosContratados());
         return "clientes/historico-servicios";
+    }
+    
+    /**
+     * Muestra la vista de confirmación para desvincular un servicio de un cliente.
+     */
+    @GetMapping("/{clienteId}/servicios/{servicioId}/desvincular")
+    public String confirmarDesvincular(@PathVariable Long clienteId,
+                                       @PathVariable Long servicioId,
+                                       Model model) {
+        CuentaCliente cliente = clienteService.obtenerClientePorId(clienteId);
+        com.unam.integrador.model.Servicio servicio = servicioService.buscarPorId(servicioId);
+        
+        model.addAttribute("cliente", cliente);
+        model.addAttribute("servicio", servicio);
+        return "clientes/confirmar-desvincular";
+    }
+    
+    /**
+     * Procesa la desvinculación de un servicio de un cliente.
+     */
+    @PostMapping("/{clienteId}/servicios/{servicioId}/desvincular")
+    public String desvincularServicio(@PathVariable Long clienteId,
+                                      @PathVariable Long servicioId,
+                                      RedirectAttributes redirectAttributes) {
+        try {
+            clienteService.desvincularServicio(clienteId, servicioId);
+            redirectAttributes.addFlashAttribute("mensaje", "Servicio desvinculado exitosamente. No se incluirá en futuras facturaciones.");
+            return "redirect:/clientes/" + clienteId;
+        } catch (IllegalArgumentException e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+            return "redirect:/clientes/" + clienteId;
+        }
     }
     
 }

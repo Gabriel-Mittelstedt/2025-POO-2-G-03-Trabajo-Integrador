@@ -101,5 +101,38 @@ public class CuentaClienteService {
         
         return clienteRepository.save(cliente);
     }
+    
+    /**
+     * Modifica los datos de un cliente existente.
+     * 
+     * <p>Permite actualizar todos los campos excepto:</p>
+     * <ul>
+     *   <li>CUIT/DNI (inmutable, es el identificador fiscal único)</li>
+     *   <li>Estado de cuenta (gestionado por otra historia de usuario)</li>
+     * </ul>
+     * 
+     * <p>Aplica las mismas validaciones que en el alta del cliente.</p>
+     * 
+     * @param id el ID del cliente a modificar
+     * @param datosActualizados objeto con los nuevos datos del cliente
+     * @return el cliente modificado
+     * @throws IllegalArgumentException si el cliente no existe o los datos son inválidos
+     */
+    public CuentaCliente modificarCliente(Long id, CuentaCliente datosActualizados) {
+        CuentaCliente cliente = obtenerClientePorId(id);
+        
+        // Delegar la actualización al modelo rico
+        // NO se modifica el estado de cuenta (eso es otra HU)
+        cliente.actualizarDatos(
+            datosActualizados.getNombre(),
+            datosActualizados.getRazonSocial(),
+            datosActualizados.getDomicilio(),
+            datosActualizados.getEmail(),
+            datosActualizados.getTelefono(),
+            datosActualizados.getCondicionIva()
+        );
+        
+        return clienteRepository.save(cliente);
+    }
 
 }

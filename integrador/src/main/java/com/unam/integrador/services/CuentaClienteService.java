@@ -7,7 +7,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.unam.integrador.model.CambioEstadoCuenta;
 import com.unam.integrador.model.CuentaCliente;
+import com.unam.integrador.model.enums.EstadoCuenta;
+import com.unam.integrador.repositories.CambioEstadoCuentaRepository;
 import com.unam.integrador.repositories.CuentaClienteRepositorie;
 import com.unam.integrador.repositories.ServicioRepository;
 
@@ -24,6 +27,9 @@ public class CuentaClienteService {
     
     @Autowired
     private ServicioRepository servicioRepository;
+    
+    @Autowired
+    private CambioEstadoCuentaRepository cambioEstadoRepository;
     
     /**
      * Crea un nuevo cliente validando todos los datos
@@ -133,6 +139,47 @@ public class CuentaClienteService {
         );
         
         return clienteRepository.save(cliente);
+    }
+    
+    /**
+     * Cambia el estado de la cuenta de un cliente.
+     * 
+     * <p>Este método orquesta el cambio de estado, delegando la lógica de negocio
+     * al modelo rico y persistiendo los cambios en la base de datos.</p>
+     * 
+     * <p>Se crea automáticamente un registro de auditoría del cambio en el historial.</p>
+     * 
+     * @param clienteId el ID del cliente cuyo estado se va a cambiar
+     * @param nuevoEstado el nuevo estado para la cuenta
+     * @param motivo la justificación del cambio de estado (obligatorio)
+     * @return el cliente con el estado actualizado
+     * @throws IllegalArgumentException si el cliente no existe, si el nuevo estado es null,
+     *                                  si el motivo es inválido, o si el estado ya es el actual
+     */
+    public CuentaCliente cambiarEstado(Long clienteId, EstadoCuenta nuevoEstado, String motivo) {
+        CuentaCliente cliente = obtenerClientePorId(clienteId);
+        
+        // Delegar la lógica de negocio al modelo rico
+        cliente.cambiarEstado(nuevoEstado, motivo);
+        
+        return clienteRepository.save(cliente);
+    }
+    
+    /**
+     * Obtiene el historial completo de cambios de estado de un cliente.
+     * 
+     * <p>Los cambios se retornan ordenados por fecha descendente (más recientes primero).</p>
+     * 
+     * @param clienteId el ID del cliente
+     * @return lista de cambios de estado ordenados cronológicamente
+     * @throws IllegalArgumentException si el cliente no existe
+     */
+    @Transactional(readOnly = true)
+    public List<CambioEstadoCuenta> obtenerHistorialEstados(Long clienteId) {
+        // Validar que el cliente existe
+        obtenerClientePorId(clienteId);
+        
+        return cambioEstadoRepository.findByClienteIdOrderByFechaCambioDesc(clienteId);
     }
 
 }

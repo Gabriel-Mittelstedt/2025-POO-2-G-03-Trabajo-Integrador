@@ -161,6 +161,15 @@ public class CuentaCliente {
     private List<ServicioContratado> serviciosContratados = new ArrayList<>();
     
     /**
+     * Historial de cambios de estado de la cuenta.
+     * 
+     * <p>Mantiene un registro completo de todos los cambios de estado realizados,
+     * incluyendo fecha, estado anterior, estado nuevo y motivo del cambio.</p>
+     */
+    @OneToMany(mappedBy = "cliente", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<CambioEstadoCuenta> historialCambiosEstado = new ArrayList<>();
+    
+    /**
      * Callback ejecutado antes de persistir la entidad en la base de datos.
      * 
      * <p>Inicializa valores por defecto:</p>
@@ -283,5 +292,77 @@ public class CuentaCliente {
         this.email = email.trim();
         this.telefono = telefono != null ? telefono.trim() : null;
         this.condicionIva = condicionIva;
+    }
+    
+    /**
+     * Cambia el estado de la cuenta del cliente y registra el cambio en el historial.
+     * 
+     * <p>Este método implementa la lógica de negocio para cambiar el estado de una cuenta,
+     * validando los datos y creando automáticamente un registro de auditoría del cambio.</p>
+     * 
+     * <p>Reglas de negocio aplicadas:</p>
+     * <ul>
+     *   <li>El motivo del cambio es obligatorio para todos los cambios de estado</li>
+     *   <li>Se permite cambiar de cualquier estado a cualquier otro estado</li>
+     *   <li>Se registra el estado anterior, el nuevo estado y la fecha/hora del cambio</li>
+     *   <li>El cambio se persiste en el historial para auditoría</li>
+     * </ul>
+     * 
+     * @param nuevoEstado el estado al que se desea cambiar la cuenta
+     * @param motivo la justificación o razón del cambio (mínimo 5 caracteres, máximo 500)
+     * @throws IllegalArgumentException si el nuevo estado es null, si el motivo es inválido,
+     *                                  o si se intenta cambiar al mismo estado actual
+     */
+    public void cambiarEstado(EstadoCuenta nuevoEstado, String motivo) {
+        // Validar que el nuevo estado no sea nulo
+        if (nuevoEstado == null) {
+            throw new IllegalArgumentException("El nuevo estado es obligatorio");
+        }
+        
+        // Validar que el motivo no sea nulo ni vacío
+        if (motivo == null || motivo.trim().isEmpty()) {
+            throw new IllegalArgumentException("El motivo del cambio es obligatorio");
+        }
+        
+        // Validar longitud del motivo
+        if (motivo.trim().length() < 5) {
+            throw new IllegalArgumentException("El motivo debe tener al menos 5 caracteres");
+        }
+        
+        if (motivo.trim().length() > 500) {
+            throw new IllegalArgumentException("El motivo no debe superar los 500 caracteres");
+        }
+        
+        // Validar que el nuevo estado sea diferente al actual
+        if (this.estado == nuevoEstado) {
+            throw new IllegalArgumentException(
+                "El estado de la cuenta ya es " + nuevoEstado.getDescripcion() + ". No es necesario realizar el cambio."
+            );
+        }
+        
+        // Crear el registro de cambio de estado para el historial
+        CambioEstadoCuenta cambio = new CambioEstadoCuenta();
+        cambio.setCliente(this);
+        cambio.setEstadoAnterior(this.estado);
+        cambio.setEstadoNuevo(nuevoEstado);
+        cambio.setMotivo(motivo.trim());
+        
+        // Agregar el cambio al historial
+        this.historialCambiosEstado.add(cambio);
+        
+        // Actualizar el estado actual de la cuenta
+        this.estado = nuevoEstado;
+    }
+    
+    /**
+     * Verifica si la cuenta está en un estado que permite facturación.
+     * 
+     * <p>Según las reglas de negocio, solo se puede facturar a clientes
+     * cuya cuenta esté en estado ACTIVA.</p>
+     * 
+     * @return true si se puede facturar al cliente, false en caso contrario
+     */
+    public boolean puedeFacturar() {
+        return this.estado == EstadoCuenta.ACTIVA;
     }
 }

@@ -193,6 +193,20 @@ public class CuentaClienteController {
     }
     
     /**
+     * Muestra el historial completo de cambios de estado de la cuenta del cliente.
+     * 
+     * <p>Presenta una vista cronológica de todos los cambios de estado realizados,
+     * incluyendo el estado anterior, nuevo estado, fecha/hora y motivo del cambio.</p>
+     */
+    @GetMapping("/{id}/estados/historico")
+    public String verHistorialEstados(@PathVariable Long id, Model model) {
+        CuentaCliente cliente = clienteService.obtenerClientePorId(id);
+        model.addAttribute("cliente", cliente);
+        model.addAttribute("cambios", clienteService.obtenerHistorialEstados(id));
+        return "clientes/historial-estados";
+    }
+    
+    /**
      * Muestra la vista de confirmación para desvincular un servicio de un cliente.
      */
     @GetMapping("/{clienteId}/servicios/{servicioId}/desvincular")
@@ -221,6 +235,36 @@ public class CuentaClienteController {
         } catch (IllegalArgumentException e) {
             redirectAttributes.addFlashAttribute("error", e.getMessage());
             return "redirect:/clientes/" + clienteId;
+        }
+    }
+    
+    /**
+     * Procesa el cambio de estado de la cuenta de un cliente.
+     * 
+     * <p>Recibe el nuevo estado y el motivo del cambio desde el formulario
+     * en la vista de detalle del cliente.</p>
+     * 
+     * <p>Si el cambio es exitoso, redirige al detalle del cliente con un mensaje
+     * de confirmación. Si hay errores, muestra el mensaje de error correspondiente.</p>
+     */
+    @PostMapping("/{id}/cambiar-estado")
+    public String cambiarEstado(@PathVariable Long id,
+                                @ModelAttribute("nuevoEstado") String nuevoEstadoStr,
+                                @ModelAttribute("motivo") String motivo,
+                                RedirectAttributes redirectAttributes) {
+        try {
+            // Convertir el string del estado a enum
+            EstadoCuenta nuevoEstado = EstadoCuenta.valueOf(nuevoEstadoStr);
+            
+            // Cambiar el estado del cliente
+            CuentaCliente cliente = clienteService.cambiarEstado(id, nuevoEstado, motivo);
+            
+            redirectAttributes.addFlashAttribute("mensaje", 
+                "Estado de cuenta cambiado exitosamente a: " + cliente.getEstado().getDescripcion());
+            return "redirect:/clientes/" + id;
+        } catch (IllegalArgumentException e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+            return "redirect:/clientes/" + id;
         }
     }
     

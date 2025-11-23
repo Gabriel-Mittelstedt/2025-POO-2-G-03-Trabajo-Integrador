@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
+    <!-- Barra de navegación principal -->
     <nav class="navbar navbar-expand-lg navbar-dark navbar-dark-custom">
         <div class="container-fluid">
             <a class="navbar-brand" href="/"><i class="bi bi-receipt-cutoff me-2"></i>ERP Facturación</a>
@@ -25,22 +26,26 @@
     </nav>
 
     <div class="container mt-4">
+        <!-- Encabezado de la página con advertencia -->
         <div class="page-header">
             <h2><i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>Confirmar Desvinculación de Servicio</h2>
             <p class="text-muted">Esta acción marcará el servicio como inactivo y no se incluirá en futuras facturaciones</p>
         </div>
 
+        <!-- Tarjeta con información del cliente y servicio a desvincular -->
         <div class="card mt-4">
             <div class="card-header bg-warning text-dark">
                 <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Información de la Desvinculación</h5>
             </div>
             <div class="card-body">
+                <!-- Alerta de advertencia sobre consecuencias -->
                 <div class="alert alert-warning" role="alert">
                     <i class="bi bi-exclamation-triangle me-2"></i>
                     <strong>Atención:</strong> Al desvincular este servicio, el cliente dejará de ser facturado por él en futuros períodos. 
                     El histórico se conservará para trazabilidad.
                 </div>
 
+                <!-- Datos del cliente y servicio a desvincular -->
                 <div class="row mt-4">
                     <div class="col-md-6">
                         <h6 class="text-muted mb-3"><i class="bi bi-person me-2"></i>Datos del Cliente</h6>
@@ -68,6 +73,7 @@
 
                 <hr class="my-4">
 
+                <!-- Nota informativa sobre baja lógica -->
                 <div class="alert alert-info" role="alert">
                     <i class="bi bi-info-circle me-2"></i>
                     <strong>Nota:</strong> Esta operación realiza una <strong>baja lógica</strong>. 
@@ -75,6 +81,7 @@
                     pero el servicio no se facturará en el próximo período de facturación masiva.
                 </div>
 
+                <!-- Botones de cancelar y confirmar desvinculación -->
                 <div class="d-flex justify-content-end gap-2 mt-4">
                     <a th:href="@{/clientes/{id}(id=${cliente.id})}" class="btn btn-secondary">
                         <i class="bi bi-x-circle me-1"></i>Cancelar
@@ -90,6 +97,7 @@
             </div>
         </div>
 
+        <!-- Tarjeta informativa sobre consecuencias de la desvinculación -->
         <div class="card mt-3">
             <div class="card-header bg-dark-header">
                 <h6 class="mb-0"><i class="bi bi-clock-history me-2"></i>¿Qué sucederá después?</h6>

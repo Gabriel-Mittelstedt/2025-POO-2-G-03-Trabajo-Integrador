@@ -111,14 +111,6 @@ public class CuentaClienteService {
     /**
      * Modifica los datos de un cliente existente.
      * 
-     * <p>Permite actualizar todos los campos excepto:</p>
-     * <ul>
-     *   <li>CUIT/DNI (inmutable, es el identificador fiscal único)</li>
-     *   <li>Estado de cuenta (gestionado por otra historia de usuario)</li>
-     * </ul>
-     * 
-     * <p>Aplica las mismas validaciones que en el alta del cliente.</p>
-     * 
      * @param id el ID del cliente a modificar
      * @param datosActualizados objeto con los nuevos datos del cliente
      * @return el cliente modificado
@@ -126,9 +118,7 @@ public class CuentaClienteService {
      */
     public CuentaCliente modificarCliente(Long id, CuentaCliente datosActualizados) {
         CuentaCliente cliente = obtenerClientePorId(id);
-        
-        // Delegar la actualización al modelo rico
-        // NO se modifica el estado de cuenta (eso es otra HU)
+
         cliente.actualizarDatos(
             datosActualizados.getNombre(),
             datosActualizados.getRazonSocial(),
@@ -143,12 +133,6 @@ public class CuentaClienteService {
     
     /**
      * Cambia el estado de la cuenta de un cliente.
-     * 
-     * <p>Este método orquesta el cambio de estado, delegando la lógica de negocio
-     * al modelo rico y persistiendo los cambios en la base de datos.</p>
-     * 
-     * <p>Se crea automáticamente un registro de auditoría del cambio en el historial.</p>
-     * 
      * @param clienteId el ID del cliente cuyo estado se va a cambiar
      * @param nuevoEstado el nuevo estado para la cuenta
      * @param motivo la justificación del cambio de estado (obligatorio)
@@ -167,8 +151,6 @@ public class CuentaClienteService {
     
     /**
      * Obtiene el historial completo de cambios de estado de un cliente.
-     * 
-     * <p>Los cambios se retornan ordenados por fecha descendente (más recientes primero).</p>
      * 
      * @param clienteId el ID del cliente
      * @return lista de cambios de estado ordenados cronológicamente

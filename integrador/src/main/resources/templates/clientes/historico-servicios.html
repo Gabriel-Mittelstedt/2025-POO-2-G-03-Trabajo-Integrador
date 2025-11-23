@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
+    <!-- Barra de navegación principal -->
     <nav class="navbar navbar-expand-lg navbar-dark navbar-dark-custom">
         <div class="container-fluid">
             <a class="navbar-brand" href="/"><i class="bi bi-receipt-cutoff me-2"></i>ERP Facturación</a>
@@ -25,6 +26,7 @@
     </nav>
 
     <div class="container mt-4">
+        <!-- Encabezado con información del cliente y botón volver -->
         <div class="page-header">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
@@ -39,17 +41,20 @@
             </div>
         </div>
 
+        <!-- Tarjeta con tabla de todos los servicios contratados (activos e inactivos) -->
         <div class="card mt-3">
             <div class="card-header bg-dark-header">
                 <h5 class="mb-0"><i class="bi bi-list-ul me-2"></i>Todos los Servicios Contratados</h5>
             </div>
             <div class="card-body">
+                <!-- Tabla con todos los servicios y sus detalles -->
                 <div class="table-responsive">
                     <table class="table table-hover" th:if="${!serviciosContratados.isEmpty()}">
                         <thead class="bg-dark-header">
                             <tr>
                                 <th><i class="bi bi-tag me-1"></i>Servicio</th>
-                                <th><i class="bi bi-calendar me-1"></i>Fecha Alta</th>
+                                <th><i class="bi bi-calendar-check me-1"></i>Fecha Alta</th>
+                                <th><i class="bi bi-calendar-x me-1"></i>Fecha Baja</th>
                                 <th><i class="bi bi-currency-dollar me-1"></i>Precio Contratado</th>
                                 <th><i class="bi bi-percent me-1"></i>Alícuota IVA</th>
                                 <th><i class="bi bi-cash-stack me-1"></i>Total con IVA</th>
@@ -64,6 +69,10 @@
                                     <small class="text-muted" th:text="${sc.servicio.descripcion}"></small>
                                 </td>
                                 <td th:text="${#temporals.format(sc.fechaAlta, 'dd/MM/yyyy')}"></td>
+                                <td>
+                                    <span th:if="${sc.fechaBaja != null}" th:text="${#temporals.format(sc.fechaBaja, 'dd/MM/yyyy')}"></span>
+                                    <span th:if="${sc.fechaBaja == null}" class="text-muted">-</span>
+                                </td>
                                 <td>$<span th:text="${#numbers.formatDecimal(sc.precioContratado, 1, 2)}"></span></td>
                                 <td th:text="${sc.servicio.alicuotaIVA.descripcion}"></td>
                                 <td>
@@ -77,6 +86,7 @@
                         </tbody>
                     </table>
                 </div>
+                <!-- Mensaje cuando no hay servicios contratados -->
                 <div th:if="${serviciosContratados.isEmpty()}" class="text-center py-4">
                     <i class="bi bi-inbox" style="font-size: 3rem; color: #ccc;"></i>
                     <p class="text-muted mt-2">No hay servicios contratados</p>
@@ -87,11 +97,13 @@
             </div>
         </div>
 
+        <!-- Tarjeta con estadísticas de servicios -->
         <div class="card mt-3">
             <div class="card-header bg-dark-header">
                 <h5 class="mb-0"><i class="bi bi-bar-chart me-2"></i>Resumen</h5>
             </div>
             <div class="card-body">
+                <!-- Fila con contadores de servicios activos, inactivos y total -->
                 <div class="row text-center">
                     <div class="col-md-4">
                         <div class="p-3 border rounded">

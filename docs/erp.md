@@ -37,7 +37,7 @@ La solución implementará un módulo para la facturación masiva, que será ini
 | **Título**                 | Modificación de cliente |
 | **Persona**                | Administrador |
 | **Descripción**            | Como administrador, quiero modificar los datos de la cuenta de un cliente, para poder mantener su información actualizada. |
-| **Criterios de aceptación** | <ul><li>Puedo modificar cualquier campo, incluyendo condición de IVA (registrando fecha de cambio).</li><li>Si cambia la condición de IVA, el sistema guarda el historial.</li><li>Validaciones iguales al alta.</li></ul> |
+| **Criterios de aceptación** | <ul><li>Puedo modificar cualquier campo, incluyendo condición de IVA.</li><li>Validaciones iguales al alta.</li></ul> |
 
 | Campo                      | Descripción |
 |:---------------------------|:------------|
@@ -45,7 +45,7 @@ La solución implementará un módulo para la facturación masiva, que será ini
 | **Título**                 | Gestión de estado de cuenta |
 | **Persona**                | Administrador |
 | **Descripción**            | Como administrador, quiero cambiar el estado de la cuenta de un cliente (activa, suspendida, dada de baja), para poder reflejar su situación actual. |
-| **Criterios de aceptación** | <ul><li>Solo se puede **facturar** clientes en estado **activa**.</li><li>Al pasar a “baja”, no se permiten nuevas facturas pero se mantiene el historial y deudas.</li><li>Al pasar a “suspendida”, se bloquea la facturación individual hasta reactivación.</li><li>El sistema registra usuario, fecha y motivo del cambio.</li></ul> |
+| **Criterios de aceptación** | <ul><li>Solo se puede **facturar** clientes en estado **activa**.</li><li>Al pasar a “baja”, no se permiten nuevas facturas pero se mantiene el historial y deudas.</li><li>Al pasar a “suspendida”, se bloquea la facturación individual hasta reactivación.</li><li>El sistema registra fecha y motivo del cambio.</li></ul> |
 
 **FACTURAS**
 

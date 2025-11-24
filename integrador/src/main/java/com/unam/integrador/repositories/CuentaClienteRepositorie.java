@@ -27,4 +27,11 @@ public interface CuentaClienteRepositorie extends JpaRepository<CuentaCliente, L
      * @return true si existe, false en caso contrario
      */
     boolean existsByCuitDni(String cuitDni);
+
+    /**
+     * Busca clientes cuyo nombre contenga la cadena proporcionada (ignorando mayúsculas)
+     * @param nombre fragmento del nombre
+     * @return lista de clientes que coinciden
+     */
+    java.util.List<CuentaCliente> findByNombreContainingIgnoreCase(String nombre);
 }

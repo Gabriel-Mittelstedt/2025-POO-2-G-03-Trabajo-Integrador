@@ -163,5 +163,15 @@ public class CuentaClienteService {
         
         return cambioEstadoRepository.findByClienteIdOrderByFechaCambioDesc(clienteId);
     }
+    /**
+     * Busca clientes por nombre (búsqueda parcial, case-insensitive)
+     * @param nombre fragmento a buscar
+     * @return lista de clientes coincidentes
+     */
+    @Transactional(readOnly = true)
+    public java.util.List<CuentaCliente> buscarPorNombre(String nombre) {
+        return clienteRepository.findByNombreContainingIgnoreCase(nombre);
+    }
+    
 
 }

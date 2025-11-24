@@ -70,4 +70,15 @@ public interface FacturaRepository extends JpaRepository<Factura, Long> {
      * @return Factura si existe
      */
     Optional<Factura> findBySerieAndNroFactura(int serie, int nroFactura);
+    
+    /**
+     * Busca facturas impagas (pendientes o pagadas parcialmente) de un cliente.
+     * Útil para pago combinado de múltiples facturas.
+     * @param clienteId ID del cliente
+     * @return Lista de facturas impagas del cliente
+     */
+    @Query("SELECT f FROM Factura f WHERE f.cliente.id = :clienteId AND " +
+           "(f.estado = 'PENDIENTE' OR f.estado = 'PAGADA_PARCIALMENTE') " +
+           "ORDER BY f.fechaEmision ASC")
+    List<Factura> findFacturasImpagasByCliente(@Param("clienteId") Long clienteId);
 }

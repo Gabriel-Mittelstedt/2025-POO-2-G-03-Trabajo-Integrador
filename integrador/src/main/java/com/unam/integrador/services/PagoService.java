@@ -211,174 +211,134 @@ public class PagoService {
             throw new IllegalArgumentException("Solo se pueden pagar facturas con saldo pendiente");
         }
         
-        // 5. Validar saldo a favor si corresponde (no descontar aún, solo validar disponibilidad)
+        // 5. Validar y aplicar saldo a favor si corresponde
         if (saldoAFavorAplicar.compareTo(BigDecimal.ZERO) > 0) {
             if (!cliente.tieneSaldoAFavor()) {
                 throw new IllegalStateException("El cliente no tiene saldo a favor disponible");
             }
-
+            
             BigDecimal saldoDisponible = cliente.getSaldoAFavor();
             if (saldoAFavorAplicar.compareTo(saldoDisponible) > 0) {
                 throw new IllegalArgumentException(
                     String.format("El monto de saldo a favor a aplicar ($%s) excede el saldo disponible ($%s)", 
                         saldoAFavorAplicar, saldoDisponible));
             }
-
-            // Validado: no descontamos todavía. El saldo se descontará por lo realmente aplicado
-            // después de distribuir entre facturas para evitar inconsistencias si no se usa todo.
+            
+            // Actualizar el saldo del cliente
+            cliente.aplicarSaldoAFavor(saldoAFavorAplicar);
+            cuentaClienteRepository.save(cliente);
+            
+            // No se persiste MovimientoSaldo: la trazabilidad se mantiene con Pagos y Recibos
         }
         
         // 6. Distribuir el pago entre las facturas
-        // Nuevo comportamiento: cuando el usuario ingresa un `montoTotal` en pantalla
-        // y hay múltiples facturas, ese `montoTotal` se interpreta como monto por factura
-        // (es decir, se intenta pagar `montoPorFactura` en cada factura, sin dividir
-        // ese monto entre ellas). Cada factura recibirá hasta `montoPorFactura` o su
-        // saldo pendiente, lo que sea menor.
-        BigDecimal montoPorFactura = montoTotal;
+        BigDecimal montoRestante = montoTotalCombinado;
         List<Pago> pagosGenerados = new ArrayList<>();
         BigDecimal montoTotalAplicadoSaldoAFavor = BigDecimal.ZERO;
         BigDecimal montoTotalAplicadoMetodoPago = BigDecimal.ZERO;
-
-        // Calcular el total requerido para aplicar montoPorFactura en cada factura
-        BigDecimal totalRequerido = BigDecimal.ZERO;
-        List<BigDecimal> montosDeseadosPorFactura = new ArrayList<>();
+        
         for (Factura factura : facturas) {
+            if (montoRestante.compareTo(BigDecimal.ZERO) <= 0) {
+                break; // Ya no hay más dinero para distribuir
+            }
+            
+            // Determinar cuánto pagar de esta factura
             BigDecimal saldoFactura = factura.getSaldoPendiente();
-            BigDecimal deseado = saldoFactura.compareTo(montoPorFactura) >= 0 ? montoPorFactura : saldoFactura;
-            montosDeseadosPorFactura.add(deseado);
-            totalRequerido = totalRequerido.add(deseado);
-        }
-
-        // Si el usuario no ingresó `montoTotal` (es 0) pero sí indicó `saldoAFavorAplicar`,
-        // queremos soportar el caso "pagar solo con saldo a favor". En ese caso
-        // distribuimos el saldo a favor entre facturas secuencialmente (llenando
-        // cada factura hasta su saldo pendiente) y no creamos pagos con el método
-        // de pago seleccionado.
-
-        // Aplicar saldo a favor (si se indicó) y luego el método de pago por factura
-        BigDecimal saldoAFavorRestante = saldoAFavorAplicar;
-        BigDecimal montoAplicadoTotal = BigDecimal.ZERO;
-
-        if (montoPorFactura.compareTo(BigDecimal.ZERO) == 0 && saldoAFavorAplicar.compareTo(BigDecimal.ZERO) > 0) {
-            // Distribuir únicamente saldoAFavorAplicar entre facturas (flujo "solo saldo")
-            for (Factura factura : facturas) {
-                if (saldoAFavorRestante.compareTo(BigDecimal.ZERO) <= 0) break;
-                BigDecimal saldoFactura = factura.getSaldoPendiente();
-                if (saldoFactura.compareTo(BigDecimal.ZERO) <= 0) continue;
-
-                BigDecimal montoAplicar = saldoAFavorRestante.compareTo(saldoFactura) >= 0 ? saldoFactura : saldoAFavorRestante;
-                Pago pagoSaldo = Pago.crearPago(montoAplicar, MetodoPago.SALDO_A_FAVOR, "Aplicacion de saldo a favor del cliente");
-                if (montoAplicar.compareTo(saldoFactura) >= 0) {
-                    factura.registrarPagoTotal(pagoSaldo);
-                } else {
-                    factura.registrarPagoParcial(pagoSaldo);
-                }
-                pagoRepository.save(pagoSaldo);
-                pagosGenerados.add(pagoSaldo);
-                montoTotalAplicadoSaldoAFavor = montoTotalAplicadoSaldoAFavor.add(montoAplicar);
-                // Persistir inmediatamente el cambio en la cuenta del cliente para evitar estados inconsistentes
-                cliente.aplicarSaldoAFavor(montoAplicar);
-                cuentaClienteRepository.save(cliente);
-                montoAplicadoTotal = montoAplicadoTotal.add(montoAplicar);
-                saldoAFavorRestante = saldoAFavorRestante.subtract(montoAplicar);
-                facturaRepository.save(factura);
-            }
-            // No se crean pagos con el método de pago porque montoPorFactura == 0
-        } else {
-            // Flujo regular: montoPorFactura > 0
-        
-        
-        
-        
-
-        for (int i = 0; i < facturas.size(); i++) {
-            Factura factura = facturas.get(i);
-            BigDecimal montoDeseado = montosDeseadosPorFactura.get(i);
-            if (montoDeseado.compareTo(BigDecimal.ZERO) <= 0) {
-                continue;
-            }
-
-            // Primero intentar cubrir desde saldo a favor
-            BigDecimal aplicarDesdeSaldo = BigDecimal.ZERO;
-            if (saldoAFavorRestante.compareTo(BigDecimal.ZERO) > 0) {
-                aplicarDesdeSaldo = saldoAFavorRestante.compareTo(montoDeseado) >= 0
-                    ? montoDeseado
-                    : saldoAFavorRestante;
-            }
-
-            if (aplicarDesdeSaldo.compareTo(BigDecimal.ZERO) > 0) {
-                Pago pagoSaldo = Pago.crearPago(aplicarDesdeSaldo, MetodoPago.SALDO_A_FAVOR,
+            BigDecimal montoPago = montoRestante.compareTo(saldoFactura) >= 0 
+                ? saldoFactura  // Pagar el saldo completo
+                : montoRestante; // Pagar lo que queda
+            
+            // Si aún hay saldo a favor sin aplicar completamente
+            if (montoRestante.compareTo(saldoAFavorAplicar) <= 0) {
+                // Este pago es completamente con saldo a favor
+                Pago pagoSaldo = Pago.crearPago(montoPago, MetodoPago.SALDO_A_FAVOR, 
                     "Aplicacion de saldo a favor del cliente");
-                if (aplicarDesdeSaldo.compareTo(factura.getSaldoPendiente()) >= 0) {
+                
+                if (montoPago.compareTo(saldoFactura) >= 0) {
                     factura.registrarPagoTotal(pagoSaldo);
                 } else {
                     factura.registrarPagoParcial(pagoSaldo);
                 }
+                
                 pagoRepository.save(pagoSaldo);
                 pagosGenerados.add(pagoSaldo);
-                montoTotalAplicadoSaldoAFavor = montoTotalAplicadoSaldoAFavor.add(aplicarDesdeSaldo);
-                // Persistir inmediatamente el cambio en la cuenta del cliente
-                cliente.aplicarSaldoAFavor(aplicarDesdeSaldo);
-                cuentaClienteRepository.save(cliente);
-                saldoAFavorRestante = saldoAFavorRestante.subtract(aplicarDesdeSaldo);
-                montoAplicadoTotal = montoAplicadoTotal.add(aplicarDesdeSaldo);
-            }
-
-            // Si queda por cubrir en esta factura, cubrir con el metodo de pago
-            BigDecimal restantePorFactura = montoDeseado.subtract(aplicarDesdeSaldo);
-            if (restantePorFactura.compareTo(BigDecimal.ZERO) > 0) {
-                Pago pagoMetodo = Pago.crearPago(restantePorFactura, metodoPago, referencia);
-                if (restantePorFactura.compareTo(factura.getSaldoPendiente()) >= 0) {
-                    factura.registrarPagoTotal(pagoMetodo);
-                } else {
-                    factura.registrarPagoParcial(pagoMetodo);
+                montoTotalAplicadoSaldoAFavor = montoTotalAplicadoSaldoAFavor.add(montoPago);
+            } else if (montoRestante.subtract(saldoAFavorAplicar).compareTo(BigDecimal.ZERO) >= 0 
+                       && montoTotalAplicadoSaldoAFavor.compareTo(saldoAFavorAplicar) < 0) {
+                // Esta factura se paga con ambos: saldo a favor y método de pago
+                BigDecimal porcionSaldoAFavor = saldoAFavorAplicar.subtract(montoTotalAplicadoSaldoAFavor);
+                BigDecimal porcionMetodoPago = montoPago.subtract(porcionSaldoAFavor);
+                
+                if (porcionSaldoAFavor.compareTo(BigDecimal.ZERO) > 0) {
+                    Pago pagoSaldo = Pago.crearPago(porcionSaldoAFavor, MetodoPago.SALDO_A_FAVOR, 
+                        "Aplicacion de saldo a favor del cliente");
+                    factura.registrarPagoParcial(pagoSaldo);
+                    pagoRepository.save(pagoSaldo);
+                    pagosGenerados.add(pagoSaldo);
+                    montoTotalAplicadoSaldoAFavor = montoTotalAplicadoSaldoAFavor.add(porcionSaldoAFavor);
                 }
-                pagoRepository.save(pagoMetodo);
-                pagosGenerados.add(pagoMetodo);
-                montoTotalAplicadoMetodoPago = montoTotalAplicadoMetodoPago.add(restantePorFactura);
-                montoAplicadoTotal = montoAplicadoTotal.add(restantePorFactura);
+                
+                if (porcionMetodoPago.compareTo(BigDecimal.ZERO) > 0) {
+                    Pago pagoMetodo = Pago.crearPago(porcionMetodoPago, metodoPago, referencia);
+                    if (factura.getSaldoPendiente().compareTo(BigDecimal.ZERO) == 0) {
+                        factura.registrarPagoTotal(pagoMetodo);
+                    } else {
+                        factura.registrarPagoParcial(pagoMetodo);
+                    }
+                    pagoRepository.save(pagoMetodo);
+                    pagosGenerados.add(pagoMetodo);
+                    montoTotalAplicadoMetodoPago = montoTotalAplicadoMetodoPago.add(porcionMetodoPago);
+                }
+            } else {
+                // Este pago es completamente con el método de pago tradicional
+                Pago pago = Pago.crearPago(montoPago, metodoPago, referencia);
+                
+                if (montoPago.compareTo(saldoFactura) >= 0) {
+                    factura.registrarPagoTotal(pago);
+                } else {
+                    factura.registrarPagoParcial(pago);
+                }
+                
+                pagoRepository.save(pago);
+                pagosGenerados.add(pago);
+                montoTotalAplicadoMetodoPago = montoTotalAplicadoMetodoPago.add(montoPago);
             }
-
+            
             facturaRepository.save(factura);
+            montoRestante = montoRestante.subtract(montoPago);
         }
-        // 7. Descontar del cliente exactamente lo que se aplicó desde su saldo a favor
-        if (montoTotalAplicadoSaldoAFavor.compareTo(BigDecimal.ZERO) > 0) {
-            cliente.aplicarSaldoAFavor(montoTotalAplicadoSaldoAFavor);
+        
+        // 7. Si sobra dinero, crear saldo a favor
+        if (montoRestante.compareTo(BigDecimal.ZERO) > 0) {
+            // Registrar el saldo a favor usando el método de dominio
+            cliente.registrarSaldoAFavor(montoRestante);
+            
+            // No se persiste MovimientoSaldo: se registra el saldo en la CuentaCliente y se genera un Recibo
             cuentaClienteRepository.save(cliente);
         }
-    }
-
-        // 8. Si sobra dinero (el total aportado por el usuario + saldo a favor excede
-        // lo requerido), registrar el sobrante como saldo a favor del cliente.
-        BigDecimal montoSobrante = montoTotalCombinado.subtract(montoAplicadoTotal);
-        if (montoSobrante.compareTo(BigDecimal.ZERO) > 0) {
-            cliente.registrarSaldoAFavor(montoSobrante);
-            cuentaClienteRepository.save(cliente);
-        }
-
-        // Generar un único recibo que agrupe todas las facturas pagadas
+        
+        // 8. Generar un único recibo que agrupe todas las facturas pagadas
         StringBuilder facturasInfo = new StringBuilder();
         facturasInfo.append(facturas.stream()
             .map(f -> String.format("Factura %d-%08d ($%s)", 
                 f.getSerie(), f.getNroFactura(), f.getTotal()))
             .collect(Collectors.joining(", ")));
-
-        if (montoTotalAplicadoSaldoAFavor.compareTo(BigDecimal.ZERO) > 0) {
-            facturasInfo.append(String.format(" - Saldo a favor aplicado: $%s", montoTotalAplicadoSaldoAFavor));
+        
+        if (saldoAFavorAplicar.compareTo(BigDecimal.ZERO) > 0) {
+            facturasInfo.append(String.format(" - Saldo a favor aplicado: $%s", saldoAFavorAplicar));
         }
-        if (montoSobrante.compareTo(BigDecimal.ZERO) > 0) {
-            facturasInfo.append(String.format(" - Nuevo saldo a favor: $%s", montoSobrante));
+        if (montoRestante.compareTo(BigDecimal.ZERO) > 0) {
+            facturasInfo.append(String.format(" - Nuevo saldo a favor: $%s", montoRestante));
         }
-
+        
         // Generar número de recibo
         int ultimoNumero = reciboRepository.findUltimoNumeroRecibo();
         String numero = String.format("%08d", ultimoNumero + 1);
-
-        // Crear el recibo usando el factory method del modelo rico. El monto del recibo
-        // será el monto efectivamente aplicado (montoAplicadoTotal).
+        
+        // Crear el recibo usando el factory method del modelo rico
         Recibo recibo = Recibo.crearRecibo(
             numero, 
-            montoAplicadoTotal, 
+            montoTotalCombinado, 
             metodoPago, 
             referencia, 
             facturasInfo.toString()

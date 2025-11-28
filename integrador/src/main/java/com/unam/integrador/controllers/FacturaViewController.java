@@ -201,4 +201,63 @@ public class FacturaViewController {
             return "redirect:/facturas/" + id;
         }
     }
+
+    /**
+     * Muestra el formulario para emitir una factura proporcional.
+     */
+    @GetMapping("/nueva-proporcional")
+    public String mostrarFormularioFacturaProporcional(Model model) {
+        model.addAttribute("clientes", clienteService.obtenerTodosLosClientes());
+        model.addAttribute("fechaEmision", LocalDate.now());
+        return "facturas/formulario-proporcional";
+    }
+
+    /**
+     * Procesa el formulario de emisión de factura proporcional.
+     * Calcula el monto proporcional basado en el rango de fechas especificado.
+     */
+    @PostMapping("/nueva-proporcional")
+    public String emitirFacturaProporcional(
+            @RequestParam Long clienteId,
+            @RequestParam LocalDate inicioPeriodo,
+            @RequestParam LocalDate finPeriodo,
+            @RequestParam LocalDate fechaEmision,
+            @RequestParam LocalDate fechaVencimiento,
+            @RequestParam(required = false) Double porcentajeDescuento,
+            @RequestParam(required = false) String motivoDescuento,
+            RedirectAttributes redirectAttributes,
+            Model model) {
+        
+        try {
+            Factura factura = facturaService.emitirFacturaProporcional(
+                clienteId,
+                inicioPeriodo,
+                finPeriodo,
+                fechaEmision,
+                fechaVencimiento,
+                porcentajeDescuento,
+                motivoDescuento
+            );
+            
+            redirectAttributes.addFlashAttribute("success", 
+                String.format("Factura proporcional %04d-%08d emitida exitosamente. Total: $%.2f", 
+                    factura.getSerie(), 
+                    factura.getNroFactura(), 
+                    factura.getTotal())
+            );
+            return "redirect:/facturas/" + factura.getIdFactura();
+            
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            model.addAttribute("error", e.getMessage());
+            model.addAttribute("clientes", clienteService.obtenerTodosLosClientes());
+            model.addAttribute("clienteId", clienteId);
+            model.addAttribute("inicioPeriodo", inicioPeriodo);
+            model.addAttribute("finPeriodo", finPeriodo);
+            model.addAttribute("fechaEmision", fechaEmision);
+            model.addAttribute("fechaVencimiento", fechaVencimiento);
+            model.addAttribute("porcentajeDescuento", porcentajeDescuento);
+            model.addAttribute("motivoDescuento", motivoDescuento);
+            return "facturas/formulario-proporcional";
+        }
+    }
 }

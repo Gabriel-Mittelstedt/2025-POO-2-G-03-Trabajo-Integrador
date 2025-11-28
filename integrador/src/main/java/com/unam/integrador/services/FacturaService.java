@@ -13,6 +13,7 @@ import com.unam.integrador.model.CuentaCliente;
 import com.unam.integrador.model.Factura;
 import com.unam.integrador.model.ItemFactura;
 import com.unam.integrador.model.NotaCredito;
+import com.unam.integrador.model.PeriodoFacturacion;
 import com.unam.integrador.model.Servicio;
 import com.unam.integrador.model.ServicioContratado;
 import com.unam.integrador.model.enums.EstadoFactura;
@@ -293,6 +294,95 @@ public class FacturaService {
     private int obtenerSiguienteNumeroNotaCredito(int serie) {
         int ultimoNumero = notaCreditoRepository.findUltimoNumeroNotaCredito(serie);
         return ultimoNumero + 1;
+    }
+
+    /**
+     * Emite una factura proporcional para un cliente en un rango de fechas específico.
+     * Calcula automáticamente el monto proporcional basado en los días efectivos del período.
+     * 
+     * @param clienteId ID del cliente
+     * @param inicioPeriodo Fecha de inicio del período a facturar
+     * @param finPeriodo Fecha de fin del período a facturar
+     * @param fechaEmision Fecha de emisión de la factura
+     * @param fechaVencimiento Fecha de vencimiento de la factura
+     * @param porcentajeDescuento Descuento opcional (puede ser null)
+     * @param motivoDescuento Motivo del descuento (requerido si hay descuento)
+     * @return Factura proporcional generada
+     */
+    @Transactional
+    public Factura emitirFacturaProporcional(
+            Long clienteId,
+            LocalDate inicioPeriodo,
+            LocalDate finPeriodo,
+            LocalDate fechaEmision,
+            LocalDate fechaVencimiento,
+            Double porcentajeDescuento,
+            String motivoDescuento) {
+        
+        // 1. Obtener cliente
+        CuentaCliente cliente = clienteRepository.findById(clienteId)
+            .orElseThrow(() -> new IllegalArgumentException("Cliente no encontrado con ID: " + clienteId));
+        
+        // 2. Obtener servicios contratados activos
+        List<ServicioContratado> serviciosContratados = cliente.getServiciosContratadosActivos();
+        if (serviciosContratados.isEmpty()) {
+            throw new IllegalArgumentException("El cliente no tiene servicios contratados activos");
+        }
+        
+        // 3. Crear período de facturación
+        PeriodoFacturacion periodo = new PeriodoFacturacion(inicioPeriodo, finPeriodo);
+        
+        // 4. Determinar tipo de factura
+        TipoFactura tipoFactura = Factura.determinarTipoFactura(
+            CONDICION_IVA_EMISOR,
+            cliente.getCondicionIva()
+        );
+        
+        // 5. Obtener serie y número
+        int serie = obtenerSerie(tipoFactura);
+        int numero = obtenerSiguienteNumeroFactura(serie);
+        
+        // 6. Crear factura
+        Factura factura = new Factura(
+            serie, 
+            numero, 
+            cliente,
+            fechaEmision, 
+            fechaVencimiento, 
+            periodo.generarDescripcionPeriodo(), // Usar descripción del período como periodo
+            tipoFactura
+        );
+        
+        // 7. Validar fechas y cliente activo
+        factura.validarFechas();
+        factura.validarClienteActivo();
+        
+        // 8. Agregar items PROPORCIONALES desde servicios contratados
+        for (ServicioContratado servicioContratado : serviciosContratados) {
+            Servicio servicio = servicioContratado.getServicio();
+            
+            // Crear item proporcional usando el método estático
+            ItemFactura item = ItemFactura.crearProporcional(
+                servicio.getNombre(),
+                servicioContratado.getPrecioContratado(),
+                1, // cantidad siempre 1 para servicios
+                servicio.getAlicuotaIVA(),
+                periodo
+            );
+            
+            factura.agregarItem(item);
+        }
+        
+        // 9. Aplicar descuento si existe
+        if (porcentajeDescuento != null && porcentajeDescuento > 0) {
+            if (motivoDescuento == null || motivoDescuento.isBlank()) {
+                throw new IllegalArgumentException("El motivo del descuento es obligatorio");
+            }
+            factura.aplicarDescuento(porcentajeDescuento, motivoDescuento);
+        }
+        
+        // 10. Persistir factura
+        return facturaRepository.save(factura);
     }
 
     /**

@@ -101,6 +101,40 @@ public class ItemFactura {
     }
 
     /**
+     * Constructor para items con facturación proporcional.
+     * Calcula automáticamente el precio proporcional basado en los días efectivos.
+     * 
+     * @param descripcionBase Descripción base del servicio
+     * @param precioMensual Precio mensual del servicio
+     * @param cantidad Cantidad del item (normalmente 1)
+     * @param alicuotaIVA Alícuota de IVA a aplicar
+     * @param periodo Período de facturación con días efectivos
+     */
+    public static ItemFactura crearProporcional(
+            String descripcionBase, 
+            BigDecimal precioMensual, 
+            int cantidad,
+            TipoAlicuotaIVA alicuotaIVA,
+            PeriodoFacturacion periodo) {
+        
+        // Calcular precio proporcional
+        BigDecimal proporcion = new BigDecimal(periodo.getDiasEfectivos())
+            .divide(new BigDecimal(periodo.getDiasDelMes()), 4, java.math.RoundingMode.HALF_UP);
+        
+        BigDecimal precioProporcional = precioMensual.multiply(proporcion)
+            .setScale(2, java.math.RoundingMode.HALF_UP);
+        
+        // Generar descripción con período parcial
+        String descripcionCompleta = String.format("%s (%s)",
+            descripcionBase,
+            periodo.generarDescripcionPeriodo()
+        );
+        
+        // Crear item con precio proporcional
+        return new ItemFactura(descripcionCompleta, precioProporcional, cantidad, alicuotaIVA);
+    }
+
+    /**
      * Obtiene el valor decimal de la alícuota de IVA.
      * @return Valor decimal de la alícuota (ej: 0.21 para IVA_21)
      */

@@ -130,49 +130,5 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Validación de fechas en el lado del cliente
-        document.addEventListener('DOMContentLoaded', function() {
-            const fechaEmision = document.getElementById('fechaEmision');
-            const fechaVencimiento = document.getElementById('fechaVencimiento');
-            const form = document.querySelector('form');
-
-            // Validar al enviar el formulario
-            form.addEventListener('submit', function(event) {
-                if (fechaEmision.value && fechaVencimiento.value) {
-                    const emision = new Date(fechaEmision.value);
-                    const vencimiento = new Date(fechaVencimiento.value);
-
-                    if (vencimiento <= emision) {
-                        event.preventDefault();
-                        alert('La fecha de vencimiento debe ser posterior a la fecha de emisión.');
-                        fechaVencimiento.focus();
-                        return false;
-                    }
-                }
-            });
-
-            // Validar cuando se cambian las fechas
-            fechaVencimiento.addEventListener('change', function() {
-                if (fechaEmision.value && fechaVencimiento.value) {
-                    const emision = new Date(fechaEmision.value);
-                    const vencimiento = new Date(fechaVencimiento.value);
-
-                    if (vencimiento <= emision) {
-                        fechaVencimiento.setCustomValidity('La fecha de vencimiento debe ser posterior a la fecha de emisión');
-                    } else {
-                        fechaVencimiento.setCustomValidity('');
-                    }
-                }
-            });
-
-            fechaEmision.addEventListener('change', function() {
-                // Revalidar la fecha de vencimiento cuando cambia la emisión
-                if (fechaVencimiento.value) {
-                    fechaVencimiento.dispatchEvent(new Event('change'));
-                }
-            });
-        });
-    </script>
 </body>
 </html>

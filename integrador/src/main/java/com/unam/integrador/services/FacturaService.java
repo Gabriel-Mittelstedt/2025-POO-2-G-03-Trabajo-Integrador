@@ -12,15 +12,12 @@ import org.springframework.transaction.annotation.Transactional;
 import com.unam.integrador.model.CuentaCliente;
 import com.unam.integrador.model.Factura;
 import com.unam.integrador.model.ItemFactura;
-import com.unam.integrador.model.NotaCredito;
 import com.unam.integrador.model.Servicio;
 import com.unam.integrador.model.ServicioContratado;
-import com.unam.integrador.model.enums.EstadoFactura;
 import com.unam.integrador.model.enums.TipoCondicionIVA;
 import com.unam.integrador.model.enums.TipoFactura;
 import com.unam.integrador.repositories.CuentaClienteRepositorie;
 import com.unam.integrador.repositories.FacturaRepository;
-import com.unam.integrador.repositories.NotaCreditoRepository;
 
 /**
  * Servicio de aplicación para la gestión de facturas.
@@ -36,9 +33,6 @@ public class FacturaService {
     
     @Autowired
     private CuentaClienteRepositorie clienteRepository;
-    
-    @Autowired
-    private NotaCreditoRepository notaCreditoRepository;
     
     // Configuración para el emisor (empresa)
     // TODO: En producción esto debería venir de configuración o base de datos
@@ -98,16 +92,10 @@ public class FacturaService {
             tipoFactura
         );
         
-        // 6. Validar fechas (delegar al dominio)
-        factura.validarFechas();
-        
-        // 7. Validar cliente activo (delegar al dominio)
+        // 6. Validar cliente activo (delegar al dominio)
         factura.validarClienteActivo();
         
-        // 7. Validar cliente activo (delegar al dominio)
-        factura.validarClienteActivo();
-        
-        // 8. Agregar items desde servicios contratados
+        // 7. Agregar items desde servicios contratados
         for (ServicioContratado servicioContratado : serviciosContratados) {
             Servicio servicio = servicioContratado.getServicio();
             
@@ -229,99 +217,5 @@ public class FacturaService {
     private int obtenerSiguienteNumeroFactura(int serie) {
         int ultimoNumero = facturaRepository.findUltimoNumeroFactura(serie);
         return ultimoNumero + 1;
-    }
-
-    /**
-     * Anula una factura individual generando una nota de crédito total.
-     * Solo se pueden anular facturas no pagadas o con saldo completo.
-     * 
-     * @param facturaId ID de la factura a anular
-     * @param motivo Motivo de la anulación
-     * @return Factura anulada con la nota de crédito asociada
-     * @throws IllegalArgumentException si la factura no existe
-     * @throws IllegalStateException si la factura no puede ser anulada
-     */
-    @Transactional
-    public Factura anularFactura(Long facturaId, String motivo) {
-        // Validar que el motivo no esté vacío
-        if (motivo == null || motivo.trim().isEmpty()) {
-            throw new IllegalArgumentException("Debe ingresar un motivo para la anulación");
-        }
-
-        // Buscar la factura
-        Factura factura = facturaRepository.findById(facturaId)
-            .orElseThrow(() -> new IllegalArgumentException("Factura no encontrada"));
-
-        // Validar que puede ser anulada (delega en el modelo)
-        if (!factura.puedeSerAnulada()) {
-            throw new IllegalStateException(
-                "No se puede anular la factura. Estado actual: " + factura.getEstado().getDescripcion() +
-                ". Solo se pueden anular facturas sin pagos o con saldo completo."
-            );
-        }
-
-        // Generar nota de crédito total
-        int serieNotaCredito = factura.getSerie(); // La nota de crédito usa la misma serie
-        int nroNotaCredito = obtenerSiguienteNumeroNotaCredito(serieNotaCredito);
-
-        NotaCredito notaCredito = new NotaCredito(
-            serieNotaCredito,
-            nroNotaCredito,
-            LocalDate.now(),
-            factura.getTotal(), // Monto total de la factura
-            motivo,
-            factura.getTipo(),
-            factura
-        );
-
-        // Agregar la nota de crédito a la factura
-        factura.agregarNotaCredito(notaCredito);
-
-        // Anular la factura (cambia el estado)
-        factura.anular();
-
-        // Persistir cambios
-        notaCreditoRepository.save(notaCredito);
-        facturaRepository.save(factura);
-
-        return factura;
-    }
-
-    /**
-     * Obtiene el siguiente número de nota de crédito para una serie.
-     */
-    private int obtenerSiguienteNumeroNotaCredito(int serie) {
-        int ultimoNumero = notaCreditoRepository.findUltimoNumeroNotaCredito(serie);
-        return ultimoNumero + 1;
-    }
-
-    /**
-     * Actualiza el estado de todas las facturas pendientes o parcialmente pagadas
-     * que hayan superado su fecha de vencimiento.
-     * Este método debe ser invocado periódicamente o antes de mostrar listados.
-     * 
-     * @return Número de facturas actualizadas a VENCIDA
-     */
-    @Transactional
-    public int actualizarFacturasVencidas() {
-        int actualizadas = 0;
-        
-        // Obtener facturas PENDIENTES o PAGADAS_PARCIALMENTE
-        List<Factura> facturasPendientes = facturaRepository.findByEstado(EstadoFactura.PENDIENTE);
-        List<Factura> facturasParciales = facturaRepository.findByEstado(EstadoFactura.PAGADA_PARCIALMENTE);
-        
-        // Unir ambas listas
-        List<Factura> facturasARevisar = new java.util.ArrayList<>(facturasPendientes);
-        facturasARevisar.addAll(facturasParciales);
-        
-        // Actualizar cada factura que esté vencida
-        for (Factura factura : facturasARevisar) {
-            if (factura.actualizarSiEstaVencida()) {
-                facturaRepository.save(factura);
-                actualizadas++;
-            }
-        }
-        
-        return actualizadas;
     }
 }

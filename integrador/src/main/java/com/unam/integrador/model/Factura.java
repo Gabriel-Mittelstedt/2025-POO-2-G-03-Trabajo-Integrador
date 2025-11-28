@@ -247,25 +247,6 @@ public class Factura {
     }
 
     /**
-     * Valida que las fechas de la factura sean coherentes.
-     * La fecha de vencimiento debe ser posterior a la fecha de emisión.
-     * 
-     * @throws IllegalArgumentException si las fechas son inválidas
-     */
-    public void validarFechas() {
-        if (this.fechaVencimiento == null || this.fechaEmision == null) {
-            throw new IllegalArgumentException("Las fechas de emisión y vencimiento son obligatorias");
-        }
-        
-        if (this.fechaVencimiento.isBefore(this.fechaEmision) || this.fechaVencimiento.isEqual(this.fechaEmision)) {
-            throw new IllegalArgumentException(
-                "La fecha de vencimiento debe ser posterior a la fecha de emisión. " +
-                "Emisión: " + this.fechaEmision + ", Vencimiento: " + this.fechaVencimiento
-            );
-        }
-    }
-
-    /**
      * Valida que el cliente tenga una cuenta activa.
      * Este método debe ser llamado antes de emitir una factura.
      * 
@@ -278,30 +259,6 @@ public class Factura {
                 + this.cliente.getEstado().getDescripcion()
             );
         }
-    }
-
-    /**
-     * Actualiza el estado de la factura a VENCIDA si cumple las condiciones:
-     * - La fecha actual es posterior a la fecha de vencimiento
-     * - El estado actual es PENDIENTE o PAGADA_PARCIALMENTE
-     * - Tiene saldo pendiente mayor a cero
-     * 
-     * @return true si se actualizó el estado, false si no fue necesario
-     */
-    public boolean actualizarSiEstaVencida() {
-        // Solo actualizar si está en estados que pueden vencer
-        if (this.estado != EstadoFactura.PENDIENTE && this.estado != EstadoFactura.PAGADA_PARCIALMENTE) {
-            return false;
-        }
-        
-        // Verificar si la fecha de vencimiento ya pasó
-        LocalDate hoy = LocalDate.now();
-        if (hoy.isAfter(this.fechaVencimiento) && this.saldoPendiente.compareTo(BigDecimal.ZERO) > 0) {
-            this.estado = EstadoFactura.VENCIDA;
-            return true;
-        }
-        
-        return false;
     }
 
     /**
@@ -362,63 +319,5 @@ public class Factura {
         } else {
             this.estado = EstadoFactura.PAGADA_PARCIALMENTE;
         }
-    }
-
-    /**
-     * Valida si la factura puede ser anulada.
-     * Solo se pueden anular facturas no pagadas o con saldo completo (sin pagos parciales).
-     * 
-     * @return true si la factura puede ser anulada
-     */
-    public boolean puedeSerAnulada() {
-        // No se puede anular una factura ya anulada
-        if (this.estado == EstadoFactura.ANULADA) {
-            return false;
-        }
-        
-        // No se puede anular si tiene pagos parciales
-        if (this.estado == EstadoFactura.PAGADA_PARCIALMENTE) {
-            return false;
-        }
-        
-        // No se puede anular si está completamente pagada
-        if (this.estado == EstadoFactura.PAGADA_TOTALMENTE) {
-            return false;
-        }
-        
-        // Se puede anular si está PENDIENTE o VENCIDA (sin pagos)
-        return this.estado == EstadoFactura.PENDIENTE || this.estado == EstadoFactura.VENCIDA;
-    }
-
-    /**
-     * Anula la factura cambiando su estado a ANULADA.
-     * Este método debe ser llamado después de validar con puedeSerAnulada()
-     * y de crear la nota de crédito correspondiente.
-     * 
-     * @throws IllegalStateException si la factura no puede ser anulada
-     */
-    public void anular() {
-        if (!puedeSerAnulada()) {
-            throw new IllegalStateException(
-                "No se puede anular la factura. Estado actual: " + this.estado.getDescripcion() +
-                ". Solo se pueden anular facturas sin pagos o con saldo completo."
-            );
-        }
-        
-        // Cambiar estado a ANULADA
-        this.estado = EstadoFactura.ANULADA;
-        
-        // El saldo pendiente se mantiene para registro histórico
-        // La nota de crédito se genera en el servicio
-    }
-
-    /**
-     * Agrega una nota de crédito a la factura.
-     * 
-     * @param notaCredito La nota de crédito a agregar
-     */
-    public void agregarNotaCredito(NotaCredito notaCredito) {
-        this.notasCredito.add(notaCredito);
-        notaCredito.setFactura(this);
     }
 }

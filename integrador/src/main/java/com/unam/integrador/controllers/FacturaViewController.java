@@ -40,9 +40,6 @@ public class FacturaViewController {
             @RequestParam(required = false) String periodo,
             Model model) {
 
-        // Actualizar facturas vencidas antes de mostrar el listado
-        facturaService.actualizarFacturasVencidas();
-
         // Proveer opciones para los selects en la vista
         model.addAttribute("estados", com.unam.integrador.model.enums.EstadoFactura.values());
         model.addAttribute("tipos", com.unam.integrador.model.enums.TipoFactura.values());
@@ -125,9 +122,6 @@ public class FacturaViewController {
      */
     @GetMapping("/{id}")
     public String verDetalle(@PathVariable Long id, Model model) {
-        // Actualizar facturas vencidas antes de mostrar el detalle
-        facturaService.actualizarFacturasVencidas();
-        
         Factura factura = facturaService.obtenerFacturaPorId(id);
         model.addAttribute("factura", factura);
         return "facturas/detalle";
@@ -151,54 +145,5 @@ public class FacturaViewController {
         model.addAttribute("facturas", facturaService.listarFacturasPorPeriodo(periodo));
         model.addAttribute("periodo", periodo);
         return "facturas/lista";
-    }
-
-    /**
-     * Muestra el formulario de confirmación para anular una factura.
-     */
-    @GetMapping("/{id}/confirmar-anulacion")
-    public String confirmarAnulacion(@PathVariable Long id, Model model, RedirectAttributes redirectAttributes) {
-        try {
-            Factura factura = facturaService.obtenerFacturaPorId(id);
-            
-            // Validar que la factura puede ser anulada
-            if (!factura.puedeSerAnulada()) {
-                redirectAttributes.addFlashAttribute("error", 
-                    "No se puede anular la factura. Estado actual: " + factura.getEstado().getDescripcion() +
-                    ". Solo se pueden anular facturas sin pagos o con saldo completo."
-                );
-                return "redirect:/facturas/" + id;
-            }
-            
-            model.addAttribute("factura", factura);
-            return "facturas/confirmar-anulacion";
-            
-        } catch (IllegalArgumentException e) {
-            redirectAttributes.addFlashAttribute("error", "Factura no encontrada");
-            return "redirect:/facturas";
-        }
-    }
-
-    /**
-     * Procesa la anulación de una factura.
-     */
-    @PostMapping("/{id}/anular")
-    public String anularFactura(
-            @PathVariable Long id, 
-            @RequestParam String motivo,
-            RedirectAttributes redirectAttributes) {
-        try {
-            Factura factura = facturaService.anularFactura(id, motivo);
-            
-            redirectAttributes.addFlashAttribute("success", 
-                String.format("Factura %04d-%08d anulada exitosamente. Se generó la nota de crédito correspondiente.",
-                    factura.getSerie(), factura.getNroFactura())
-            );
-            return "redirect:/facturas/" + id;
-            
-        } catch (IllegalArgumentException | IllegalStateException e) {
-            redirectAttributes.addFlashAttribute("error", e.getMessage());
-            return "redirect:/facturas/" + id;
-        }
     }
 }

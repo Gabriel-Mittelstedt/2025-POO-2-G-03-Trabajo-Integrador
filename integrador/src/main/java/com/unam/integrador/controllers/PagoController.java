@@ -96,14 +96,6 @@ public class PagoController {
                 .map(Factura::getSaldoPendiente)
                 .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
         model.addAttribute("totalAdeudado", totalAdeudado);
-        // Calcular el máximo de saldo a favor que puede aplicarse: no debe exceder
-        // ni el saldo disponible del cliente ni el total adeudado de las facturas
-        java.math.BigDecimal maxSaldoAplicable = java.math.BigDecimal.ZERO;
-        if (cliente != null && cliente.tieneSaldoAFavor()) {
-            java.math.BigDecimal saldoAFavor = cliente.getSaldoAFavor();
-            maxSaldoAplicable = saldoAFavor.min(totalAdeudado);
-        }
-        model.addAttribute("maxSaldoAplicable", maxSaldoAplicable);
         // Si se pasó facturaId, marcarla como preseleccionada en la vista
         model.addAttribute("preselectedFacturaId", facturaId);
         // Si se pasó facturaId, usar su saldoPendiente para prellenar el monto sugerido
@@ -189,7 +181,6 @@ public class PagoController {
     public String registrarPagoCombinado(
             @RequestParam(value = "facturasIds", required = false) List<Long> facturasIds,
             @RequestParam(value = "montoTotal", required = false) BigDecimal montoTotal,
-            @RequestParam(value = "saldoAFavorAplicar", required = false) BigDecimal saldoAFavorAplicar,
             @RequestParam("metodoPago") MetodoPago metodoPago,
             @RequestParam(value = "referencia", required = false) String referencia,
             @RequestParam(value = "clienteId", required = false) Long clienteId,
@@ -208,21 +199,26 @@ public class PagoController {
         }
 
         try {
-            // Si no se proporcionó saldoAFavorAplicar, usar 0
-            if (saldoAFavorAplicar == null) {
-                saldoAFavorAplicar = BigDecimal.ZERO;
-            }
-            
-            // Si no se proporcionó montoTotal, usar 0 (solo se aplicará saldo a favor)
+            // Si no se proporcionó montoTotal, calcularlo como la suma de saldos pendientes
             if (montoTotal == null) {
-                montoTotal = BigDecimal.ZERO;
+                java.math.BigDecimal suma = java.math.BigDecimal.ZERO;
+                for (Long id : facturasIds) {
+                    try {
+                        Factura f = facturaService.obtenerFacturaPorId(id);
+                        if (f != null && f.getSaldoPendiente() != null) {
+                            suma = suma.add(f.getSaldoPendiente());
+                        }
+                    } catch (Exception ex) {
+                        // ignorar facturas no encontradas en el cálculo
+                    }
+                }
+                montoTotal = suma;
             }
 
             // Llamar al servicio que orquesta las entidades de dominio
             Recibo recibo = pagoService.registrarPagoCombinado(
                 facturasIds,
                 montoTotal,
-                saldoAFavorAplicar,
                 metodoPago,
                 referencia
             );

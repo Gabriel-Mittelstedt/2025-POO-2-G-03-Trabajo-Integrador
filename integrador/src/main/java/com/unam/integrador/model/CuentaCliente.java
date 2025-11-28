@@ -127,8 +127,6 @@ public class CuentaCliente {
     @OneToMany(mappedBy = "cliente", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CambioEstadoCuenta> historialCambiosEstado = new ArrayList<>();
     
-    // Historial de movimientos eliminado: la trazabilidad se realiza con Pagos y Recibos
-    
     /**
      * Callback ejecutado antes de persistir la entidad en la base de datos.
      */
@@ -297,71 +295,5 @@ public class CuentaCliente {
      */
     public boolean puedeFacturar() {
         return this.estado == EstadoCuenta.ACTIVA;
-    }
-    
-    /**
-     * Obtiene el saldo a favor del cliente.
-     * Un saldo negativo indica que el cliente tiene crédito a favor.
-     * @return el saldo a favor (valor absoluto si es negativo, cero si no tiene)
-     */
-    public BigDecimal getSaldoAFavor() {
-        if (saldo == null) {
-            return BigDecimal.ZERO;
-        }
-        // Si el saldo es negativo, el cliente tiene crédito a favor
-        return saldo.compareTo(BigDecimal.ZERO) < 0 ? saldo.abs() : BigDecimal.ZERO;
-    }
-    
-    /**
-     * Verifica si el cliente tiene saldo a favor disponible.
-     * @return true si tiene saldo a favor, false en caso contrario
-     */
-    public boolean tieneSaldoAFavor() {
-        return saldo != null && saldo.compareTo(BigDecimal.ZERO) < 0;
-    }
-    
-    /**
-     * Aplica saldo a favor del cliente a un monto específico.
-     * Reduce el saldo a favor (lo acerca a cero) y retorna el monto aplicado.
-     * 
-     * @param montoSolicitado el monto que se desea aplicar
-     * @return el monto efectivamente aplicado (puede ser menor si no hay suficiente saldo)
-     * @throws IllegalArgumentException si el monto solicitado es inválido
-     */
-    public BigDecimal aplicarSaldoAFavor(BigDecimal montoSolicitado) {
-        if (montoSolicitado == null || montoSolicitado.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("El monto a aplicar debe ser mayor a cero");
-        }
-        
-        BigDecimal saldoDisponible = getSaldoAFavor();
-        if (saldoDisponible.compareTo(BigDecimal.ZERO) == 0) {
-            throw new IllegalStateException("El cliente no tiene saldo a favor disponible");
-        }
-        
-        // Determinar cuánto se puede aplicar
-        BigDecimal montoAplicado = montoSolicitado.min(saldoDisponible);
-        
-        // Actualizar el saldo (reducir el crédito a favor)
-        this.saldo = this.saldo.add(montoAplicado);
-        
-        return montoAplicado;
-    }
-    
-    /**
-     * Registra un saldo a favor generado por un pago excedente.
-     * 
-     * @param monto el monto del excedente
-     * @throws IllegalArgumentException si el monto es inválido
-     */
-    public void registrarSaldoAFavor(BigDecimal monto) {
-        if (monto == null || monto.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("El monto del saldo a favor debe ser mayor a cero");
-        }
-        
-        // Restar el monto del saldo (hacer más negativo = más crédito a favor)
-        if (this.saldo == null) {
-            this.saldo = BigDecimal.ZERO;
-        }
-        this.saldo = this.saldo.subtract(monto);
     }
 }

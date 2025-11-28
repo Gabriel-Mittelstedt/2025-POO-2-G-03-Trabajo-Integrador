@@ -6,7 +6,6 @@ package com.unam.integrador.model.enums;
 public enum MetodoPago {
     EFECTIVO,
     TRANSFERENCIA,
-    TARJETA,
-    SALDO_A_FAVOR
+    TARJETA
     
 }

@@ -88,32 +88,10 @@
                 </div>
                 <div class="row mt-3">
                     <div class="col-md-6">
-                        <!-- Saldo a Favor -->
-                        <div th:if="${cliente.tieneSaldoAFavor()}" class="mb-3 p-3 border border-success rounded bg-light">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <label class="form-label fw-bold mb-0"><i class="bi bi-cash-coin text-success"></i> Saldo a Favor Disponible</label>
-                                <span class="text-success fw-bold" th:text="${'$' + #numbers.formatDecimal(cliente.saldoAFavor, 1, 'POINT', 2, 'COMMA')}"></span>
-                            </div>
-                            <label class="form-label">Usar saldo a favor</label>
-                            <input type="number" id="saldoAFavorAplicar" name="saldoAFavorAplicar" 
-                                class="form-control" step="0.01" min="0" 
-                                th:attr="max=${maxSaldoAplicable}, data-saldo=${cliente.saldoAFavor}"
-                                inputmode="decimal" autocomplete="off"
-                                placeholder="Ingrese monto a usar del saldo a favor" />
-                            <small class="text-muted">El saldo a favor se aplicará antes del pago con otro método</small>
-                            <div class="mt-2">
-                                <small class="text-muted">Saldo disponible total: <strong th:text="${'$' + #numbers.formatDecimal(cliente.saldoAFavor,1,'POINT',2,'COMMA')}"></strong></small>
-                                <br />
-                                <small class="text-muted">Máximo aplicable aquí: <strong th:text="${'$' + #numbers.formatDecimal(maxSaldoAplicable,1,'POINT',2,'COMMA')}"></strong></small>
-                            </div>
-                        </div>
-                        
                         <div class="mb-2">
-                            <label class="form-label">Monto adicional a pagar</label>
-                            <input type="number" id="montoTotal" name="montoTotal" 
-                                class="form-control" step="0.01" min="0" inputmode="decimal" 
-                                placeholder="Ingrese monto adicional a pagar" autocomplete="off" />
-                            <small class="text-muted">Monto a pagar con el método de pago seleccionado</small>
+                            <label class="form-label">Monto a aplicar</label>
+                            <input type="number" name="montoTotal" th:value="${suggestedMonto != null ? suggestedMonto : totalAdeudado}"
+                                   class="form-control" step="0.01" min="0.01" inputmode="decimal" />
                         </div>
                         <div class="mb-2">
                             <label class="form-label">Método de pago</label>
@@ -126,33 +104,9 @@
                             <input type="text" name="referencia" class="form-control" />
                         </div>
                     </div>
-                    <div class="col-md-6">
-                        <div class="card bg-light">
-                            <div class="card-body">
-                                <h6 class="card-title">Resumen del Pago</h6>
-                                <div class="d-flex justify-content-between">
-                                    <span>Saldo a favor a usar:</span>
-                                    <span id="resumenSaldoAFavor" class="fw-bold text-success">$0.00</span>
-                                </div>
-                                <div class="d-flex justify-content-between">
-                                    <span>Saldo a favor restante:</span>
-                                    <span id="resumenSaldoRestante" class="fw-bold text-muted">$0.00</span>
-                                </div>
-                                <div class="d-flex justify-content-between">
-                                    <span>Monto adicional:</span>
-                                    <span id="resumenMontoAdicional" class="fw-bold">$0.00</span>
-                                </div>
-                                <hr>
-                                <div class="d-flex justify-content-between">
-                                    <span class="fw-bold">Total a aplicar:</span>
-                                    <span id="resumenTotal" class="fw-bold text-primary fs-5">$0.00</span>
-                                </div>
-                                <div class="mt-3 d-flex justify-content-end">
-                                    <a th:href="@{/clientes/{id}(id=${cliente.id})}" class="btn btn-secondary me-2">Cancelar</a>
-                                    <button type="submit" class="btn btn-primary">Registrar Pago</button>
-                                </div>
-                            </div>
-                        </div>
+                    <div class="col-md-6 d-flex align-items-end justify-content-end">
+                        <a th:href="@{/clientes/{id}(id=${cliente.id})}" class="btn btn-secondary me-2">Cancelar</a>
+                        <button type="submit" class="btn btn-primary">Registrar Pago</button>
                     </div>
                 </div>
             </form>
@@ -161,52 +115,5 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-    // Actualizar resumen del pago y validar input de saldo a favor
-    function formatoMoneda(valor) {
-        return '$' + Number(valor || 0).toFixed(2).replace('.', ',');
-    }
-
-    function actualizarResumen() {
-        const saldoInput = document.getElementById('saldoAFavorAplicar');
-        const montoInput = document.getElementById('montoTotal');
-
-        let saldoAFavor = parseFloat(saldoInput?.value || 0);
-        const montoAdicional = parseFloat(montoInput?.value || 0);
-
-        const max = parseFloat(saldoInput?.getAttribute('max') || 0);
-        const disponible = parseFloat(saldoInput?.dataset?.saldo || 0);
-
-        // Clamp a max permitido
-        if (!isNaN(max) && saldoAFavor > max) {
-            saldoAFavor = max;
-            saldoInput.value = max.toFixed(2);
-        }
-
-        const total = saldoAFavor + montoAdicional;
-        const restante = Math.max(0, disponible - saldoAFavor);
-
-        document.getElementById('resumenSaldoAFavor').textContent = formatoMoneda(saldoAFavor);
-        document.getElementById('resumenSaldoRestante').textContent = formatoMoneda(restante);
-        document.getElementById('resumenMontoAdicional').textContent = formatoMoneda(montoAdicional);
-        document.getElementById('resumenTotal').textContent = formatoMoneda(total);
-    }
-
-    // Agregar listeners
-    document.addEventListener('DOMContentLoaded', function() {
-        const saldoInput = document.getElementById('saldoAFavorAplicar');
-        const montoInput = document.getElementById('montoTotal');
-
-        if (saldoInput) {
-            saldoInput.addEventListener('input', actualizarResumen);
-        }
-        if (montoInput) {
-            montoInput.addEventListener('input', actualizarResumen);
-        }
-
-        // Inicializar resumen
-        actualizarResumen();
-    });
-</script>
 </body>
 </html>

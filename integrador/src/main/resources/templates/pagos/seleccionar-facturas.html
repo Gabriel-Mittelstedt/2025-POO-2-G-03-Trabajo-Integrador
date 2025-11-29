@@ -67,6 +67,7 @@
                             <tr th:each="factura : ${facturas}">
                                 <td>
                                     <input type="checkbox" name="facturasIds" th:value="${factura.idFactura}" class="form-check-input"
+                                           th:attr="data-saldo-pendiente=${factura.saldoPendiente}"
                                            th:checked="${preselectedFacturaId != null and factura.idFactura == preselectedFacturaId}" />
                                 </td>
                                 <td th:text="${factura.serie + '-' + #numbers.formatInteger(factura.nroFactura, 8)}"></td>
@@ -104,15 +105,15 @@
                             <div class="mt-2">
                                 <small class="text-muted">Saldo disponible total: <strong th:text="${'$' + #numbers.formatDecimal(cliente.saldoAFavor,1,'POINT',2,'COMMA')}"></strong></small>
                                 <br />
-                                <small class="text-muted">Máximo aplicable aquí: <strong th:text="${'$' + #numbers.formatDecimal(maxSaldoAplicable,1,'POINT',2,'COMMA')}"></strong></small>
+                                <small class="text-muted">Máximo aplicable aquí: <strong id="maxAplicableMostrar" th:text="${'$' + #numbers.formatDecimal(maxSaldoAplicable,1,'POINT',2,'COMMA')}"></strong></small>
                             </div>
                         </div>
                         
                         <div class="mb-2">
-                            <label class="form-label">Monto adicional a pagar</label>
+                            <label class="form-label">Monto a pagar</label>
                             <input type="number" id="montoTotal" name="montoTotal" 
                                 class="form-control" step="0.01" min="0" inputmode="decimal" 
-                                placeholder="Ingrese monto adicional a pagar" autocomplete="off" />
+                                placeholder="Ingrese monto a pagar" autocomplete="off" />
                             <small class="text-muted">Monto a pagar con el método de pago seleccionado</small>
                         </div>
                         <div class="mb-2">
@@ -135,12 +136,12 @@
                                     <span id="resumenSaldoAFavor" class="fw-bold text-success">$0.00</span>
                                 </div>
                                 <div class="d-flex justify-content-between">
-                                    <span>Saldo a favor restante:</span>
-                                    <span id="resumenSaldoRestante" class="fw-bold text-muted">$0.00</span>
-                                </div>
-                                <div class="d-flex justify-content-between">
                                     <span>Monto adicional:</span>
                                     <span id="resumenMontoAdicional" class="fw-bold">$0.00</span>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <span>Saldo pendiente:</span>
+                                    <span id="resumenSaldoPendiente" class="fw-bold text-danger">$0.00</span>
                                 </div>
                                 <hr>
                                 <div class="d-flex justify-content-between">
@@ -170,7 +171,6 @@
     function actualizarResumen() {
         const saldoInput = document.getElementById('saldoAFavorAplicar');
         const montoInput = document.getElementById('montoTotal');
-
         let saldoAFavor = parseFloat(saldoInput?.value || 0);
         const montoAdicional = parseFloat(montoInput?.value || 0);
 
@@ -183,11 +183,38 @@
             saldoInput.value = max.toFixed(2);
         }
 
-        const total = saldoAFavor + montoAdicional;
-        const restante = Math.max(0, disponible - saldoAFavor);
+        // Sumar saldos pendientes de facturas seleccionadas
+        let pendienteTotal = 0;
+        document.querySelectorAll('input[name="facturasIds"]:checked').forEach(function(chk) {
+            const v = parseFloat(chk.dataset?.saldoPendiente || 0);
+            if (!isNaN(v)) pendienteTotal += v;
+        });
+
+        // Recalcular máximo aplicable: mínimo entre disponible y suma de saldos pendientes seleccionados
+        const nuevoMax = Math.max(0, Math.min(disponible || 0, pendienteTotal || 0));
+        if (saldoInput) {
+            saldoInput.setAttribute('max', nuevoMax.toFixed(2));
+        }
+        const maxMostrarEl = document.getElementById('maxAplicableMostrar');
+        if (maxMostrarEl) {
+            maxMostrarEl.textContent = formatoMoneda(nuevoMax);
+        }
+
+        // Si el valor actual excede el nuevo max, ajustarlo
+        if (!isNaN(saldoAFavor) && saldoAFavor > nuevoMax) {
+            saldoAFavor = nuevoMax;
+            if (saldoInput) saldoInput.value = nuevoMax.toFixed(2);
+        }
+
+        // Calcular cuánto del saldo pendiente queda luego de aplicar saldo a favor y monto adicional
+        const aplicado = (isNaN(saldoAFavor) ? 0 : saldoAFavor) + (isNaN(montoAdicional) ? 0 : montoAdicional);
+        const pendienteRestante = Math.max(0, pendienteTotal - aplicado);
+
+        const total = (isNaN(saldoAFavor) ? 0 : saldoAFavor) + (isNaN(montoAdicional) ? 0 : montoAdicional);
+        const restante = Math.max(0, (disponible || 0) - (isNaN(saldoAFavor) ? 0 : saldoAFavor));
 
         document.getElementById('resumenSaldoAFavor').textContent = formatoMoneda(saldoAFavor);
-        document.getElementById('resumenSaldoRestante').textContent = formatoMoneda(restante);
+        document.getElementById('resumenSaldoPendiente').textContent = formatoMoneda(pendienteRestante);
         document.getElementById('resumenMontoAdicional').textContent = formatoMoneda(montoAdicional);
         document.getElementById('resumenTotal').textContent = formatoMoneda(total);
     }
@@ -196,6 +223,11 @@
     document.addEventListener('DOMContentLoaded', function() {
         const saldoInput = document.getElementById('saldoAFavorAplicar');
         const montoInput = document.getElementById('montoTotal');
+
+        // Listeners para checkboxes de facturas
+        document.querySelectorAll('input[name="facturasIds"]').forEach(function(chk) {
+            chk.addEventListener('change', actualizarResumen);
+        });
 
         if (saldoInput) {
             saldoInput.addEventListener('input', actualizarResumen);

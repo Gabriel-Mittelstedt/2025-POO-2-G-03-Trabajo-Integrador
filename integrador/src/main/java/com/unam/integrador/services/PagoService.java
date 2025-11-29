@@ -378,22 +378,33 @@ public class PagoService {
         // Generar número de recibo
         int ultimoNumero = reciboRepository.findUltimoNumeroRecibo();
         String numero = String.format("%08d", ultimoNumero + 1);
-        
+
         // Crear el recibo usando el factory method del modelo rico
         Recibo recibo = Recibo.crearRecibo(
-            numero, 
-            montoTotalCombinado, 
-            metodoPago, 
-            referencia, 
+            numero,
+            montoTotalCombinado,
+            metodoPago,
+            referencia,
             facturasInfo.toString()
         );
-        
-        // Asociar el recibo al primer pago (por convención)
+
+        // Asociar el recibo al primer pago (por convención) para cumplir la
+        // restricción de la entidad Recibo (pago no nulo). Además, guardamos
+        // el número de recibo en cada pago generado para que el historial muestre
+        // claramente que varios pagos pertenecen al mismo recibo.
         if (!pagosGenerados.isEmpty()) {
             recibo.asociarPago(pagosGenerados.get(0));
         }
-        
-        return reciboRepository.save(recibo);
+
+        Recibo reciboGuardado = reciboRepository.save(recibo);
+
+        // Guardar el número de recibo en todos los pagos generados
+        for (Pago p : pagosGenerados) {
+            p.setNumeroRecibo(reciboGuardado.getNumero());
+            pagoRepository.save(p);
+        }
+
+        return reciboGuardado;
     }
     
     /**
@@ -510,8 +521,15 @@ public class PagoService {
         if (!pagosGenerados.isEmpty()) {
             recibo.asociarPago(pagosGenerados.get(0));
         }
-        
+
         Recibo reciboGuardado = reciboRepository.save(recibo);
+
+        // Guardar el número de recibo en todos los pagos generados para trazabilidad
+        for (Pago p : pagosGenerados) {
+            p.setNumeroRecibo(reciboGuardado.getNumero());
+            pagoRepository.save(p);
+        }
+
         // No hay MovimientoSaldo; retornamos el recibo generado
         return reciboGuardado;
     }

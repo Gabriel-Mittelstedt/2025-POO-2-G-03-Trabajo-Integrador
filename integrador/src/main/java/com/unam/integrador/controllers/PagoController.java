@@ -41,6 +41,9 @@ public class PagoController {
     @Autowired
     private CuentaClienteService cuentaClienteService;
     
+    @Autowired
+    private com.unam.integrador.repositories.ReciboRepository reciboRepository;
+    
     /**
      * Muestra la lista de todos los pagos.
      */
@@ -72,8 +75,49 @@ public class PagoController {
         model.addAttribute("desde", desdeStr);
         model.addAttribute("hasta", hastaStr);
 
-        model.addAttribute("pagos", pagoService.listarFiltrados(clienteNombre, desde, hasta));
+        // Variables finales para usar dentro de lambdas (evita error "must be final or effectively final")
+        final java.time.LocalDate desdeF = desde;
+        final java.time.LocalDate hastaF = hasta;
+
+        // Listar recibos (uno por fila) y aplicar filtros equivalentes
+        java.util.List<com.unam.integrador.model.Recibo> all = reciboRepository.findAll();
+
+        java.util.List<com.unam.integrador.model.Recibo> filtered = all.stream()
+            .filter(r -> {
+                if (clienteNombre != null && !clienteNombre.isBlank()) {
+                    if (r.getPago() == null || r.getPago().getFactura() == null || r.getPago().getFactura().getCliente() == null) return false;
+                    String nombre = r.getPago().getFactura().getCliente().getNombre();
+                    if (nombre == null) return false;
+                    if (!nombre.toLowerCase().contains(clienteNombre.toLowerCase())) return false;
+                }
+                return true;
+            })
+            .filter(r -> {
+                if (desdeF != null) {
+                    if (r.getFecha() == null) return false;
+                    if (r.getFecha().isBefore(desdeF)) return false;
+                }
+                return true;
+            })
+            .filter(r -> {
+                if (hastaF != null) {
+                    if (r.getFecha() == null) return false;
+                    if (r.getFecha().isAfter(hastaF)) return false;
+                }
+                return true;
+            })
+            .collect(java.util.stream.Collectors.toList());
+
+        model.addAttribute("recibos", filtered);
         return "pagos/lista";
+    }
+
+    @GetMapping("/recibo/{id}")
+    public String verReciboDetalle(@PathVariable Long id, Model model) {
+        com.unam.integrador.model.Recibo recibo = reciboRepository.findById(id)
+            .orElseThrow(() -> new IllegalArgumentException("Recibo no encontrado con ID: " + id));
+        model.addAttribute("recibo", recibo);
+        return "pagos/recibo-detalle";
     }
 
     /**

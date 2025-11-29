@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalle de Recibo</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+    <style>
+        .page-title-card {
+            border-radius: 8px;
+            padding: 28px 20px;
+            background: #fff;
+            box-shadow: 0 6px 18px rgba(16,24,40,0.06);
+            margin-bottom: 18px;
+        }
+        .header-accent { background: #1e7e34; color: white; border-top-left-radius: 6px; border-top-right-radius:6px }
+        .info-label { color: #6c757d; font-size: 0.95rem }
+        .info-value { font-weight:600 }
+        .recibo-card { border-radius: 10px; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">
+                <i class="bi bi-building"></i> ERP Facturación
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="/clientes"><i class="bi bi-people"></i> Clientes</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/servicios"><i class="bi bi-grid"></i> Servicios</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/facturas"><i class="bi bi-file-text"></i> Facturas</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/facturacion-masiva"><i class="bi bi-files"></i> Facturación Masiva</a></li>
+                    <li class="nav-item"><a class="nav-link active" aria-current="page" href="/pagos"><i class="bi bi-cash-coin"></i> Pagos</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="page-title-card">
+            <h1 class="h3 mb-1"><i class="bi bi-receipt text-success"></i> Detalle de Pago</h1>
+            <p class="text-muted mb-0">Información completa del recibo y facturas asociadas</p>
+        </div>
+
+        <div class="card recibo-card">
+            <div class="card-header header-accent">
+                <h5 class="mb-0"><i class="bi bi-receipt"></i> Recibo N° <span th:text="${recibo.numero}"></span></h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="info-label mb-1">Fecha</p>
+                        <p class="info-value" th:text="${#temporals.format(recibo.fecha, 'dd/MM/yyyy')}"></p>
+
+                        <p class="info-label mb-1 mt-3">Método de Pago</p>
+                        <p class="info-value" th:text="${recibo.metodoPago}"></p>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="info-label mb-1">Monto</p>
+                        <p class="info-value text-success fs-5" th:text="${'$' + #numbers.formatDecimal(recibo.monto,1,'POINT',2,'COMMA')}"></p>
+
+                        <p class="info-label mb-1 mt-3">Referencia</p>
+                        <p class="info-value" th:text="${recibo.referencia != null and !#strings.isEmpty(recibo.referencia)} ? ${recibo.referencia} : 'Sin referencia'"></p>
+                    </div>
+                </div>
+
+                <hr />
+
+                <h6 class="mb-3"><i class="bi bi-file-earmark-text-fill me-2"></i> Facturas Asociadas</h6>
+
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card border-0 bg-light mb-3">
+                            <div class="card-body">
+                                <p class="mb-0 text-muted" th:text="${recibo.facturasAsociadas}"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between mt-4">
+                    <a href="/pagos" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> Volver al Listado
+                    </a>
+                    <a th:href="@{/facturas}" class="btn btn-primary">
+                        <i class="bi bi-file-text"></i> Ver Facturas
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

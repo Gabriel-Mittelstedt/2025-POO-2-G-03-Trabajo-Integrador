@@ -141,7 +141,7 @@
                                 <td><strong th:text="${'Serie: ' + factura.serie + ' - Nº ' + factura.nroFactura}"></strong></td>
                                 <td><span class="badge bg-secondary" th:text="${'Tipo ' + factura.tipo.name()}"></span></td>
                                 <td th:text="${factura.cliente.nombre}"></td>
-                                <td><span class="badge bg-info" th:text="${factura.periodo}"></span></td>
+                                <td><span class="badge bg-info" th:text="${factura.periodoFormateado}"></span></td>
                                 <td th:text="${#temporals.format(factura.fechaEmision, 'dd/MM/yyyy')}"></td>
                                 <td th:text="${#temporals.format(factura.fechaVencimiento, 'dd/MM/yyyy')}"></td>
                                 <td><strong th:text="${'$' + #numbers.formatDecimal(factura.total, 1, 'POINT', 2, 'COMMA')}"></strong></td>

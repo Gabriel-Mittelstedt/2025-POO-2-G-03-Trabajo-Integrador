@@ -51,7 +51,7 @@
                         <p><strong>CUIT/DNI:</strong> <span th:text="${factura.cliente.cuitDni}"></span></p>
                     </div>
                     <div class="col-md-6">
-                        <p><strong>Período:</strong> <span th:text="${factura.periodo}"></span></p>
+                        <p><strong>Período:</strong> <span th:text="${factura.periodoFormateado}"></span></p>
                         <p><strong>Fecha Emisión:</strong> <span th:text="${#temporals.format(factura.fechaEmision, 'dd/MM/yyyy')}"></span></p>
                         <p><strong>Estado Actual:</strong> 
                             <span class="badge bg-warning" th:text="${factura.estado.descripcion}"></span>

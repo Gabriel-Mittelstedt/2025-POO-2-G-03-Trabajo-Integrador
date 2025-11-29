@@ -70,7 +70,7 @@
                                            th:checked="${preselectedFacturaId != null and factura.idFactura == preselectedFacturaId}" />
                                 </td>
                                 <td th:text="${factura.serie + '-' + #numbers.formatInteger(factura.nroFactura, 8)}"></td>
-                                <td th:text="${factura.periodo}"></td>
+                                <td th:text="${factura.periodoFormateado}"></td>
                                 <td th:text="${#temporals.format(factura.fechaEmision, 'dd/MM/yyyy')}"></td>
                                 <td th:text="${#temporals.format(factura.fechaVencimiento, 'dd/MM/yyyy')}"></td>
                                 <td class="text-end" th:text="${'$' + #numbers.formatDecimal(factura.total, 1, 'POINT', 2, 'COMMA')}"></td>

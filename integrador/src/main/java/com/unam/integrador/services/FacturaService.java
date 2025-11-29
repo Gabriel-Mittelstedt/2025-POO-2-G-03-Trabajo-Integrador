@@ -52,7 +52,7 @@ public class FacturaService {
      * Emite una factura individual usando los servicios contratados activos del cliente.
      * Los items se generan automáticamente desde los servicios asignados.
      * @param clienteId ID del cliente
-     * @param periodo Período de facturación (formato YYYYMM)
+     * @param periodo Período de facturación como LocalDate (se usará el primer día del mes)
      * @param fechaEmision Fecha de emisión
      * @param fechaVencimiento Fecha de vencimiento
      * @param porcentajeDescuento Descuento opcional (puede ser null)
@@ -62,7 +62,7 @@ public class FacturaService {
     @Transactional
     public Factura emitirFacturaDesdeServiciosContratados(
             Long clienteId, 
-            String periodo, 
+            LocalDate periodo, 
             LocalDate fechaEmision,
             LocalDate fechaVencimiento,
             Double porcentajeDescuento,
@@ -78,17 +78,26 @@ public class FacturaService {
             throw new IllegalArgumentException("El cliente no tiene servicios contratados activos");
         }
         
-        // 3. Determinar tipo de factura (delegar al dominio)
+        // 3. Validar que no exista otra factura no anulada para el mismo período
+        LocalDate periodoNormalizado = periodo.withDayOfMonth(1);
+        if (facturaRepository.existsByClienteIdAndPeriodoAndEstadoNot(clienteId, periodoNormalizado, EstadoFactura.ANULADA)) {
+            throw new IllegalStateException(
+                "Ya existe una factura emitida para este cliente en el período seleccionado. " +
+                "Solo se puede emitir una nueva factura si la anterior fue anulada."
+            );
+        }
+        
+        // 4. Determinar tipo de factura (delegar al dominio)
         TipoFactura tipoFactura = Factura.determinarTipoFactura(
             CONDICION_IVA_EMISOR,
             cliente.getCondicionIva()
         );
         
-        // 4. Obtener serie y número
+        // 5. Obtener serie y número
         int serie = obtenerSerie(tipoFactura);
         int numero = obtenerSiguienteNumeroFactura(serie);
         
-        // 5. Crear factura
+        // 6. Crear factura
         Factura factura = new Factura(
             serie, 
             numero, 
@@ -99,16 +108,13 @@ public class FacturaService {
             tipoFactura
         );
         
-        // 6. Validar fechas (delegar al dominio)
+        // 7. Validar fechas (delegar al dominio)
         factura.validarFechas();
         
-        // 7. Validar cliente activo (delegar al dominio)
+        // 8. Validar cliente activo (delegar al dominio)
         factura.validarClienteActivo();
         
-        // 7. Validar cliente activo (delegar al dominio)
-        factura.validarClienteActivo();
-        
-        // 8. Agregar items desde servicios contratados
+        // 9. Agregar items desde servicios contratados
         for (ServicioContratado servicioContratado : serviciosContratados) {
             Servicio servicio = servicioContratado.getServicio();
             
@@ -122,7 +128,7 @@ public class FacturaService {
             factura.agregarItem(item);
         }
         
-        // 8. Aplicar descuento si existe
+        // 10. Aplicar descuento si existee
         if (porcentajeDescuento != null && porcentajeDescuento > 0) {
             if (motivoDescuento == null || motivoDescuento.isBlank()) {
                 throw new IllegalArgumentException("El motivo del descuento es obligatorio");
@@ -130,7 +136,7 @@ public class FacturaService {
             factura.aplicarDescuento(porcentajeDescuento, motivoDescuento);
         }
         
-        // 9. Persistir factura
+        // 11. Persistir factura
         return facturaRepository.save(factura);
     }
 
@@ -167,11 +173,11 @@ public class FacturaService {
     
     /**
      * Lista facturas por período.
-     * @param periodo Período de facturación
+     * @param periodo Período de facturación como LocalDate
      * @return Lista de facturas
      */
     @Transactional(readOnly = true)
-    public Iterable<Factura> listarFacturasPorPeriodo(String periodo) {
+    public Iterable<Factura> listarFacturasPorPeriodo(LocalDate periodo) {
         return facturaRepository.findByPeriodo(periodo);
     }
 
@@ -206,7 +212,8 @@ public class FacturaService {
                 })
                 .filter(f -> {
                     if (periodo == null || periodo.isBlank()) return true;
-                    return f.getPeriodo() != null && f.getPeriodo().toLowerCase().contains(periodo.toLowerCase());
+                    String periodoFormateado = f.getPeriodoFormateado();
+                    return periodoFormateado != null && periodoFormateado.toLowerCase().contains(periodo.toLowerCase());
                 })
                 .collect(Collectors.toList());
     }
@@ -329,35 +336,44 @@ public class FacturaService {
             throw new IllegalArgumentException("El cliente no tiene servicios contratados activos");
         }
         
-        // 3. Crear período de facturación
+        // 3. Validar que no exista otra factura no anulada para el mismo período
+        LocalDate periodoNormalizado = inicioPeriodo.withDayOfMonth(1);
+        if (facturaRepository.existsByClienteIdAndPeriodoAndEstadoNot(clienteId, periodoNormalizado, EstadoFactura.ANULADA)) {
+            throw new IllegalStateException(
+                "Ya existe una factura emitida para este cliente en el período seleccionado. " +
+                "Solo se puede emitir una nueva factura si la anterior fue anulada."
+            );
+        }
+        
+        // 4. Crear período de facturación
         PeriodoFacturacion periodo = new PeriodoFacturacion(inicioPeriodo, finPeriodo);
         
-        // 4. Determinar tipo de factura
+        // 5. Determinar tipo de factura
         TipoFactura tipoFactura = Factura.determinarTipoFactura(
             CONDICION_IVA_EMISOR,
             cliente.getCondicionIva()
         );
         
-        // 5. Obtener serie y número
+        // 6. Obtener serie y número
         int serie = obtenerSerie(tipoFactura);
         int numero = obtenerSiguienteNumeroFactura(serie);
         
-        // 6. Crear factura
+        // 7. Crear factura - usar el inicio del período como LocalDate para el campo periodo
         Factura factura = new Factura(
             serie, 
             numero, 
             cliente,
             fechaEmision, 
             fechaVencimiento, 
-            periodo.generarDescripcionPeriodo(), // Usar descripción del período como periodo
+            inicioPeriodo, // Usar la fecha de inicio como periodo
             tipoFactura
         );
         
-        // 7. Validar fechas y cliente activo
+        // 8. Validar fechas y cliente activo
         factura.validarFechas();
         factura.validarClienteActivo();
         
-        // 8. Agregar items PROPORCIONALES desde servicios contratados
+        // 9. Agregar items PROPORCIONALES desde servicios contratados
         for (ServicioContratado servicioContratado : serviciosContratados) {
             Servicio servicio = servicioContratado.getServicio();
             
@@ -373,7 +389,7 @@ public class FacturaService {
             factura.agregarItem(item);
         }
         
-        // 9. Aplicar descuento si existe
+        // 10. Aplicar descuento si existe
         if (porcentajeDescuento != null && porcentajeDescuento > 0) {
             if (motivoDescuento == null || motivoDescuento.isBlank()) {
                 throw new IllegalArgumentException("El motivo del descuento es obligatorio");
@@ -381,7 +397,7 @@ public class FacturaService {
             factura.aplicarDescuento(porcentajeDescuento, motivoDescuento);
         }
         
-        // 10. Persistir factura
+        // 11. Persistir factura
         return facturaRepository.save(factura);
     }
 

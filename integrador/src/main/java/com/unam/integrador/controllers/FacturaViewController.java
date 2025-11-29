@@ -1,6 +1,11 @@
 package com.unam.integrador.controllers;
 
 import java.time.LocalDate;
+import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -63,7 +68,44 @@ public class FacturaViewController {
         // Cargar lista de clientes activos para el select
         model.addAttribute("clientes", clienteService.obtenerTodosLosClientes());
         model.addAttribute("fechaEmision", LocalDate.now());
+        model.addAttribute("periodos", generarOpcionesPeriodos());
         return "facturas/formulario-individual";
+    }
+    
+    /**
+     * Genera la lista de períodos disponibles para facturación.
+     * Incluye 2 meses hacia atrás, el mes actual y 12 meses hacia adelante.
+     * 
+     * @return Lista de strings con los períodos en formato "Mes Año"
+     */
+    private List<String> generarOpcionesPeriodos() {
+        List<String> periodos = new ArrayList<>();
+        YearMonth mesActual = YearMonth.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.of("es", "ES"));
+        
+        // 2 meses hacia atrás + mes actual + 12 meses hacia adelante = 15 períodos
+        for (int i = -2; i <= 12; i++) {
+            YearMonth mes = mesActual.plusMonths(i);
+            // Capitalizar primera letra del mes
+            String periodo = mes.format(formatter);
+            periodo = periodo.substring(0, 1).toUpperCase() + periodo.substring(1);
+            periodos.add(periodo);
+        }
+        
+        return periodos;
+    }
+
+    /**
+     * Convierte un string de período en formato "Mes Año" a LocalDate.
+     * El día siempre será 1.
+     * 
+     * @param periodoStr String del período (ej: "Noviembre 2025")
+     * @return LocalDate con el primer día del mes indicado
+     */
+    private LocalDate convertirPeriodoALocalDate(String periodoStr) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.of("es", "ES"));
+        YearMonth yearMonth = YearMonth.parse(periodoStr.toLowerCase(), formatter);
+        return yearMonth.atDay(1);
     }
     
     /**
@@ -71,7 +113,7 @@ public class FacturaViewController {
      * Los items se generan automáticamente desde los servicios contratados del cliente.
      * 
      * @param clienteId ID del cliente
-     * @param periodo Período de facturación (formato YYYYMM)
+     * @param periodoStr Período de facturación (formato "Mes Año")
      * @param fechaEmision Fecha de emisión
      * @param fechaVencimiento Fecha de vencimiento
      * @param porcentajeDescuento Descuento opcional
@@ -89,10 +131,13 @@ public class FacturaViewController {
             Model model) {
         
         try {
+            // Convertir el período de String a LocalDate
+            LocalDate periodoDate = convertirPeriodoALocalDate(periodo);
+            
             // Emitir factura usando servicios contratados
             Factura factura = facturaService.emitirFacturaDesdeServiciosContratados(
                 clienteId, 
-                periodo, 
+                periodoDate, 
                 fechaEmision,
                 fechaVencimiento, 
                 porcentajeDescuento, 
@@ -110,6 +155,7 @@ public class FacturaViewController {
         } catch (IllegalArgumentException | IllegalStateException e) {
             model.addAttribute("error", e.getMessage());
             model.addAttribute("clientes", clienteService.obtenerTodosLosClientes());
+            model.addAttribute("periodos", generarOpcionesPeriodos());
             model.addAttribute("clienteId", clienteId);
             model.addAttribute("periodo", periodo);
             model.addAttribute("fechaEmision", fechaEmision);
@@ -145,10 +191,12 @@ public class FacturaViewController {
     
     /**
      * Lista facturas de un período específico.
+     * El período viene en formato "Mes Año" y se convierte a LocalDate.
      */
     @GetMapping("/periodo/{periodo}")
     public String listarFacturasPorPeriodo(@PathVariable String periodo, Model model) {
-        model.addAttribute("facturas", facturaService.listarFacturasPorPeriodo(periodo));
+        LocalDate periodoDate = convertirPeriodoALocalDate(periodo);
+        model.addAttribute("facturas", facturaService.listarFacturasPorPeriodo(periodoDate));
         model.addAttribute("periodo", periodo);
         return "facturas/lista";
     }

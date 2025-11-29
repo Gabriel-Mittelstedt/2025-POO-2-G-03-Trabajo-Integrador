@@ -49,14 +49,6 @@ public interface LoteFacturacionRepository extends JpaRepository<LoteFacturacion
     boolean existsByPeriodoFechaAndAnuladoFalse(LocalDate periodoFecha);
     
     /**
-     * Busca lotes por usuario de ejecución.
-     * 
-     * @param usuario Usuario que ejecutó la facturación
-     * @return Lista de lotes
-     */
-    List<LoteFacturacion> findByUsuarioEjecucion(String usuario);
-    
-    /**
      * Cuenta la cantidad de facturas en un lote específico.
      * 
      * @param loteId ID del lote

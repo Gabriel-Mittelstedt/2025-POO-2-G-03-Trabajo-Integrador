@@ -24,10 +24,4 @@ public class FacturacionMasivaDTO {
      */
     @NotNull(message = "La fecha de vencimiento es obligatoria")
     private LocalDate fechaVencimiento;
-    
-    /**
-     * Usuario que ejecuta la facturación masiva.
-     */
-    @NotBlank(message = "El usuario es obligatorio")
-    private String usuario;
 }

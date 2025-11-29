@@ -451,15 +451,13 @@ public class FacturaService {
      * 
      * @param periodoStr Período en formato texto (ej: "Noviembre 2025")
      * @param fechaVencimiento Fecha de vencimiento para todas las facturas
-     * @param usuario Usuario que ejecuta la facturación
      * @return Lote de facturación generado con todas las facturas
      * @throws IllegalStateException si ya existe un lote para el período
      */
     @Transactional
     public LoteFacturacion ejecutarFacturacionMasiva(
             String periodoStr,
-            LocalDate fechaVencimiento,
-            String usuario) {
+            LocalDate fechaVencimiento) {
         
         // 1. Validar parámetros
         if (periodoStr == null || periodoStr.trim().isEmpty()) {
@@ -467,9 +465,6 @@ public class FacturaService {
         }
         if (fechaVencimiento == null) {
             throw new IllegalArgumentException("La fecha de vencimiento es obligatoria");
-        }
-        if (usuario == null || usuario.trim().isEmpty()) {
-            throw new IllegalArgumentException("El usuario es obligatorio");
         }
         
         // 2. Convertir período string a LocalDate
@@ -491,12 +486,11 @@ public class FacturaService {
             );
         }
         
-        // 5. Crear el lote de facturación
+        // 5. Crear el lote de facturación (sin usuario)
         LoteFacturacion lote = new LoteFacturacion(
             periodoStr,
             periodoFecha,
-            fechaVencimiento,
-            usuario
+            fechaVencimiento
         );
         
         // 6. Obtener todos los clientes activos con servicios contratados
@@ -627,12 +621,11 @@ public class FacturaService {
      * 
      * @param loteId ID del lote a anular
      * @param motivo Motivo de la anulación
-     * @param usuario Usuario que ejecuta la anulación
      * @return Lote anulado
      * @throws IllegalStateException si el lote no puede ser anulado
      */
     @Transactional
-    public LoteFacturacion anularLoteFacturacion(Long loteId, String motivo, String usuario) {
+    public LoteFacturacion anularLoteFacturacion(Long loteId, String motivo) {
         // 1. Obtener el lote
         LoteFacturacion lote = obtenerLotePorId(loteId);
         
@@ -669,7 +662,7 @@ public class FacturaService {
         }
         
         // 4. Anular el lote
-        lote.anular(motivo, usuario);
+        lote.anular(motivo);
         
         // 5. Guardar y retornar
         return loteFacturacionRepository.save(lote);

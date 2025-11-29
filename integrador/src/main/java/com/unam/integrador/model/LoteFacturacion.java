@@ -64,12 +64,6 @@ public class LoteFacturacion {
     private BigDecimal montoTotal;
     
     /**
-     * Usuario que ejecutó la facturación masiva.
-     */
-    @Column(nullable = false)
-    private String usuarioEjecucion;
-    
-    /**
      * Indica si el lote fue anulado.
      */
     @Column(nullable = false)
@@ -85,10 +79,7 @@ public class LoteFacturacion {
      */
     private String motivoAnulacion;
     
-    /**
-     * Usuario que ejecutó la anulación (si aplica).
-     */
-    private String usuarioAnulacion;
+
     
     /**
      * Lista de facturas generadas en este lote.
@@ -102,15 +93,13 @@ public class LoteFacturacion {
      * @param periodo Período en formato texto (ej: "Noviembre 2025")
      * @param periodoFecha Fecha del período (primer día del mes)
      * @param fechaVencimiento Fecha de vencimiento para las facturas
-     * @param usuario Usuario que ejecuta la facturación
      */
     public LoteFacturacion(String periodo, LocalDate periodoFecha, 
-                           LocalDate fechaVencimiento, String usuario) {
+                           LocalDate fechaVencimiento) {
         this.periodo = periodo;
         this.periodoFecha = periodoFecha;
         this.fechaEjecucion = LocalDateTime.now();
         this.fechaVencimiento = fechaVencimiento;
-        this.usuarioEjecucion = usuario;
         this.cantidadFacturas = 0;
         this.montoTotal = BigDecimal.ZERO;
         this.anulado = false;
@@ -162,10 +151,9 @@ public class LoteFacturacion {
      * Cambia el estado del lote a anulado y registra la información de anulación.
      * 
      * @param motivo Motivo de la anulación
-     * @param usuario Usuario que ejecuta la anulación
      * @throws IllegalStateException si el lote no puede ser anulado
      */
-    public void anular(String motivo, String usuario) {
+    public void anular(String motivo) {
         if (!puedeSerAnulado()) {
             throw new IllegalStateException(
                 "No se puede anular el lote. Algunas facturas ya tienen pagos registrados."
@@ -176,14 +164,9 @@ public class LoteFacturacion {
             throw new IllegalArgumentException("El motivo de anulación es obligatorio");
         }
         
-        if (usuario == null || usuario.trim().isEmpty()) {
-            throw new IllegalArgumentException("El usuario de anulación es obligatorio");
-        }
-        
         this.anulado = true;
         this.fechaAnulacion = LocalDateTime.now();
         this.motivoAnulacion = motivo.trim();
-        this.usuarioAnulacion = usuario.trim();
     }
     
     /**

@@ -64,7 +64,6 @@
                         <p><i class="bi bi-calendar-month text-primary"></i> <strong>Período:</strong> <span th:text="${lote.periodo}"></span></p>
                         <p><i class="bi bi-clock text-primary"></i> <strong>Fecha de Ejecución:</strong> <span th:text="${#temporals.format(lote.fechaEjecucion, 'dd/MM/yyyy HH:mm:ss')}"></span></p>
                         <p><i class="bi bi-calendar-x text-primary"></i> <strong>Fecha de Vencimiento:</strong> <span th:text="${#temporals.format(lote.fechaVencimiento, 'dd/MM/yyyy')}"></span></p>
-                        <p><i class="bi bi-person text-primary"></i> <strong>Usuario:</strong> <span th:text="${lote.usuarioEjecucion}"></span></p>
                     </div>
                     <div class="col-md-6">
                         <p><i class="bi bi-file-text text-primary"></i> <strong>Cantidad de Facturas:</strong> <span class="badge bg-info" th:text="${lote.cantidadFacturas}"></span></p>
@@ -80,7 +79,6 @@
                 <div th:if="${lote.anulado}" class="alert alert-danger mt-3">
                     <h6><i class="bi bi-exclamation-triangle"></i> Información de Anulación</h6>
                     <p class="mb-1"><strong>Fecha de Anulación:</strong> <span th:text="${#temporals.format(lote.fechaAnulacion, 'dd/MM/yyyy HH:mm:ss')}"></span></p>
-                    <p class="mb-1"><strong>Usuario:</strong> <span th:text="${lote.usuarioAnulacion}"></span></p>
                     <p class="mb-0"><strong>Motivo:</strong> <span th:text="${lote.motivoAnulacion}"></span></p>
                 </div>
             </div>

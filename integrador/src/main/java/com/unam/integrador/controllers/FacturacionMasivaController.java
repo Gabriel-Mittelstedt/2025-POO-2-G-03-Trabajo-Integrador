@@ -1,5 +1,11 @@
 package com.unam.integrador.controllers;
 
+import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -50,7 +56,31 @@ public class FacturacionMasivaController {
     @GetMapping("/nuevo")
     public String mostrarFormulario(Model model) {
         model.addAttribute("facturacionDTO", new FacturacionMasivaDTO());
+        model.addAttribute("periodos", generarOpcionesPeriodos());
         return "facturacion-masiva/formulario";
+    }
+    
+    /**
+     * Genera la lista de períodos disponibles para facturación.
+     * Incluye 2 meses hacia atrás, el mes actual y 12 meses hacia adelante.
+     * 
+     * @return Lista de strings con los períodos en formato "Mes Año"
+     */
+    private List<String> generarOpcionesPeriodos() {
+        List<String> periodos = new ArrayList<>();
+        YearMonth mesActual = YearMonth.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.of("es", "ES"));
+        
+        // 2 meses hacia atrás + mes actual + 12 meses hacia adelante = 15 períodos
+        for (int i = -2; i <= 12; i++) {
+            YearMonth mes = mesActual.plusMonths(i);
+            // Capitalizar primera letra del mes
+            String periodo = mes.format(formatter);
+            periodo = periodo.substring(0, 1).toUpperCase() + periodo.substring(1);
+            periodos.add(periodo);
+        }
+        
+        return periodos;
     }
     
     /**
@@ -71,14 +101,14 @@ public class FacturacionMasivaController {
             Model model) {
         
         if (result.hasErrors()) {
+            model.addAttribute("periodos", generarOpcionesPeriodos());
             return "facturacion-masiva/formulario";
         }
         
         try {
             LoteFacturacion lote = facturaService.ejecutarFacturacionMasiva(
                 dto.getPeriodo(),
-                dto.getFechaVencimiento(),
-                dto.getUsuario()
+                dto.getFechaVencimiento()
             );
             
             redirectAttributes.addFlashAttribute("mensaje", 
@@ -92,6 +122,7 @@ public class FacturacionMasivaController {
             
         } catch (IllegalArgumentException | IllegalStateException e) {
             model.addAttribute("error", e.getMessage());
+            model.addAttribute("periodos", generarOpcionesPeriodos());
             return "facturacion-masiva/formulario";
         }
     }
@@ -152,7 +183,6 @@ public class FacturacionMasivaController {
      * 
      * @param id ID del lote
      * @param motivo Motivo de la anulación
-     * @param usuario Usuario que ejecuta la anulación
      * @param redirectAttributes Atributos para redirección
      * @return Redirección al detalle del lote
      */
@@ -160,11 +190,10 @@ public class FacturacionMasivaController {
     public String anularLote(
             @PathVariable Long id,
             @RequestParam String motivo,
-            @RequestParam String usuario,
             RedirectAttributes redirectAttributes) {
         
         try {
-            LoteFacturacion lote = facturaService.anularLoteFacturacion(id, motivo, usuario);
+            LoteFacturacion lote = facturaService.anularLoteFacturacion(id, motivo);
             
             redirectAttributes.addFlashAttribute("mensaje", 
                 String.format("Lote #%d anulado exitosamente. " +

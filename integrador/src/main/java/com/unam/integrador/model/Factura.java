@@ -72,6 +72,14 @@ public class Factura {
     @OneToMany(mappedBy = "factura", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Pago> pagos = new ArrayList<>();
 
+    /**
+     * Lote de facturación masiva al que pertenece esta factura (si aplica).
+     * Null para facturas individuales.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "lote_facturacion_id")
+    private LoteFacturacion loteFacturacion;
+
     //CONSTRUCTOR
     public Factura(int serie, int nroFactura, CuentaCliente cliente, LocalDate fechaEmision, 
                    LocalDate fechaVencimiento, LocalDate periodo, TipoFactura tipo) {

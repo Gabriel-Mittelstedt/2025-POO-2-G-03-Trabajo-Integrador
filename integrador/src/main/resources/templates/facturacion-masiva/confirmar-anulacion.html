@@ -3,58 +3,96 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Confirmar Anulación</title>
+    <title>Confirmar Anulación de Lote</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <nav class="navbar navbar-expand-lg">
         <div class="container-fluid">
-            <a class="navbar-brand" href="/">ERP Facturación</a>
+            <a class="navbar-brand" href="/">
+                <i class="bi bi-building"></i> ERP Facturación
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="/clientes"><i class="bi bi-people"></i> Clientes</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/servicios"><i class="bi bi-grid"></i> Servicios</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/facturas"><i class="bi bi-file-text"></i> Facturas</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="/facturacion-masiva"><i class="bi bi-files"></i> Facturación Masiva</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/pagos"><i class="bi bi-cash-coin"></i> Pagos</a></li>
+                </ul>
+            </div>
         </div>
     </nav>
 
     <div class="container mt-4">
-        <h1 class="text-danger">Confirmar Anulación de Lote</h1>
+        <div class="page-header">
+            <h1 class="text-danger"><i class="bi bi-exclamation-triangle-fill"></i> Confirmar Anulación de Lote</h1>
+            <p class="text-muted">Esta acción no se puede deshacer</p>
+        </div>
 
-        <div class="card mt-3">
-            <div class="card-header bg-warning">
-                <h5>Advertencia</h5>
+        <div class="card mt-3 border-danger">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="bi bi-exclamation-circle"></i> Advertencia</h5>
             </div>
             <div class="card-body">
-                <p>Está a punto de anular el lote de facturación:</p>
-                <ul>
-                    <li><strong>Período:</strong> <span th:text="${lote.periodo}"></span></li>
-                    <li><strong>Cantidad de facturas:</strong> <span th:text="${lote.cantidadFacturas}"></span></li>
-                    <li><strong>Monto total:</strong> $<span th:text="${#numbers.formatDecimal(lote.montoTotal, 1, 2)}"></span></li>
-                </ul>
+                <p class="lead">Está a punto de anular el lote de facturación masiva:</p>
+                
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <ul class="list-unstyled">
+                            <li><i class="bi bi-hash text-primary"></i> <strong>ID del Lote:</strong> <span th:text="${lote.id}"></span></li>
+                            <li><i class="bi bi-calendar-month text-primary"></i> <strong>Período:</strong> <span th:text="${lote.periodo}"></span></li>
+                            <li><i class="bi bi-clock text-primary"></i> <strong>Fecha de Ejecución:</strong> <span th:text="${#temporals.format(lote.fechaEjecucion, 'dd/MM/yyyy HH:mm')}"></span></li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <ul class="list-unstyled">
+                            <li><i class="bi bi-file-text text-primary"></i> <strong>Cantidad de facturas:</strong> <span class="badge bg-info" th:text="${lote.cantidadFacturas}"></span></li>
+                            <li><i class="bi bi-currency-dollar text-primary"></i> <strong>Monto total:</strong> <span class="fw-bold">$<span th:text="${#numbers.formatDecimal(lote.montoTotal, 1, 2)}"></span></span></li>
+                            <li><i class="bi bi-person text-primary"></i> <strong>Usuario que ejecutó:</strong> <span th:text="${lote.usuarioEjecucion}"></span></li>
+                        </ul>
+                    </div>
+                </div>
 
                 <div class="alert alert-danger">
-                    <strong>¡Atención!</strong> Esta acción:
-                    <ul>
-                        <li>Anulará TODAS las facturas del lote</li>
-                        <li>Generará notas de crédito automáticamente</li>
-                        <li>NO se puede deshacer</li>
+                    <h6><i class="bi bi-exclamation-octagon-fill"></i> ¡Atención! Esta acción:</h6>
+                    <ul class="mb-0">
+                        <li>Anulará <strong>TODAS</strong> las facturas del lote (<span th:text="${lote.cantidadFacturas}"></span> facturas)</li>
+                        <li>Generará notas de crédito automáticamente para cada factura</li>
+                        <li>El total de notas de crédito será: <strong>$<span th:text="${#numbers.formatDecimal(lote.montoTotal, 1, 2)}"></span></strong></li>
+                        <li class="text-uppercase fw-bold">NO se puede deshacer</li>
                     </ul>
                 </div>
 
                 <form method="post" th:action="@{/facturacion-masiva/{id}/anular(id=${lote.id})}">
                     <div class="mb-3">
-                        <label for="motivo" class="form-label">Motivo de la Anulación *</label>
+                        <label for="motivo" class="form-label"><i class="bi bi-chat-left-text"></i> Motivo de la Anulación *</label>
                         <textarea name="motivo" id="motivo" class="form-control" rows="3" required 
-                                  placeholder="Ingrese el motivo de la anulación del lote..."></textarea>
+                                  minlength="5" maxlength="500"
+                                  placeholder="Ingrese el motivo de la anulación del lote (mínimo 5 caracteres)..."></textarea>
+                        <small class="text-muted">Este motivo se registrará en todas las notas de crédito generadas.</small>
                     </div>
 
-                    <div class="mb-3">
-                        <label for="usuario" class="form-label">Usuario *</label>
+                    <div class="mb-4">
+                        <label for="usuario" class="form-label"><i class="bi bi-person-badge"></i> Usuario que ejecuta la anulación *</label>
                         <input type="text" name="usuario" id="usuario" class="form-control" 
-                               value="admin" required>
+                               placeholder="Ingrese su nombre de usuario" required>
                     </div>
 
-                    <button type="submit" class="btn btn-danger btn-lg" 
-                            onclick="return confirm('¿Está COMPLETAMENTE SEGURO de anular este lote y todas sus facturas?');">
-                        Confirmar Anulación
-                    </button>
-                    <a th:href="@{/facturacion-masiva/{id}(id=${lote.id})}" class="btn btn-secondary">Cancelar</a>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-danger btn-lg" 
+                                onclick="return confirm('¿Está COMPLETAMENTE SEGURO de anular este lote y todas sus facturas? Esta acción NO se puede deshacer.');">
+                            <i class="bi bi-x-circle"></i> Confirmar Anulación
+                        </button>
+                        <a th:href="@{/facturacion-masiva/{id}(id=${lote.id})}" class="btn btn-secondary btn-lg">
+                            <i class="bi bi-arrow-left"></i> Cancelar
+                        </a>
+                    </div>
                 </form>
             </div>
         </div>

@@ -52,7 +52,7 @@ public class FacturaService {
      * Emite una factura individual usando los servicios contratados activos del cliente.
      * Los items se generan automáticamente desde los servicios asignados.
      * @param clienteId ID del cliente
-     * @param periodo Período de facturación (formato YYYYMM)
+     * @param periodo Período de facturación como LocalDate (se usará el primer día del mes)
      * @param fechaEmision Fecha de emisión
      * @param fechaVencimiento Fecha de vencimiento
      * @param porcentajeDescuento Descuento opcional (puede ser null)
@@ -62,7 +62,7 @@ public class FacturaService {
     @Transactional
     public Factura emitirFacturaDesdeServiciosContratados(
             Long clienteId, 
-            String periodo, 
+            LocalDate periodo, 
             LocalDate fechaEmision,
             LocalDate fechaVencimiento,
             Double porcentajeDescuento,
@@ -167,11 +167,11 @@ public class FacturaService {
     
     /**
      * Lista facturas por período.
-     * @param periodo Período de facturación
+     * @param periodo Período de facturación como LocalDate
      * @return Lista de facturas
      */
     @Transactional(readOnly = true)
-    public Iterable<Factura> listarFacturasPorPeriodo(String periodo) {
+    public Iterable<Factura> listarFacturasPorPeriodo(LocalDate periodo) {
         return facturaRepository.findByPeriodo(periodo);
     }
 
@@ -206,7 +206,8 @@ public class FacturaService {
                 })
                 .filter(f -> {
                     if (periodo == null || periodo.isBlank()) return true;
-                    return f.getPeriodo() != null && f.getPeriodo().toLowerCase().contains(periodo.toLowerCase());
+                    String periodoFormateado = f.getPeriodoFormateado();
+                    return periodoFormateado != null && periodoFormateado.toLowerCase().contains(periodo.toLowerCase());
                 })
                 .collect(Collectors.toList());
     }
@@ -342,14 +343,14 @@ public class FacturaService {
         int serie = obtenerSerie(tipoFactura);
         int numero = obtenerSiguienteNumeroFactura(serie);
         
-        // 6. Crear factura
+        // 6. Crear factura - usar el inicio del período como LocalDate para el campo periodo
         Factura factura = new Factura(
             serie, 
             numero, 
             cliente,
             fechaEmision, 
             fechaVencimiento, 
-            periodo.generarDescripcionPeriodo(), // Usar descripción del período como periodo
+            inicioPeriodo, // Usar la fecha de inicio como periodo
             tipoFactura
         );
         

@@ -2,8 +2,10 @@ package com.unam.integrador.model;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import com.unam.integrador.model.enums.EstadoCuenta;
 import com.unam.integrador.model.enums.EstadoFactura;
@@ -37,7 +39,12 @@ public class Factura {
     // --- Atributos de la Factura ---
     private LocalDate fechaEmision;
     private LocalDate fechaVencimiento;
-    private String periodo;
+    
+    /**
+     * Período de facturación almacenado como LocalDate.
+     * Siempre usa el día 1 del mes correspondiente.
+     */
+    private LocalDate periodo;
 
     @Enumerated(EnumType.STRING)
     private TipoFactura tipo;
@@ -67,14 +74,15 @@ public class Factura {
 
     //CONSTRUCTOR
     public Factura(int serie, int nroFactura, CuentaCliente cliente, LocalDate fechaEmision, 
-                   LocalDate fechaVencimiento, String periodo, TipoFactura tipo) {
+                   LocalDate fechaVencimiento, LocalDate periodo, TipoFactura tipo) {
         
         this.serie = serie;
         this.nroFactura = nroFactura;
         this.cliente = cliente;
         this.fechaEmision = fechaEmision;
         this.fechaVencimiento = fechaVencimiento;
-        this.periodo = periodo;
+        // Asegurar que el día siempre sea 1
+        this.periodo = periodo.withDayOfMonth(1);
         this.tipo = tipo;
 
         // --- Valores por defecto al crear una factura ---
@@ -420,5 +428,34 @@ public class Factura {
     public void agregarNotaCredito(NotaCredito notaCredito) {
         this.notasCredito.add(notaCredito);
         notaCredito.setFactura(this);
+    }
+
+    /**
+     * Obtiene el período formateado como String legible.
+     * Formato: "Mes Año" (ej: "Noviembre 2025")
+     * 
+     * @return Período formateado o null si no hay período
+     */
+    public String getPeriodoFormateado() {
+        if (this.periodo == null) {
+            return null;
+        }
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMMM yyyy", new Locale("es", "ES"));
+        String formateado = this.periodo.format(formatter);
+        // Capitalizar primera letra
+        return formateado.substring(0, 1).toUpperCase() + formateado.substring(1);
+    }
+
+    /**
+     * Establece el período asegurando que el día sea siempre 1.
+     * 
+     * @param periodo Fecha del período (se usará el primer día del mes)
+     */
+    public void setPeriodo(LocalDate periodo) {
+        if (periodo != null) {
+            this.periodo = periodo.withDayOfMonth(1);
+        } else {
+            this.periodo = null;
+        }
     }
 }

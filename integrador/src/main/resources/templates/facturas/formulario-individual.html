@@ -59,12 +59,14 @@
 
                         <div class="col-md-6 mb-3">
                             <label for="periodo" class="form-label"><i class="bi bi-calendar"></i> Período *</label>
-                            <input type="text" name="periodo" id="periodo" class="form-control" 
-                                   th:value="${periodo}"
-                                   placeholder="Ej: Noviembre 2025"
-                                   maxlength="50"
-                                   required>
-                            <small class="form-text text-muted">Descripción del período (ej: Noviembre 2025, 1er Trimestre 2025)</small>
+                            <select name="periodo" id="periodo" class="form-select" required>
+                                <option value="">Seleccione un período...</option>
+                                <option th:each="p : ${periodos}" 
+                                        th:value="${p}" 
+                                        th:selected="${p == periodo}"
+                                        th:text="${p}"></option>
+                            </select>
+                            <small class="form-text text-muted">Seleccione el mes de facturación</small>
                         </div>
                     </div>
 

@@ -1,5 +1,6 @@
 package com.unam.integrador.repositories;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -42,10 +43,10 @@ public interface FacturaRepository extends JpaRepository<Factura, Long> {
     
     /**
      * Busca facturas por período.
-     * @param periodo Período de facturación (ej: "2025-11 o Noviembre 2025")
+     * @param periodo Período de facturación como LocalDate
      * @return Lista de facturas de ese período
      */
-    List<Factura> findByPeriodo(String periodo);
+    List<Factura> findByPeriodo(LocalDate periodo);
     
     /**
      * Busca facturas por cliente y estado.

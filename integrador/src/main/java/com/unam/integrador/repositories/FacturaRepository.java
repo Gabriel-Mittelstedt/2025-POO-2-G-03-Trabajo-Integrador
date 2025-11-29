@@ -82,4 +82,13 @@ public interface FacturaRepository extends JpaRepository<Factura, Long> {
            "(f.estado = 'PENDIENTE' OR f.estado = 'VENCIDA' OR f.estado = 'PAGADA_PARCIALMENTE') " +
            "ORDER BY f.fechaEmision ASC")
     List<Factura> findFacturasImpagasByCliente(@Param("clienteId") Long clienteId);
+    
+    /**
+     * Verifica si existe una factura no anulada para un cliente en un período específico.
+     * Se usa para evitar emitir más de una factura por período al mismo cliente.
+     * @param clienteId ID del cliente
+     * @param periodo Período de facturación (primer día del mes)
+     * @return true si existe una factura no anulada para ese cliente y período
+     */
+    boolean existsByClienteIdAndPeriodoAndEstadoNot(Long clienteId, LocalDate periodo, EstadoFactura estado);
 }

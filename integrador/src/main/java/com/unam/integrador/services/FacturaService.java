@@ -1,7 +1,11 @@
 package com.unam.integrador.services;
 
 import java.time.LocalDate;
+import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -12,15 +16,18 @@ import org.springframework.transaction.annotation.Transactional;
 import com.unam.integrador.model.CuentaCliente;
 import com.unam.integrador.model.Factura;
 import com.unam.integrador.model.ItemFactura;
+import com.unam.integrador.model.LoteFacturacion;
 import com.unam.integrador.model.NotaCredito;
 import com.unam.integrador.model.PeriodoFacturacion;
 import com.unam.integrador.model.Servicio;
 import com.unam.integrador.model.ServicioContratado;
+import com.unam.integrador.model.enums.EstadoCuenta;
 import com.unam.integrador.model.enums.EstadoFactura;
 import com.unam.integrador.model.enums.TipoCondicionIVA;
 import com.unam.integrador.model.enums.TipoFactura;
 import com.unam.integrador.repositories.CuentaClienteRepositorie;
 import com.unam.integrador.repositories.FacturaRepository;
+import com.unam.integrador.repositories.LoteFacturacionRepository;
 import com.unam.integrador.repositories.NotaCreditoRepository;
 
 /**
@@ -40,6 +47,9 @@ public class FacturaService {
     
     @Autowired
     private NotaCreditoRepository notaCreditoRepository;
+    
+    @Autowired
+    private LoteFacturacionRepository loteFacturacionRepository;
     
     // Configuración para el emisor (empresa)
     // TODO: En producción esto debería venir de configuración o base de datos
@@ -429,5 +439,247 @@ public class FacturaService {
         }
         
         return actualizadas;
+    }
+    
+    // ========== MÉTODOS DE FACTURACIÓN MASIVA (HU-07, HU-08, HU-09) ==========
+    
+    /**
+     * Ejecuta la facturación masiva para un período determinado.
+     * Genera facturas para todos los clientes activos con servicios contratados.
+     * 
+     * Implementa HU-07: Emisión de facturación masiva por período
+     * 
+     * @param periodoStr Período en formato texto (ej: "Noviembre 2025")
+     * @param fechaVencimiento Fecha de vencimiento para todas las facturas
+     * @return Lote de facturación generado con todas las facturas
+     * @throws IllegalStateException si ya existe un lote para el período
+     */
+    @Transactional
+    public LoteFacturacion ejecutarFacturacionMasiva(
+            String periodoStr,
+            LocalDate fechaVencimiento) {
+        
+        // 1. Validar parámetros
+        if (periodoStr == null || periodoStr.trim().isEmpty()) {
+            throw new IllegalArgumentException("El período es obligatorio");
+        }
+        if (fechaVencimiento == null) {
+            throw new IllegalArgumentException("La fecha de vencimiento es obligatoria");
+        }
+        
+        // 2. Convertir período string a LocalDate
+        LocalDate periodoFecha = convertirPeriodoALocalDate(periodoStr);
+        LocalDate fechaEmision = LocalDate.now();
+        
+        // 3. Validar que la fecha de vencimiento sea posterior a la fecha de emisión
+        if (fechaVencimiento.isBefore(fechaEmision) || fechaVencimiento.isEqual(fechaEmision)) {
+            throw new IllegalArgumentException(
+                "La fecha de vencimiento debe ser posterior a la fecha de emisión (" + fechaEmision + ")"
+            );
+        }
+        
+        // 4. Verificar que no exista un lote activo para el mismo período
+        if (loteFacturacionRepository.existsByPeriodoFechaAndAnuladoFalse(periodoFecha)) {
+            throw new IllegalStateException(
+                "Ya existe una facturación masiva activa para el período " + periodoStr + 
+                ". Debe anular el lote existente antes de crear uno nuevo."
+            );
+        }
+        
+        // 5. Crear el lote de facturación (sin usuario)
+        LoteFacturacion lote = new LoteFacturacion(
+            periodoStr,
+            periodoFecha,
+            fechaVencimiento
+        );
+        
+        // 6. Obtener todos los clientes activos con servicios contratados
+        List<CuentaCliente> clientesActivos = clienteRepository.findAll().stream()
+            .filter(c -> c.getEstado() == EstadoCuenta.ACTIVA)
+            .filter(c -> !c.getServiciosContratadosActivos().isEmpty())
+            .collect(Collectors.toList());
+        
+        if (clientesActivos.isEmpty()) {
+            throw new IllegalStateException(
+                "No hay clientes activos con servicios contratados para facturar en el período " + periodoStr
+            );
+        }
+        
+        // 7. Generar factura para cada cliente
+        List<String> errores = new ArrayList<>();
+        int facturasGeneradas = 0;
+        
+        for (CuentaCliente cliente : clientesActivos) {
+            try {
+                // Verificar si ya existe factura para este cliente en este período
+                if (facturaRepository.existsByClienteIdAndPeriodoAndEstadoNot(
+                        cliente.getId(), periodoFecha, EstadoFactura.ANULADA)) {
+                    errores.add("Cliente " + cliente.getNombre() + " ya tiene factura para este período");
+                    continue;
+                }
+                
+                // Determinar tipo de factura
+                TipoFactura tipoFactura = Factura.determinarTipoFactura(
+                    CONDICION_IVA_EMISOR,
+                    cliente.getCondicionIva()
+                );
+                
+                // Obtener serie y número
+                int serie = obtenerSerie(tipoFactura);
+                int numero = obtenerSiguienteNumeroFactura(serie);
+                
+                // Crear factura
+                Factura factura = new Factura(
+                    serie,
+                    numero,
+                    cliente,
+                    fechaEmision,
+                    fechaVencimiento,
+                    periodoFecha,
+                    tipoFactura
+                );
+                
+                // Agregar items desde servicios contratados
+                for (ServicioContratado servicioContratado : cliente.getServiciosContratadosActivos()) {
+                    Servicio servicio = servicioContratado.getServicio();
+                    
+                    ItemFactura item = new ItemFactura(
+                        servicio.getNombre(),
+                        servicioContratado.getPrecioContratado(),
+                        1,
+                        servicio.getAlicuotaIVA()
+                    );
+                    
+                    factura.agregarItem(item);
+                }
+                
+                // Agregar factura al lote
+                lote.agregarFactura(factura);
+                facturasGeneradas++;
+                
+            } catch (Exception e) {
+                errores.add("Error al generar factura para cliente " + cliente.getNombre() + ": " + e.getMessage());
+            }
+        }
+        
+        // 8. Verificar que se haya generado al menos una factura
+        if (facturasGeneradas == 0) {
+            String mensajeError = "No se pudo generar ninguna factura.";
+            if (!errores.isEmpty()) {
+                mensajeError += " Errores: " + String.join("; ", errores);
+            }
+            throw new IllegalStateException(mensajeError);
+        }
+        
+        // 9. Guardar el lote con todas sus facturas
+        lote = loteFacturacionRepository.save(lote);
+        
+        return lote;
+    }
+    
+    /**
+     * Convierte un string de período en formato "Mes Año" a LocalDate.
+     * El día siempre será 1.
+     * 
+     * @param periodoStr String del período (ej: "Noviembre 2025")
+     * @return LocalDate con el primer día del mes indicado
+     */
+    private LocalDate convertirPeriodoALocalDate(String periodoStr) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.of("es", "ES"));
+        YearMonth yearMonth = YearMonth.parse(periodoStr.toLowerCase(), formatter);
+        return yearMonth.atDay(1);
+    }
+    
+    /**
+     * Obtiene todos los lotes de facturación ordenados por fecha de ejecución.
+     * 
+     * @return Lista de lotes ordenados de más reciente a más antiguo
+     */
+    @Transactional(readOnly = true)
+    public List<LoteFacturacion> listarLotesFacturacion() {
+        return loteFacturacionRepository.findAllByOrderByFechaEjecucionDesc();
+    }
+    
+    /**
+     * Obtiene un lote de facturación por su ID.
+     * 
+     * @param id ID del lote
+     * @return Lote encontrado
+     * @throws IllegalArgumentException si no existe
+     */
+    @Transactional(readOnly = true)
+    public LoteFacturacion obtenerLotePorId(Long id) {
+        return loteFacturacionRepository.findById(id)
+            .orElseThrow(() -> new IllegalArgumentException("Lote de facturación no encontrado con ID: " + id));
+    }
+    
+    /**
+     * Anula un lote de facturación completo.
+     * Genera notas de crédito para todas las facturas del lote.
+     * 
+     * Implementa HU-08: Anulación de facturación masiva
+     * 
+     * @param loteId ID del lote a anular
+     * @param motivo Motivo de la anulación
+     * @return Lote anulado
+     * @throws IllegalStateException si el lote no puede ser anulado
+     */
+    @Transactional
+    public LoteFacturacion anularLoteFacturacion(Long loteId, String motivo) {
+        // 1. Obtener el lote
+        LoteFacturacion lote = obtenerLotePorId(loteId);
+        
+        // 2. Validar que puede ser anulado
+        if (!lote.puedeSerAnulado()) {
+            throw new IllegalStateException(
+                "No se puede anular el lote. Algunas facturas ya tienen pagos registrados."
+            );
+        }
+        
+        // 3. Anular cada factura del lote y generar notas de crédito
+        for (Factura factura : lote.getFacturas()) {
+            if (factura.puedeSerAnulada()) {
+                // Generar nota de crédito
+                int serieNotaCredito = factura.getSerie();
+                int nroNotaCredito = obtenerSiguienteNumeroNotaCredito(serieNotaCredito);
+                
+                NotaCredito notaCredito = new NotaCredito(
+                    serieNotaCredito,
+                    nroNotaCredito,
+                    LocalDate.now(),
+                    factura.getTotal(),
+                    motivo + " (Anulación de lote #" + loteId + ")",
+                    factura.getTipo(),
+                    factura
+                );
+                
+                factura.agregarNotaCredito(notaCredito);
+                factura.anular();
+                
+                notaCreditoRepository.save(notaCredito);
+                facturaRepository.save(factura);
+            }
+        }
+        
+        // 4. Anular el lote
+        lote.anular(motivo);
+        
+        // 5. Guardar y retornar
+        return loteFacturacionRepository.save(lote);
+    }
+    
+    /**
+     * Obtiene el resumen de un lote de facturación.
+     * Útil para la vista de detalle (HU-09).
+     * 
+     * @param loteId ID del lote
+     * @return Lote con sus facturas cargadas
+     */
+    @Transactional(readOnly = true)
+    public LoteFacturacion obtenerLoteConFacturas(Long loteId) {
+        LoteFacturacion lote = obtenerLotePorId(loteId);
+        // Forzar carga de facturas (lazy loading)
+        lote.getFacturas().size();
+        return lote;
     }
 }

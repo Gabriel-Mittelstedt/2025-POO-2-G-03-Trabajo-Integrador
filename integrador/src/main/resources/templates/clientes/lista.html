@@ -89,6 +89,7 @@
                                 <th><i class="bi bi-phone"></i> Teléfono</th>
                                 <th><i class="bi bi-file-earmark-check"></i> Condición IVA</th>
                                 <th><i class="bi bi-clipboard-check"></i> Estado</th>
+                                <th><i class="bi bi-cash-coin"></i> Saldo</th>
                                 <th class="text-center"><i class="bi bi-gear"></i> Acciones</th>
                             </tr>
                         </thead>
@@ -106,6 +107,12 @@
                                           th:text="${cliente.estado.descripcion}">
                                     </span>
                                 </td>
+                                <td>
+                                    <span th:if="${cliente.tieneSaldoAFavor()}" class="badge bg-success" title="Saldo a favor disponible">
+                                        <i class="bi bi-cash-coin"></i> $<span th:text="${#numbers.formatDecimal(cliente.saldoAFavor, 1, 2)}"></span>
+                                    </span>
+                                    <span th:unless="${cliente.tieneSaldoAFavor()}" class="text-muted">-</span>
+                                </td>
                                 <td class="text-center">
                                     <div class="action-buttons justify-content-center">
                                         <a th:href="@{/clientes/{id}(id=${cliente.id})}" class="btn btn-sm btn-info" title="Gestionar">
@@ -114,11 +121,12 @@
                                         <a th:href="@{/clientes/{id}/editar(id=${cliente.id})}" class="btn btn-sm btn-primary" title="Editar">
                                             <i class="bi bi-pencil"></i>
                                         </a>
+                                        <!-- Botón de 'Saldo a favor' removido según petición -->
                                     </div>
                                 </td>
                             </tr>
                             <tr th:if="${#lists.isEmpty(clientes)}">
-                                <td colspan="7" class="text-center py-5">
+                                <td colspan="8" class="text-center py-5">
                                     <i class="bi bi-inbox" style="font-size: 3rem; color: #ccc;"></i>
                                     <p class="text-muted mt-3">No se encontraron clientes</p>
                                     <a href="/clientes/nuevo" class="btn btn-success">

@@ -1,6 +1,7 @@
 package com.unam.integrador.model;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 
 import com.unam.integrador.model.enums.MetodoPago;
@@ -113,6 +114,23 @@ public class Recibo {
         }
         if (monto.compareTo(java.math.BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("El monto del recibo debe ser mayor a cero");
+        }
+        // Validación para respetar la definición de la columna: precision=10, scale=2
+        final int maxPrecision = 10;
+        final int maxScale = 2;
+        if (monto.scale() > maxScale) {
+            throw new IllegalArgumentException(
+                    String.format("Monto inválido: máximo %d decimales permitidos (ej: 12345.67).", maxScale));
+        }
+        // Comprobar dígitos enteros (precision - scale) para evitar overflow en DB numeric(10,2)
+        final int maxIntegerDigits = maxPrecision - maxScale; // 8
+        int integerDigits = monto.abs().setScale(0, RoundingMode.DOWN).toBigInteger().toString().length();
+        if (integerDigits > maxIntegerDigits) {
+            throw new IllegalArgumentException(
+                    String.format(
+                            "Monto inválido: la parte entera no puede tener más de %d dígitos. " +
+                                    "Valor máximo permitido: 99,999,999.99.",
+                            maxIntegerDigits));
         }
     }
 

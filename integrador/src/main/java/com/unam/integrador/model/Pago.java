@@ -1,6 +1,7 @@
 package com.unam.integrador.model;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -68,6 +69,9 @@ public class Pago {
     
     @OneToOne(mappedBy = "pago", cascade = CascadeType.ALL, orphanRemoval = true)
     private Recibo recibo;
+
+    @Column(length = 50)
+    private String numeroRecibo;
     
     // --- Constructor privado (fuerza uso de factory methods) ---
     
@@ -196,7 +200,24 @@ public class Pago {
             throw new IllegalArgumentException("El monto del pago no puede ser nulo");
         }
         if (monto.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("El monto del pago debe ser mayor a cero. Monto recibido: " + monto);
+            throw new IllegalArgumentException("El monto del pago debe ser mayor a cero");
+        }
+        // Validación para respetar la definición de la columna: precision=10, scale=2
+        final int maxPrecision = 10;
+        final int maxScale = 2;
+        if (monto.scale() > maxScale) {
+            throw new IllegalArgumentException(
+                    String.format("Monto inválido: máximo %d decimales permitidos (ej: 12345.67).", maxScale));
+        }
+        // Comprobar dígitos enteros (precision - scale) para evitar overflow en DB numeric(10,2)
+        final int maxIntegerDigits = maxPrecision - maxScale; // 8
+        int integerDigits = monto.abs().setScale(0, RoundingMode.DOWN).toBigInteger().toString().length();
+        if (integerDigits > maxIntegerDigits) {
+            throw new IllegalArgumentException(
+                    String.format(
+                            "Monto inválido: la parte entera no puede tener más de %d dígitos. " +
+                                    "Valor máximo permitido: 99,999,999.99.",
+                            maxIntegerDigits));
         }
     }
     
@@ -240,5 +261,13 @@ public class Pago {
      */
     void setRecibo(Recibo recibo) {
         this.recibo = recibo;
+    }
+
+    /**
+     * Setter package-private para asignar el número de recibo cuando un recibo
+     * agrupa varios pagos (pagos combinados). No expuesto públicamente.
+     */
+    public void setNumeroRecibo(String numeroRecibo) {
+        this.numeroRecibo = numeroRecibo;
     }
 }

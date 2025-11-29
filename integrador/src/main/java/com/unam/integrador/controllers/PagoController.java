@@ -5,6 +5,8 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -43,8 +45,34 @@ public class PagoController {
      * Muestra la lista de todos los pagos.
      */
     @GetMapping
-    public String listarPagos(Model model) {
-        model.addAttribute("pagos", pagoService.listarTodos());
+    public String listarPagos(
+            @RequestParam(value = "clienteNombre", required = false) String clienteNombre,
+            @RequestParam(value = "desde", required = false) String desdeStr,
+            @RequestParam(value = "hasta", required = false) String hastaStr,
+            Model model) {
+
+        LocalDate desde = null;
+        LocalDate hasta = null;
+        try {
+            if (desdeStr != null && !desdeStr.isBlank()) {
+                desde = LocalDate.parse(desdeStr);
+            }
+        } catch (DateTimeParseException e) {
+            model.addAttribute("error", "Fecha 'desde' inválida. Use YYYY-MM-DD.");
+        }
+        try {
+            if (hastaStr != null && !hastaStr.isBlank()) {
+                hasta = LocalDate.parse(hastaStr);
+            }
+        } catch (DateTimeParseException e) {
+            model.addAttribute("error", "Fecha 'hasta' inválida. Use YYYY-MM-DD.");
+        }
+
+        model.addAttribute("clienteNombre", clienteNombre);
+        model.addAttribute("desde", desdeStr);
+        model.addAttribute("hasta", hastaStr);
+
+        model.addAttribute("pagos", pagoService.listarFiltrados(clienteNombre, desde, hasta));
         return "pagos/lista";
     }
 
@@ -96,6 +124,14 @@ public class PagoController {
                 .map(Factura::getSaldoPendiente)
                 .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
         model.addAttribute("totalAdeudado", totalAdeudado);
+        // Calcular el máximo de saldo a favor que puede aplicarse: no debe exceder
+        // ni el saldo disponible del cliente ni el total adeudado de las facturas
+        java.math.BigDecimal maxSaldoAplicable = java.math.BigDecimal.ZERO;
+        if (cliente != null && cliente.tieneSaldoAFavor()) {
+            java.math.BigDecimal saldoAFavor = cliente.getSaldoAFavor();
+            maxSaldoAplicable = saldoAFavor.min(totalAdeudado);
+        }
+        model.addAttribute("maxSaldoAplicable", maxSaldoAplicable);
         // Si se pasó facturaId, marcarla como preseleccionada en la vista
         model.addAttribute("preselectedFacturaId", facturaId);
         // Si se pasó facturaId, usar su saldoPendiente para prellenar el monto sugerido
@@ -181,6 +217,7 @@ public class PagoController {
     public String registrarPagoCombinado(
             @RequestParam(value = "facturasIds", required = false) List<Long> facturasIds,
             @RequestParam(value = "montoTotal", required = false) BigDecimal montoTotal,
+            @RequestParam(value = "saldoAFavorAplicar", required = false) BigDecimal saldoAFavorAplicar,
             @RequestParam("metodoPago") MetodoPago metodoPago,
             @RequestParam(value = "referencia", required = false) String referencia,
             @RequestParam(value = "clienteId", required = false) Long clienteId,
@@ -199,26 +236,21 @@ public class PagoController {
         }
 
         try {
-            // Si no se proporcionó montoTotal, calcularlo como la suma de saldos pendientes
+            // Si no se proporcionó saldoAFavorAplicar, usar 0
+            if (saldoAFavorAplicar == null) {
+                saldoAFavorAplicar = BigDecimal.ZERO;
+            }
+            
+            // Si no se proporcionó montoTotal, usar 0 (solo se aplicará saldo a favor)
             if (montoTotal == null) {
-                java.math.BigDecimal suma = java.math.BigDecimal.ZERO;
-                for (Long id : facturasIds) {
-                    try {
-                        Factura f = facturaService.obtenerFacturaPorId(id);
-                        if (f != null && f.getSaldoPendiente() != null) {
-                            suma = suma.add(f.getSaldoPendiente());
-                        }
-                    } catch (Exception ex) {
-                        // ignorar facturas no encontradas en el cálculo
-                    }
-                }
-                montoTotal = suma;
+                montoTotal = BigDecimal.ZERO;
             }
 
             // Llamar al servicio que orquesta las entidades de dominio
             Recibo recibo = pagoService.registrarPagoCombinado(
                 facturasIds,
                 montoTotal,
+                saldoAFavorAplicar,
                 metodoPago,
                 referencia
             );

@@ -158,4 +158,25 @@ public class Servicio {
     public void desactivar() {
         this.activo = false;
     }
+    
+    /**
+     * Modifica los datos del servicio con validaciones.
+     * Permite actualizar nombre, descripción, precio y alícuota IVA.
+     * @param nuevoNombre Nuevo nombre del servicio
+     * @param nuevaDescripcion Nueva descripción del servicio
+     * @param nuevoPrecio Nuevo precio del servicio
+     * @param nuevaAlicuota Nueva alícuota de IVA
+     * @throws IllegalArgumentException si los datos son inválidos
+     */
+    public void modificar(String nuevoNombre, String nuevaDescripcion, 
+                          BigDecimal nuevoPrecio, TipoAlicuotaIVA nuevaAlicuota) {
+        // Actualizar los campos
+        this.nombre = nuevoNombre;
+        this.descripcion = nuevaDescripcion;
+        this.precio = nuevoPrecio;
+        this.alicuotaIVA = nuevaAlicuota;
+        
+        // Validar los nuevos datos
+        this.validar();
+    }
 }

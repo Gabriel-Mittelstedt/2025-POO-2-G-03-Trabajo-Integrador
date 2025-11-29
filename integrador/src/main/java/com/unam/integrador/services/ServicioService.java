@@ -76,4 +76,54 @@ public class ServicioService {
             .findByNombreContainingIgnoreCaseOrDescripcionContainingIgnoreCase(
                 termino, termino);
     }
+    
+    /**
+     * HU-18: Modifica un servicio existente validando sus datos.
+     * @param id ID del servicio a modificar
+     * @param servicioActualizado Servicio con los nuevos datos
+     * @return el servicio modificado
+     * @throws IllegalArgumentException si no existe o los datos son inválidos
+     */
+    @Transactional
+    public Servicio modificarServicio(Long id, Servicio servicioActualizado) {
+        // Buscar el servicio existente
+        Servicio servicio = buscarPorId(id);
+        
+        // Verificar que el nombre no esté en uso por otro servicio
+        if (!servicio.getNombre().equals(servicioActualizado.getNombre())) {
+            servicioRepository.findByNombre(servicioActualizado.getNombre())
+                .ifPresent(s -> {
+                    if (!s.getIDServicio().equals(id)) {
+                        throw new IllegalArgumentException(
+                            "Ya existe otro servicio con el nombre: " + servicioActualizado.getNombre());
+                    }
+                });
+        }
+        
+        // Delegar la modificación al modelo rico
+        servicio.modificar(
+            servicioActualizado.getNombre(),
+            servicioActualizado.getDescripcion(),
+            servicioActualizado.getPrecio(),
+            servicioActualizado.getAlicuotaIVA()
+        );
+        
+        // Persistir cambios
+        return servicioRepository.save(servicio);
+    }
+    
+    /**
+     * HU-19: Da de baja (desactiva) un servicio.
+     * El servicio desactivado no puede ser asignado a nuevos clientes,
+     * pero se mantiene en los contratos existentes.
+     * @param id ID del servicio a dar de baja
+     * @return el servicio desactivado
+     * @throws IllegalArgumentException si no se encuentra el servicio
+     */
+    @Transactional
+    public Servicio darDeBajaServicio(Long id) {
+        Servicio servicio = buscarPorId(id);
+        servicio.desactivar();
+        return servicioRepository.save(servicio);
+    }
 }

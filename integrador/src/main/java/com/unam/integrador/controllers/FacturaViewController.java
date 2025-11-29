@@ -81,7 +81,7 @@ public class FacturaViewController {
     private List<String> generarOpcionesPeriodos() {
         List<String> periodos = new ArrayList<>();
         YearMonth mesActual = YearMonth.now();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMMM yyyy", new Locale("es", "ES"));
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.of("es", "ES"));
         
         // 2 meses hacia atrás + mes actual + 12 meses hacia adelante = 15 períodos
         for (int i = -2; i <= 12; i++) {
@@ -103,7 +103,7 @@ public class FacturaViewController {
      * @return LocalDate con el primer día del mes indicado
      */
     private LocalDate convertirPeriodoALocalDate(String periodoStr) {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMMM yyyy", new Locale("es", "ES"));
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.of("es", "ES"));
         YearMonth yearMonth = YearMonth.parse(periodoStr.toLowerCase(), formatter);
         return yearMonth.atDay(1);
     }

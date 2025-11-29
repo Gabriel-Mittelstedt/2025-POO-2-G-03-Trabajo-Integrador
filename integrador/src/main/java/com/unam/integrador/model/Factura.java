@@ -440,7 +440,7 @@ public class Factura {
         if (this.periodo == null) {
             return null;
         }
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMMM yyyy", new Locale("es", "ES"));
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.of("es", "ES"));
         String formateado = this.periodo.format(formatter);
         // Capitalizar primera letra
         return formateado.substring(0, 1).toUpperCase() + formateado.substring(1);

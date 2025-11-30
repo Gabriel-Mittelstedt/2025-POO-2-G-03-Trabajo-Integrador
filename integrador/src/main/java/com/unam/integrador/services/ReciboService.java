@@ -62,6 +62,7 @@ public class ReciboService {
         StringBuilder facturasInfo = new StringBuilder();
         List<Long> facturasIds = new ArrayList<>();
         String clienteNombre = "";
+        String clienteCuitDni = "";
         Long clienteId = null;
         
         for (int i = 0; i < detalles.size(); i++) {
@@ -80,6 +81,7 @@ public class ReciboService {
             
             if (factura.getCliente() != null) {
                 clienteNombre = factura.getCliente().getNombre();
+                clienteCuitDni = factura.getCliente().getCuitDni();
                 clienteId = factura.getCliente().getId();
             }
         }
@@ -88,6 +90,20 @@ public class ReciboService {
         String numeroRecibo = pago.getNumeroRecibo() != null 
             ? pago.getNumeroRecibo() 
             : generarNumeroRecibo(pago.getIDPago());
+        
+        // Generar desglose de pagos (un pago puede tener múltiples detalles aplicados a diferentes facturas)
+        List<ReciboDTO.DetallePagoDTO> desglosePagos = new ArrayList<>();
+        for (DetallePago detalle : detalles) {
+            Factura factura = detalle.getFactura();
+            String numeroFactura = String.format("%d-%08d", factura.getSerie(), factura.getNroFactura());
+            
+            desglosePagos.add(ReciboDTO.DetallePagoDTO.builder()
+                .metodoPago(pago.getMetodoPago())
+                .numeroFactura(numeroFactura)
+                .facturaId(factura.getIdFactura())
+                .monto(detalle.getMontoAplicado())
+                .build());
+        }
         
         return ReciboDTO.builder()
             .numero(numeroRecibo)
@@ -98,9 +114,11 @@ public class ReciboService {
             .facturasAsociadas(facturasInfo.toString())
             .facturasIds(facturasIds)
             .clienteNombre(clienteNombre)
+            .clienteCuitDni(clienteCuitDni)
             .clienteId(clienteId)
             .pagoId(pago.getIDPago())
             .observaciones(null)
+            .desglosePagos(desglosePagos)
             .build();
     }
     
@@ -179,6 +197,7 @@ public class ReciboService {
         List<Long> facturasIds = new ArrayList<>();
         StringBuilder facturasInfo = new StringBuilder();
         String clienteNombre = "";
+        String clienteCuitDni = "";
         Long clienteId = null;
         
         for (Pago pago : pagos) {
@@ -202,6 +221,7 @@ public class ReciboService {
                 // Tomar datos del cliente de la primera factura
                 if (clienteNombre.isEmpty() && factura.getCliente() != null) {
                     clienteNombre = factura.getCliente().getNombre();
+                    clienteCuitDni = factura.getCliente().getCuitDni();
                     clienteId = factura.getCliente().getId();
                 }
             }
@@ -219,6 +239,24 @@ public class ReciboService {
             observaciones.append(String.format("Saldo a favor aplicado: $%s", saldoAFavorAplicado));
         }
         
+        // Generar desglose de pagos consolidado
+        List<ReciboDTO.DetallePagoDTO> desglosePagos = new ArrayList<>();
+        for (Pago pago : pagos) {
+            List<DetallePago> detalles = detallePagoRepository.findByPagoIDPago(pago.getIDPago());
+            
+            for (DetallePago detalle : detalles) {
+                Factura factura = detalle.getFactura();
+                String numeroFactura = String.format("%d-%08d", factura.getSerie(), factura.getNroFactura());
+                
+                desglosePagos.add(ReciboDTO.DetallePagoDTO.builder()
+                    .metodoPago(pago.getMetodoPago())
+                    .numeroFactura(numeroFactura)
+                    .facturaId(factura.getIdFactura())
+                    .monto(detalle.getMontoAplicado())
+                    .build());
+            }
+        }
+        
         return ReciboDTO.builder()
             .numero(numeroRecibo)
             .fecha(fecha)
@@ -228,9 +266,11 @@ public class ReciboService {
             .facturasAsociadas(facturasInfo.toString())
             .facturasIds(facturasIds)
             .clienteNombre(clienteNombre)
+            .clienteCuitDni(clienteCuitDni)
             .clienteId(clienteId)
             .pagoId(pagos.get(0).getIDPago()) // ID del primer pago para referencia
             .observaciones(observaciones.length() > 0 ? observaciones.toString() : null)
+            .desglosePagos(desglosePagos)
             .build();
     }
     

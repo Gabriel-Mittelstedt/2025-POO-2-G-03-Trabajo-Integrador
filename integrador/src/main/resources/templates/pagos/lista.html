@@ -72,10 +72,9 @@
                     <table class="table table-hover mb-0">
                         <thead>
                             <tr>
-                                <th><i class="bi bi-hash"></i> ID</th>
+                                <th><i class="bi bi-receipt"></i> Recibo</th>
                                 <th><i class="bi bi-calendar"></i> Fecha</th>
                                 <th><i class="bi bi-person"></i> Cliente</th>
-                                <th><i class="bi bi-receipt"></i> Recibo</th>
                                 <th><i class="bi bi-currency-dollar"></i> Monto</th>
                                 <th><i class="bi bi-credit-card"></i> Método</th>
                                 <th><i class="bi bi-hash"></i> Referencia</th>
@@ -83,22 +82,22 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr th:each="recibo : ${recibos}">
-                                <td><strong th:text="${recibo.pagoId}"></strong></td>
+                            <tr th:each="recibo, idxStat : ${recibos}">
+                                <td><strong th:text="${recibo.numero}"></strong></td>
                                 <td th:text="${#temporals.format(recibo.fecha, 'dd/MM/yyyy')}"></td>
                                 <td th:text="${recibo.clienteNombre != null ? recibo.clienteNombre : '-'}"></td>
-                                <td th:text="${recibo.numero}"></td>
                                 <td><strong>$<span th:text="${#numbers.formatDecimal(recibo.monto, 1, 'POINT', 2, 'COMMA')}"></span></strong></td>
                                 <td><span class="badge bg-info" th:text="${recibo.metodoPago}"></span></td>
                                 <td th:text="${recibo.referencia != null and !#strings.isEmpty(recibo.referencia)} ? ${recibo.referencia} : '-'"></td>
                                 <td class="text-center">
-                                    <a th:href="@{/pagos/recibo/{id}(id=${recibo.pagoId})}" class="btn btn-sm btn-info" title="Ver detalle">
+                                    <!-- Si hay múltiples pagos bajo el mismo recibo, abrir por número; si no, por id -->
+                                    <a th:href="${recibo.facturasIds != null and #lists.size(recibo.facturasIds) > 1} ? @{'/pagos/recibo/numero/' + ${recibo.numero}} : @{'/pagos/recibo/' + ${recibo.pagoId}}" class="btn btn-sm btn-info" title="Ver detalle">
                                         <i class="bi bi-eye"></i> Ver
                                     </a>
                                 </td>
                             </tr>
                             <tr th:if="${#lists.isEmpty(recibos)}">
-                                <td colspan="8" class="text-center py-5">
+                                <td colspan="7" class="text-center py-5">
                                     <i class="bi bi-inbox" style="font-size: 3rem; color: #ccc;"></i>
                                     <p class="text-muted mt-3">No se encontraron recibos registrados</p>
                                 </td>

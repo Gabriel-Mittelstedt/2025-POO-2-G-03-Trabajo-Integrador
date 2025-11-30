@@ -60,6 +60,9 @@
 
                         <p class="info-label mb-1 mt-3">Método de Pago</p>
                         <p class="info-value" th:text="${recibo.metodoPago}"></p>
+                        
+                        <p class="info-label mb-1 mt-3">Cliente</p>
+                        <p class="info-value" th:text="${recibo.clienteNombre}"></p>
                     </div>
                     <div class="col-md-6">
                         <p class="info-label mb-1">Monto</p>
@@ -67,21 +70,57 @@
 
                         <p class="info-label mb-1 mt-3">Referencia</p>
                         <p class="info-value" th:text="${recibo.referencia != null and !#strings.isEmpty(recibo.referencia)} ? ${recibo.referencia} : 'Sin referencia'"></p>
+                        
+                        <p class="info-label mb-1 mt-3">CUIT/DNI</p>
+                        <p class="info-value" th:text="${recibo.clienteCuitDni}"></p>
                     </div>
                 </div>
 
                 <hr />
 
-                <h6 class="mb-3"><i class="bi bi-file-earmark-text-fill me-2"></i> Facturas Asociadas</h6>
-
-                <div class="row">
-                    <div class="col-12">
-                        <div class="card border-0 bg-light mb-3">
-                            <div class="card-body">
-                                <p class="mb-0 text-muted" th:text="${recibo.facturasAsociadas}"></p>
+                <!-- Desglose de Pagos -->
+                <div th:if="${recibo.desglosePagos != null and !recibo.desglosePagos.isEmpty()}">
+                    <h6 class="mb-3"><i class="bi bi-list-ul me-2"></i> Desglose de Pagos</h6>
+                    
+                    <div class="card border-0 shadow-sm mb-3">
+                        <div class="card-body p-0">
+                            <div class="list-group list-group-flush">
+                                <div th:each="detalle, iterStat : ${recibo.desglosePagos}" 
+                                     class="list-group-item d-flex justify-content-between align-items-center py-3 px-4"
+                                     th:classappend="${iterStat.index % 2 == 0} ? 'bg-light' : ''"
+                                     style="cursor: default;">
+                                    <div class="d-flex align-items-center">
+                                        <div class="me-3">
+                                            <span class="badge rounded-pill" 
+                                                  th:classappend="${detalle.metodoPago.name() == 'SALDO_A_FAVOR'} ? 'bg-warning text-dark' : 'bg-primary'"
+                                                  th:text="${detalle.metodoPago}"
+                                                  style="font-size: 0.85rem; padding: 0.5em 0.9em;"></span>
+                                        </div>
+                                        <div>
+                                            <div class="fw-semibold mb-1">
+                                                <a th:href="@{'/facturas/' + ${detalle.facturaId}}" 
+                                                   th:text="'Factura ' + ${detalle.numeroFactura}"
+                                                   class="text-decoration-none"
+                                                   style="color: #0d6efd; position: relative; z-index: 10;"
+                                                   onmouseover="this.style.textDecoration='underline'"
+                                                   onmouseout="this.style.textDecoration='none'"></a>
+                                            </div>
+                                            <small class="text-muted">
+                                                <i class="bi bi-file-earmark-text me-1"></i>
+                                                Aplicado a esta factura
+                                            </small>
+                                        </div>
+                                    </div>
+                                    <div class="text-end">
+                                        <div class="fs-5 fw-bold text-success" 
+                                             th:text="${'$' + #numbers.formatDecimal(detalle.monto,1,'POINT',2,'COMMA')}"></div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
+                    
+                    <hr />
                 </div>
 
                 <div class="d-flex justify-content-between mt-4">

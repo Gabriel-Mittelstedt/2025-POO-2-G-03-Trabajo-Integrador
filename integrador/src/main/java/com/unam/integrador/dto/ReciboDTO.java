@@ -69,6 +69,11 @@ public class ReciboDTO {
     private String clienteNombre;
     
     /**
+     * CUIT/DNI del cliente.
+     */
+    private String clienteCuitDni;
+    
+    /**
      * ID del cliente (para navegación).
      */
     private Long clienteId;
@@ -83,4 +88,24 @@ public class ReciboDTO {
      * Ejemplo: "Saldo a favor aplicado: $500.00"
      */
     private String observaciones;
+    
+    /**
+     * Desglose de pagos que componen este recibo.
+     * Útil para pagos combinados con múltiples métodos de pago.
+     */
+    private List<DetallePagoDTO> desglosePagos;
+    
+    /**
+     * DTO interno para representar cada línea del desglose de pagos.
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class DetallePagoDTO {
+        private MetodoPago metodoPago;
+        private String numeroFactura;
+        private Long facturaId;
+        private BigDecimal monto;
+    }
 }

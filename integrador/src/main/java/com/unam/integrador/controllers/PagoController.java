@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -79,9 +80,23 @@ public class PagoController {
         // Usar ReciboService para generar recibos dinámicamente desde los pagos
         List<Pago> pagos = pagoService.listarFiltrados(clienteNombre, desde, hasta);
         
-        // Generar ReciboDTO para cada pago
-        List<ReciboDTO> recibos = pagos.stream()
-            .map(pago -> reciboService.generarReciboDesdePago(pago))
+        // Agrupar pagos por número de recibo para evitar duplicados
+        Map<String, List<Pago>> pagosPorRecibo = pagos.stream()
+            .collect(java.util.stream.Collectors.groupingBy(
+                pago -> pago.getNumeroRecibo() != null ? pago.getNumeroRecibo() : String.valueOf(pago.getIDPago())
+            ));
+        
+        // Generar un ReciboDTO por cada grupo de pagos con el mismo número de recibo
+        List<ReciboDTO> recibos = pagosPorRecibo.values().stream()
+            .map(gruposPagos -> {
+                if (gruposPagos.size() == 1) {
+                    return reciboService.generarReciboDesdePago(gruposPagos.get(0));
+                } else {
+                    String numeroRecibo = gruposPagos.get(0).getNumeroRecibo();
+                    return reciboService.generarReciboDesdeMultiplesPagos(gruposPagos, numeroRecibo);
+                }
+            })
+            .sorted((r1, r2) -> r2.getNumero().compareTo(r1.getNumero())) // Ordenar por número de recibo descendente
             .collect(java.util.stream.Collectors.toList());
 
         model.addAttribute("recibos", recibos);
@@ -92,6 +107,14 @@ public class PagoController {
     public String verReciboDetalle(@PathVariable Long id, Model model) {
         // Generar el ReciboDTO dinámicamente desde el Pago
         ReciboDTO recibo = reciboService.generarReciboPorPagoId(id);
+        model.addAttribute("recibo", recibo);
+        return "pagos/recibo-detalle";
+    }
+    
+    @GetMapping("/recibo/numero/{numero}")
+    public String verReciboDetalleConsolidado(@PathVariable String numero, Model model) {
+        // Generar el ReciboDTO consolidado desde múltiples pagos con el mismo número de recibo
+        ReciboDTO recibo = reciboService.generarReciboConsolidado(numero);
         model.addAttribute("recibo", recibo);
         return "pagos/recibo-detalle";
     }

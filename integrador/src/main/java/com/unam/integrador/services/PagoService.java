@@ -521,16 +521,19 @@ public class PagoService {
     // --- Métodos privados auxiliares ---
     
     /**
-     * Genera un número de recibo secuencial basado en el conteo total de pagos.
-     * Usa un contador simple basado en el máximo ID de pago actual.
+     * Genera un número de recibo secuencial basado en números de recibo únicos existentes.
+     * Cuenta cuántos números de recibo distintos hay y genera el siguiente.
      */
     private String generarNumeroReciboSecuencial() {
-        Long maxId = pagoRepository.findAll().stream()
-            .map(Pago::getIDPago)
-            .max(Long::compareTo)
-            .orElse(0L);
+        // Obtener todos los números de recibo únicos existentes
+        long cantidadRecibos = pagoRepository.findAll().stream()
+            .map(Pago::getNumeroRecibo)
+            .filter(nr -> nr != null && !nr.isEmpty())
+            .distinct()
+            .count();
         
-        return String.format("%08d", maxId);
+        // El siguiente número de recibo es la cantidad actual + 1
+        return String.format("%08d", cantidadRecibos + 1);
     }
     
     /**

@@ -165,80 +165,102 @@
 <script>
     // Actualizar resumen del pago y validar input de saldo a favor
     function formatoMoneda(valor) {
-        return '$' + Number(valor || 0).toFixed(2).replace('.', ',');
+        const num = parseFloat(valor);
+        if (isNaN(num)) return '$0,00';
+        return '$' + num.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, '.').replace('.', ',').replace(/(\d),(\d{2})$/, '$1.$2');
+    }
+
+    function parseMoneda(valor) {
+        if (!valor) return 0;
+        const num = parseFloat(valor);
+        return isNaN(num) ? 0 : num;
     }
 
     function actualizarResumen() {
         const saldoInput = document.getElementById('saldoAFavorAplicar');
         const montoInput = document.getElementById('montoTotal');
-        let saldoAFavor = parseFloat(saldoInput?.value || 0);
-        const montoAdicional = parseFloat(montoInput?.value || 0);
+        
+        let saldoAFavor = parseMoneda(saldoInput?.value);
+        let montoAdicional = parseMoneda(montoInput?.value);
 
-        const max = parseFloat(saldoInput?.getAttribute('max') || 0);
-        const disponible = parseFloat(saldoInput?.dataset?.saldo || 0);
-
-        // Clamp a max permitido
-        if (!isNaN(max) && saldoAFavor > max) {
-            saldoAFavor = max;
-            saldoInput.value = max.toFixed(2);
-        }
-
+        const disponible = parseMoneda(saldoInput?.getAttribute('data-saldo'));
+        
         // Sumar saldos pendientes de facturas seleccionadas
         let pendienteTotal = 0;
-        document.querySelectorAll('input[name="facturasIds"]:checked').forEach(function(chk) {
-            const v = parseFloat(chk.dataset?.saldoPendiente || 0);
-            if (!isNaN(v)) pendienteTotal += v;
+        const checkboxes = document.querySelectorAll('input[name="facturasIds"]:checked');
+        checkboxes.forEach(function(chk) {
+            const saldo = parseMoneda(chk.getAttribute('data-saldo-pendiente'));
+            pendienteTotal += saldo;
         });
 
         // Recalcular máximo aplicable: mínimo entre disponible y suma de saldos pendientes seleccionados
-        const nuevoMax = Math.max(0, Math.min(disponible || 0, pendienteTotal || 0));
+        const nuevoMax = Math.min(disponible, pendienteTotal);
+        
         if (saldoInput) {
             saldoInput.setAttribute('max', nuevoMax.toFixed(2));
         }
+        
         const maxMostrarEl = document.getElementById('maxAplicableMostrar');
         if (maxMostrarEl) {
             maxMostrarEl.textContent = formatoMoneda(nuevoMax);
         }
 
         // Si el valor actual excede el nuevo max, ajustarlo
-        if (!isNaN(saldoAFavor) && saldoAFavor > nuevoMax) {
+        if (saldoAFavor > nuevoMax) {
             saldoAFavor = nuevoMax;
-            if (saldoInput) saldoInput.value = nuevoMax.toFixed(2);
+            if (saldoInput) {
+                saldoInput.value = nuevoMax.toFixed(2);
+            }
         }
 
         // Calcular cuánto del saldo pendiente queda luego de aplicar saldo a favor y monto adicional
-        const aplicado = (isNaN(saldoAFavor) ? 0 : saldoAFavor) + (isNaN(montoAdicional) ? 0 : montoAdicional);
-        const pendienteRestante = Math.max(0, pendienteTotal - aplicado);
+        const totalAplicado = saldoAFavor + montoAdicional;
+        const pendienteRestante = Math.max(0, pendienteTotal - totalAplicado);
 
-        const total = (isNaN(saldoAFavor) ? 0 : saldoAFavor) + (isNaN(montoAdicional) ? 0 : montoAdicional);
-        const restante = Math.max(0, (disponible || 0) - (isNaN(saldoAFavor) ? 0 : saldoAFavor));
-
-        document.getElementById('resumenSaldoAFavor').textContent = formatoMoneda(saldoAFavor);
-        document.getElementById('resumenSaldoPendiente').textContent = formatoMoneda(pendienteRestante);
-        document.getElementById('resumenMontoAdicional').textContent = formatoMoneda(montoAdicional);
-        document.getElementById('resumenTotal').textContent = formatoMoneda(total);
+        // Actualizar visualización
+        const resumenSaldoEl = document.getElementById('resumenSaldoAFavor');
+        const resumenPendienteEl = document.getElementById('resumenSaldoPendiente');
+        const resumenAdicionalEl = document.getElementById('resumenMontoAdicional');
+        const resumenTotalEl = document.getElementById('resumenTotal');
+        
+        if (resumenSaldoEl) resumenSaldoEl.textContent = formatoMoneda(saldoAFavor);
+        if (resumenPendienteEl) resumenPendienteEl.textContent = formatoMoneda(pendienteRestante);
+        if (resumenAdicionalEl) resumenAdicionalEl.textContent = formatoMoneda(montoAdicional);
+        if (resumenTotalEl) resumenTotalEl.textContent = formatoMoneda(totalAplicado);
     }
 
-    // Agregar listeners
-    document.addEventListener('DOMContentLoaded', function() {
+    // Inicializar listeners
+    function inicializarEventos() {
         const saldoInput = document.getElementById('saldoAFavorAplicar');
         const montoInput = document.getElementById('montoTotal');
 
         // Listeners para checkboxes de facturas
-        document.querySelectorAll('input[name="facturasIds"]').forEach(function(chk) {
+        const checkboxes = document.querySelectorAll('input[name="facturasIds"]');
+        checkboxes.forEach(function(chk) {
             chk.addEventListener('change', actualizarResumen);
         });
 
+        // Listeners para inputs
         if (saldoInput) {
             saldoInput.addEventListener('input', actualizarResumen);
+            saldoInput.addEventListener('change', actualizarResumen);
         }
         if (montoInput) {
             montoInput.addEventListener('input', actualizarResumen);
+            montoInput.addEventListener('change', actualizarResumen);
         }
 
-        // Inicializar resumen
+        // Inicializar resumen inmediatamente
         actualizarResumen();
-    });
+    }
+
+    // Ejecutar cuando el DOM esté listo
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', inicializarEventos);
+    } else {
+        // DOM ya está listo
+        inicializarEventos();
+    }
 </script>
 </body>
 </html>

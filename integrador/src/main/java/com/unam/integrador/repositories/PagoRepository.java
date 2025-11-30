@@ -14,13 +14,6 @@ import com.unam.integrador.model.Pago;
 public interface PagoRepository extends JpaRepository<Pago, Long> {
     
     /**
-     * Busca pagos por factura.
-     * @param facturaId ID de la factura
-     * @return Lista de pagos de la factura
-     */
-    List<Pago> findByFacturaIdFactura(Long facturaId);
-    
-    /**
      * Busca todos los pagos que comparten el mismo número de recibo.
      * Útil para reconstruir recibos consolidados de pagos combinados.
      * 

@@ -4,19 +4,20 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.unam.integrador.model.enums.MetodoPago;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.AccessLevel;
@@ -61,9 +62,12 @@ public class Pago {
     
     // --- Relaciones ---
     
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "factura_id", nullable = false)
-    private Factura factura;
+    /**
+     * Detalles de pago que indican a qué facturas se aplicó este pago.
+     * Un pago puede aplicarse a múltiples facturas (pago combinado).
+     */
+    @OneToMany(mappedBy = "pago", cascade = CascadeType.ALL, orphanRemoval = true)
+    private final List<DetallePago> detallesPago = new ArrayList<>();
 
     /**
      * Número de recibo asociado a este pago.
@@ -114,59 +118,67 @@ public class Pago {
     // --- Métodos de Dominio (Comportamiento) ---
     
     /**
-     * Asocia este pago a una factura.
+     * Asocia este pago a una factura creando un DetallePago.
      * Mantiene la consistencia bidireccional de la relación.
      * 
      * @param factura La factura a la que se asocia el pago
-     * @throws IllegalArgumentException si la factura es nula
+     * @param montoAplicado El monto específico del pago que se aplica a esta factura
+     * @return El DetallePago creado
+     * @throws IllegalArgumentException si la factura es nula o el monto es inválido
      */
-    public void asociarFactura(Factura factura) {
+    public DetallePago asociarFactura(Factura factura, BigDecimal montoAplicado) {
         if (factura == null) {
             throw new IllegalArgumentException("La factura no puede ser nula");
         }
-        this.factura = factura;
+        
+        // Crear el detalle de pago usando el factory method (modelo RICO)
+        DetallePago detalle = DetallePago.crear(this, factura, montoAplicado);
+        
+        // Agregar a la lista de detalles
+        this.detallesPago.add(detalle);
+        
+        return detalle;
     }
     
     /**
-     * Verifica si el pago cubre completamente el monto especificado.
-     * Útil para validar pagos totales.
+     * Obtiene todas las facturas asociadas a este pago.
      * 
-     * @param montoTotal El monto a verificar
-     * @return true si el monto del pago es igual o mayor al monto total
+     * @return Lista de facturas (puede estar vacía)
      */
-    public boolean cubreMonto(BigDecimal montoTotal) {
-        if (montoTotal == null) {
-            return false;
-        }
-        return this.monto.compareTo(montoTotal) >= 0;
+    public List<Factura> obtenerFacturas() {
+        return detallesPago.stream()
+            .map(DetallePago::getFactura)
+            .toList();
     }
     
     /**
-     * Verifica si el pago es parcial respecto al monto total especificado.
+     * Calcula el monto total aplicado de este pago.
+     * Suma todos los montos aplicados en los detalles de pago.
      * 
-     * @param montoTotal El monto total a comparar
-     * @return true si el pago es menor al monto total
+     * @return Monto total aplicado
      */
-    public boolean esPagoParcial(BigDecimal montoTotal) {
-        if (montoTotal == null) {
-            return false;
-        }
-        return this.monto.compareTo(montoTotal) < 0;
+    public BigDecimal calcularMontoTotalAplicado() {
+        return detallesPago.stream()
+            .map(DetallePago::getMontoAplicado)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
     
     /**
-     * Verifica si el monto del pago es válido para el saldo pendiente.
-     * El pago no debe exceder el saldo pendiente.
+     * Calcula el monto restante del pago (no aplicado a facturas).
      * 
-     * @param saldoPendiente El saldo pendiente de la factura
-     * @return true si el pago es válido
+     * @return Monto restante
      */
-    public boolean esMontoValido(BigDecimal saldoPendiente) {
-        if (saldoPendiente == null) {
-            return false;
-        }
-        // El pago no debe ser mayor al saldo pendiente
-        return this.monto.compareTo(saldoPendiente) <= 0;
+    public BigDecimal calcularMontoRestante() {
+        return this.monto.subtract(calcularMontoTotalAplicado());
+    }
+    
+    /**
+     * Verifica si el pago ha sido completamente aplicado a facturas.
+     * 
+     * @return true si todo el monto fue aplicado
+     */
+    public boolean estaCompletamenteAplicado() {
+        return calcularMontoRestante().compareTo(BigDecimal.ZERO) == 0;
     }
     
     // --- Métodos de Validación Privados ---
@@ -230,13 +242,6 @@ public class Pago {
     // --- Setters controlados solo para uso interno/JPA ---
     // Estos métodos son package-private para permitir su uso desde el service
     // pero evitar el uso indiscriminado desde fuera del paquete
-    
-    /**
-     * Setter interno para la factura (usado por JPA y métodos de dominio).
-     */
-    void setFactura(Factura factura) {
-        this.factura = factura;
-    }
 
     /**
      * Setter package-private para asignar el número de recibo cuando un recibo

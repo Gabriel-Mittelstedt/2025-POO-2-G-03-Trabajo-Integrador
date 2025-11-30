@@ -11,8 +11,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.unam.integrador.dto.ReciboDTO;
+import com.unam.integrador.model.DetallePago;
 import com.unam.integrador.model.Factura;
 import com.unam.integrador.model.Pago;
+import com.unam.integrador.repositories.DetallePagoRepository;
 import com.unam.integrador.repositories.PagoRepository;
 
 /**
@@ -33,6 +35,9 @@ public class ReciboService {
     @Autowired
     private PagoRepository pagoRepository;
     
+    @Autowired
+    private DetallePagoRepository detallePagoRepository;
+    
     /**
      * Genera un ReciboDTO a partir de un Pago individual.
      * 
@@ -46,18 +51,31 @@ public class ReciboService {
             throw new IllegalArgumentException("El pago no puede ser nulo");
         }
         
-        // Obtener información de la factura asociada
-        Factura factura = pago.getFactura();
-        String facturasInfo = "";
+        // Obtener los detalles de pago asociados
+        List<DetallePago> detalles = detallePagoRepository.findByPagoIDPago(pago.getIDPago());
+        
+        if (detalles.isEmpty()) {
+            throw new IllegalStateException("El pago no tiene facturas asociadas");
+        }
+        
+        // Obtener información de las facturas desde los detalles
+        StringBuilder facturasInfo = new StringBuilder();
         List<Long> facturasIds = new ArrayList<>();
         String clienteNombre = "";
         Long clienteId = null;
         
-        if (factura != null) {
-            facturasInfo = String.format("Factura %d-%08d ($%s)", 
+        for (int i = 0; i < detalles.size(); i++) {
+            DetallePago detalle = detalles.get(i);
+            Factura factura = detalle.getFactura();
+            
+            if (i > 0) {
+                facturasInfo.append(", ");
+            }
+            
+            facturasInfo.append(String.format("Factura %d-%08d ($%s)", 
                 factura.getSerie(), 
                 factura.getNroFactura(), 
-                factura.getTotal());
+                detalle.getMontoAplicado())); // Usar el monto aplicado del detalle
             facturasIds.add(factura.getIdFactura());
             
             if (factura.getCliente() != null) {
@@ -77,7 +95,7 @@ public class ReciboService {
             .monto(pago.getMonto())
             .metodoPago(pago.getMetodoPago())
             .referencia(pago.getReferencia())
-            .facturasAsociadas(facturasInfo)
+            .facturasAsociadas(facturasInfo.toString())
             .facturasIds(facturasIds)
             .clienteNombre(clienteNombre)
             .clienteId(clienteId)
@@ -164,17 +182,22 @@ public class ReciboService {
         Long clienteId = null;
         
         for (Pago pago : pagos) {
-            Factura factura = pago.getFactura();
-            if (factura != null) {
+            List<DetallePago> detalles = detallePagoRepository.findByPagoIDPago(pago.getIDPago());
+            
+            for (DetallePago detalle : detalles) {
+                Factura factura = detalle.getFactura();
+                
                 if (facturasInfo.length() > 0) {
                     facturasInfo.append(", ");
                 }
                 facturasInfo.append(String.format("Factura %d-%08d ($%s)", 
                     factura.getSerie(), 
                     factura.getNroFactura(), 
-                    pago.getMonto()));
+                    detalle.getMontoAplicado())); // Usar el monto aplicado del detalle
                 
-                facturasIds.add(factura.getIdFactura());
+                if (!facturasIds.contains(factura.getIdFactura())) {
+                    facturasIds.add(factura.getIdFactura());
+                }
                 
                 // Tomar datos del cliente de la primera factura
                 if (clienteNombre.isEmpty() && factura.getCliente() != null) {
@@ -255,11 +278,17 @@ public class ReciboService {
         
         return pagos.stream()
             .filter(pago -> {
-                if (pago.getFactura() == null || pago.getFactura().getCliente() == null) {
-                    return false;
-                }
-                String nombre = pago.getFactura().getCliente().getNombre();
-                return nombre != null && nombre.toLowerCase().contains(clienteNombre.toLowerCase());
+                // Obtener los detalles de pago para verificar si alguna factura pertenece al cliente
+                List<DetallePago> detalles = detallePagoRepository.findByPagoIDPago(pago.getIDPago());
+                
+                return detalles.stream().anyMatch(detalle -> {
+                    Factura factura = detalle.getFactura();
+                    if (factura == null || factura.getCliente() == null) {
+                        return false;
+                    }
+                    String nombre = factura.getCliente().getNombre();
+                    return nombre != null && nombre.toLowerCase().contains(clienteNombre.toLowerCase());
+                });
             })
             .map(this::generarReciboDesdePago)
             .collect(Collectors.toList());

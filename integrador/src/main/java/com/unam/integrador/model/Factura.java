@@ -69,8 +69,12 @@ public class Factura {
     @OneToMany(mappedBy = "factura", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<NotaCredito> notasCredito = new ArrayList<>();
 
+    /**
+     * Detalles de pago aplicados a esta factura.
+     * Una factura puede tener múltiples pagos (pagos parciales).
+     */
     @OneToMany(mappedBy = "factura", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Pago> pagos = new ArrayList<>();
+    private List<DetallePago> detallesPago = new ArrayList<>();
 
     /**
      * Lote de facturación masiva al que pertenece esta factura (si aplica).
@@ -325,9 +329,11 @@ public class Factura {
      * Actualiza el saldo pendiente y el estado a PAGADA_TOTALMENTE.
      * 
      * @param pago El pago a registrar
+     * @param montoAplicado El monto del pago que se aplica a esta factura
+     * @return El DetallePago creado
      * @throws IllegalStateException si la factura ya está pagada o anulada
      */
-    public void registrarPagoTotal(Pago pago) {
+    public DetallePago registrarPagoTotal(Pago pago, BigDecimal montoAplicado) {
         if (this.estado == EstadoFactura.PAGADA_TOTALMENTE) {
             throw new IllegalStateException("La factura ya está totalmente pagada");
         }
@@ -335,15 +341,19 @@ public class Factura {
             throw new IllegalStateException("No se puede registrar pago en una factura anulada");
         }
         
-        // Agregar el pago a la lista
-        this.pagos.add(pago);
-        pago.setFactura(this);
+        // Crear el detalle de pago
+        DetallePago detalle = DetallePago.crear(pago, this, montoAplicado);
+        
+        // Agregar a la lista
+        this.detallesPago.add(detalle);
         
         // Actualizar saldo pendiente
-        this.saldoPendiente = BigDecimal.ZERO;
+        this.saldoPendiente = this.saldoPendiente.subtract(montoAplicado);
         
         // Cambiar estado a pagada totalmente
         this.estado = EstadoFactura.PAGADA_TOTALMENTE;
+        
+        return detalle;
     }
 
     /**
@@ -351,26 +361,30 @@ public class Factura {
      * Actualiza el saldo pendiente y el estado a PAGADA_PARCIALMENTE.
      * 
      * @param pago El pago parcial a registrar
+     * @param montoAplicado El monto del pago que se aplica a esta factura
+     * @return El DetallePago creado
      * @throws IllegalStateException si la factura está anulada o ya pagada totalmente
      * @throws IllegalArgumentException si el monto del pago excede el saldo pendiente
      */
-    public void registrarPagoParcial(Pago pago) {
+    public DetallePago registrarPagoParcial(Pago pago, BigDecimal montoAplicado) {
         if (this.estado == EstadoFactura.PAGADA_TOTALMENTE) {
             throw new IllegalStateException("La factura ya está totalmente pagada");
         }
         if (this.estado == EstadoFactura.ANULADA) {
             throw new IllegalStateException("No se puede registrar pago en una factura anulada");
         }
-        if (pago.getMonto().compareTo(this.saldoPendiente) > 0) {
+        if (montoAplicado.compareTo(this.saldoPendiente) > 0) {
             throw new IllegalArgumentException("El monto del pago no puede exceder el saldo pendiente");
         }
         
-        // Agregar el pago a la lista
-        this.pagos.add(pago);
-        pago.setFactura(this);
+        // Crear el detalle de pago
+        DetallePago detalle = DetallePago.crear(pago, this, montoAplicado);
+        
+        // Agregar a la lista
+        this.detallesPago.add(detalle);
         
         // Actualizar saldo pendiente
-        this.saldoPendiente = this.saldoPendiente.subtract(pago.getMonto());
+        this.saldoPendiente = this.saldoPendiente.subtract(montoAplicado);
         
         // Actualizar estado
         if (this.saldoPendiente.compareTo(BigDecimal.ZERO) == 0) {
@@ -378,6 +392,32 @@ public class Factura {
         } else {
             this.estado = EstadoFactura.PAGADA_PARCIALMENTE;
         }
+        
+        return detalle;
+    }
+    
+    /**
+     * Obtiene todos los pagos aplicados a esta factura.
+     * 
+     * @return Lista de pagos (puede estar vacía)
+     */
+    public List<Pago> obtenerPagos() {
+        return detallesPago.stream()
+            .map(DetallePago::getPago)
+            .distinct()
+            .toList();
+    }
+    
+    /**
+     * Calcula el monto total pagado de esta factura.
+     * Suma todos los montos aplicados de los detalles de pago.
+     * 
+     * @return Monto total pagado
+     */
+    public BigDecimal calcularMontoPagado() {
+        return detallesPago.stream()
+            .map(DetallePago::getMontoAplicado)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     /**

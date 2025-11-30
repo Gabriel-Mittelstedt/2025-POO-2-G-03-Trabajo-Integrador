@@ -27,6 +27,16 @@ import lombok.NoArgsConstructor;
  * - Monto específico del pago aplicado a esta factura
  * - Fecha y hora de aplicación del pago
  * 
+ * Responsabilidades:
+ * - Almacenar datos de la asociación Pago-Factura
+ * - Validar la integridad de los datos (montos, referencias no nulas, etc.)
+ * - Garantizar que el monto aplicado no exceda el saldo pendiente de la factura
+ * 
+ * NO es responsable de:
+ * - Lógica de negocio sobre tipos de pago (total/parcial) → Ver Factura
+ * - Cálculos de porcentajes y distribuciones → Ver Pago y Factura
+ * - Gestión del flujo de pagos → Ver PagoService
+ * 
  * Implementa el patrón de Modelo Rico (Rich Domain Model):
  * - Constructor privado con factory methods
  * - Validaciones de reglas de negocio
@@ -105,63 +115,13 @@ public class DetallePago {
      * @throws IllegalArgumentException si alguna validación falla
      */
     public static DetallePago crear(Pago pago, Factura factura, BigDecimal montoAplicado) {
-        return new DetallePago(pago, factura, montoAplicado);
-    }
-    
-    // --- Métodos de Dominio (Comportamiento) ---
-    
-    /**
-     * Verifica si este detalle representa un pago total de la factura.
-     * 
-     * @return true si el monto aplicado cubre el saldo pendiente de la factura
-     */
-    public boolean esPagoTotal() {
-        if (factura == null || factura.getSaldoPendiente() == null) {
-            return false;
-        }
-        return montoAplicado.compareTo(factura.getSaldoPendiente()) >= 0;
-    }
-    
-    /**
-     * Verifica si este detalle representa un pago parcial de la factura.
-     * 
-     * @return true si el monto aplicado es menor al saldo pendiente de la factura
-     */
-    public boolean esPagoParcial() {
-        if (factura == null || factura.getSaldoPendiente() == null) {
-            return false;
-        }
-        return montoAplicado.compareTo(factura.getSaldoPendiente()) < 0;
-    }
-    
-    /**
-     * Calcula el porcentaje del pago total que representa este monto aplicado.
-     * 
-     * @return Porcentaje (0-100) del pago total
-     */
-    public BigDecimal calcularPorcentajeDelPagoTotal() {
-        if (pago == null || pago.getMonto() == null || pago.getMonto().compareTo(BigDecimal.ZERO) == 0) {
-            return BigDecimal.ZERO;
-        }
+        DetallePago detalle = new DetallePago(pago, factura, montoAplicado);
         
-        return montoAplicado
-            .multiply(BigDecimal.valueOf(100))
-            .divide(pago.getMonto(), 2, RoundingMode.HALF_UP);
-    }
-    
-    /**
-     * Calcula el porcentaje del total de la factura que representa este pago.
-     * 
-     * @return Porcentaje (0-100) del total de la factura
-     */
-    public BigDecimal calcularPorcentajeDelTotalFactura() {
-        if (factura == null || factura.getTotal() == null || factura.getTotal().compareTo(BigDecimal.ZERO) == 0) {
-            return BigDecimal.ZERO;
-        }
+        // Mantener coherencia bidireccional después de construir el objeto
+        pago.agregarDetallePago(detalle);
+        factura.agregarDetallePago(detalle);
         
-        return montoAplicado
-            .multiply(BigDecimal.valueOf(100))
-            .divide(factura.getTotal(), 2, RoundingMode.HALF_UP);
+        return detalle;
     }
     
     // --- Métodos de Validación Privados ---
@@ -245,21 +205,5 @@ public class DetallePago {
                     "El monto aplicado ($%s) no puede exceder el saldo pendiente de la factura ($%s)",
                     montoAplicado, factura.getSaldoPendiente()));
         }
-    }
-    
-    // --- Setters controlados solo para uso interno/JPA ---
-    
-    /**
-     * Setter package-private para el pago (usado por JPA y métodos de dominio).
-     */
-    void setPago(Pago pago) {
-        this.pago = pago;
-    }
-    
-    /**
-     * Setter package-private para la factura (usado por JPA y métodos de dominio).
-     */
-    void setFactura(Factura factura) {
-        this.factura = factura;
     }
 }

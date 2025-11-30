@@ -12,12 +12,24 @@ import com.unam.integrador.model.enums.EstadoFactura;
 import com.unam.integrador.model.enums.TipoCondicionIVA;
 import com.unam.integrador.model.enums.TipoFactura;
 
-import jakarta.persistence.*;
-
-import lombok.Data;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-@Data
+@Getter
 @Entity
 @NoArgsConstructor
 public class Factura {
@@ -50,31 +62,37 @@ public class Factura {
     private TipoFactura tipo;
     
     @Enumerated(EnumType.STRING)
+    @Setter(AccessLevel.NONE)
     private EstadoFactura estado;
 
     // --- Campos Calculados y Opcionales ---
     // Se inicializan en 0 o null y se calculan con un método.
+    @Setter(AccessLevel.NONE)
     private BigDecimal subtotal;
+    @Setter(AccessLevel.NONE)
     private double descuento;
     private String motivoDescuento;
+    @Setter(AccessLevel.NONE)
     private BigDecimal totalIva;
+    @Setter(AccessLevel.NONE)
     private BigDecimal saldoPendiente;
+    @Setter(AccessLevel.NONE)
     private BigDecimal total;
 
     //--Relaciones--
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @JoinColumn(name = "factura_id") 
-    private List<ItemFactura> detalleFactura = new ArrayList<>();
+    private final List<ItemFactura> detalleFactura = new ArrayList<>();
 
     @OneToMany(mappedBy = "factura", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<NotaCredito> notasCredito = new ArrayList<>();
+    private final List<NotaCredito> notasCredito = new ArrayList<>();
 
     /**
      * Detalles de pago aplicados a esta factura.
      * Una factura puede tener múltiples pagos (pagos parciales).
      */
     @OneToMany(mappedBy = "factura", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<DetallePago> detallesPago = new ArrayList<>();
+    private final List<DetallePago> detallesPago = new ArrayList<>();
 
     /**
      * Lote de facturación masiva al que pertenece esta factura (si aplica).
@@ -325,75 +343,85 @@ public class Factura {
     }
 
     /**
-     * Registra un pago total para esta factura.
-     * Actualiza el saldo pendiente y el estado a PAGADA_TOTALMENTE.
+     * Registra un pago en esta factura.
+     * Actualiza automáticamente el saldo pendiente y el estado según corresponda.
      * 
      * @param pago El pago a registrar
      * @param montoAplicado El monto del pago que se aplica a esta factura
      * @return El DetallePago creado
-     * @throws IllegalStateException si la factura ya está pagada o anulada
+     * @throws IllegalStateException si la factura está anulada o ya pagada totalmente
      */
-    public DetallePago registrarPagoTotal(Pago pago, BigDecimal montoAplicado) {
-        if (this.estado == EstadoFactura.PAGADA_TOTALMENTE) {
-            throw new IllegalStateException("La factura ya está totalmente pagada");
-        }
-        if (this.estado == EstadoFactura.ANULADA) {
-            throw new IllegalStateException("No se puede registrar pago en una factura anulada");
-        }
+    public DetallePago registrarPago(Pago pago, BigDecimal montoAplicado) {
+        // Validar que puede recibir el pago
+        validarPuedeRecibirPago(montoAplicado);
         
-        // Crear el detalle de pago
+        // Crear el detalle de pago (ya valida que monto no exceda saldo pendiente)
         DetallePago detalle = DetallePago.crear(pago, this, montoAplicado);
-        
-        // Agregar a la lista
-        this.detallesPago.add(detalle);
+        agregarDetallePago(detalle);
         
         // Actualizar saldo pendiente
         this.saldoPendiente = this.saldoPendiente.subtract(montoAplicado);
         
-        // Cambiar estado a pagada totalmente
-        this.estado = EstadoFactura.PAGADA_TOTALMENTE;
+        // Actualizar estado automáticamente según el saldo
+        actualizarEstadoSegunSaldo();
         
         return detalle;
     }
-
+    
     /**
-     * Registra un pago parcial para esta factura.
-     * Actualiza el saldo pendiente y el estado a PAGADA_PARCIALMENTE.
+     * Valida que la factura puede recibir un pago.
+     * Método de lógica de negocio que encapsula las reglas.
      * 
-     * @param pago El pago parcial a registrar
-     * @param montoAplicado El monto del pago que se aplica a esta factura
-     * @return El DetallePago creado
-     * @throws IllegalStateException si la factura está anulada o ya pagada totalmente
-     * @throws IllegalArgumentException si el monto del pago excede el saldo pendiente
+     * @param monto El monto del pago a validar
+     * @throws IllegalStateException si la factura no puede recibir pagos
+     * @throws IllegalArgumentException si el monto es inválido
      */
-    public DetallePago registrarPagoParcial(Pago pago, BigDecimal montoAplicado) {
+    public void validarPuedeRecibirPago(BigDecimal monto) {
         if (this.estado == EstadoFactura.PAGADA_TOTALMENTE) {
             throw new IllegalStateException("La factura ya está totalmente pagada");
         }
         if (this.estado == EstadoFactura.ANULADA) {
             throw new IllegalStateException("No se puede registrar pago en una factura anulada");
         }
-        if (montoAplicado.compareTo(this.saldoPendiente) > 0) {
-            throw new IllegalArgumentException("El monto del pago no puede exceder el saldo pendiente");
+        if (monto == null || monto.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("El monto del pago debe ser mayor a cero");
         }
-        
-        // Crear el detalle de pago
-        DetallePago detalle = DetallePago.crear(pago, this, montoAplicado);
-        
-        // Agregar a la lista
-        this.detallesPago.add(detalle);
-        
-        // Actualizar saldo pendiente
-        this.saldoPendiente = this.saldoPendiente.subtract(montoAplicado);
-        
-        // Actualizar estado
+        if (monto.compareTo(this.saldoPendiente) > 0) {
+            throw new IllegalArgumentException(
+                String.format("El monto del pago ($%s) no puede exceder el saldo pendiente ($%s)",
+                    monto, this.saldoPendiente));
+        }
+    }
+    
+    /**
+     * Agrega un detalle de pago manteniendo la coherencia bidireccional.
+     * Método package-private para uso interno.
+     */
+    void agregarDetallePago(DetallePago detalle) {
+        if (!this.detallesPago.contains(detalle)) {
+            this.detallesPago.add(detalle);
+        }
+    }
+    
+    /**
+     * Setter público para loteFacturacion.
+     * Usado por LoteFacturacion para mantener bidireccionalidad.
+     */
+    public void setLoteFacturacion(LoteFacturacion lote) {
+        this.loteFacturacion = lote;
+    }
+    
+    /**
+     * Actualiza el estado de la factura según el saldo pendiente.
+     * Método privado de lógica interna.
+     */
+    private void actualizarEstadoSegunSaldo() {
         if (this.saldoPendiente.compareTo(BigDecimal.ZERO) == 0) {
             this.estado = EstadoFactura.PAGADA_TOTALMENTE;
-        } else {
+        } else if (this.saldoPendiente.compareTo(this.total) < 0) {
             this.estado = EstadoFactura.PAGADA_PARCIALMENTE;
         }
-        
-        return detalle;
+        // Si el saldo es igual al total, mantiene el estado actual (PENDIENTE o VENCIDA)
     }
     
     /**

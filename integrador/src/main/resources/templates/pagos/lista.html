@@ -87,7 +87,7 @@
                                 <td th:text="${#temporals.format(recibo.fecha, 'dd/MM/yyyy')}"></td>
                                 <td th:text="${recibo.clienteNombre != null ? recibo.clienteNombre : '-'}"></td>
                                 <td><strong>$<span th:text="${#numbers.formatDecimal(recibo.monto, 1, 'POINT', 2, 'COMMA')}"></span></strong></td>
-                                <td><span class="badge bg-info" th:text="${recibo.metodoPago}"></span></td>
+                                <td><span class="badge bg-info" th:text="${recibo.metodoPagoDisplay}"></span></td>
                                 <td th:text="${recibo.referencia != null and !#strings.isEmpty(recibo.referencia)} ? ${recibo.referencia} : '-'"></td>
                                 <td class="text-center">
                                     <!-- Si hay múltiples pagos bajo el mismo recibo, abrir por número; si no, por id -->

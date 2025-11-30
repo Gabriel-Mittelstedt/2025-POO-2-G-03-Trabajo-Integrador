@@ -14,6 +14,7 @@ import com.unam.integrador.dto.ReciboDTO;
 import com.unam.integrador.model.DetallePago;
 import com.unam.integrador.model.Factura;
 import com.unam.integrador.model.Pago;
+import com.unam.integrador.model.enums.MetodoPago;
 import com.unam.integrador.repositories.DetallePagoRepository;
 import com.unam.integrador.repositories.PagoRepository;
 
@@ -110,6 +111,7 @@ public class ReciboService {
             .fecha(pago.getFechaPago())
             .monto(pago.getMonto())
             .metodoPago(pago.getMetodoPago())
+            .metodoPagoDisplay(pago.getMetodoPagoDisplay())
             .referencia(pago.getReferencia())
             .facturasAsociadas(facturasInfo.toString())
             .facturasIds(facturasIds)
@@ -262,6 +264,7 @@ public class ReciboService {
             .fecha(fecha)
             .monto(montoTotal)
             .metodoPago(metodoPago)
+            .metodoPagoDisplay(calcularMetodoPagoDisplay(pagos))
             .referencia(referencia)
             .facturasAsociadas(facturasInfo.toString())
             .facturasIds(facturasIds)
@@ -286,6 +289,30 @@ public class ReciboService {
             throw new IllegalArgumentException("El ID del pago no puede ser nulo");
         }
         return String.format("%08d", pagoId);
+    }
+    
+    /**
+     * Calcula el método de pago para mostrar cuando hay múltiples pagos consolidados.
+     * Si hay saldo a favor usado, muestra la combinación.
+     * 
+     * @param pagos Lista de pagos consolidados
+     * @return String con método de pago para display
+     */
+    private String calcularMetodoPagoDisplay(List<Pago> pagos) {
+        boolean tieneSaldoAFavor = pagos.stream()
+                .anyMatch(p -> p.getMetodoPago() == MetodoPago.SALDO_A_FAVOR);
+        
+        MetodoPago metodoPrincipal = pagos.stream()
+                .filter(p -> p.getMetodoPago() != MetodoPago.SALDO_A_FAVOR)
+                .findFirst()
+                .map(Pago::getMetodoPago)
+                .orElse(MetodoPago.SALDO_A_FAVOR);
+        
+        if (tieneSaldoAFavor && metodoPrincipal != MetodoPago.SALDO_A_FAVOR) {
+            return metodoPrincipal.toString() + " + SALDO A FAVOR";
+        }
+        
+        return metodoPrincipal.toString();
     }
     
     /**

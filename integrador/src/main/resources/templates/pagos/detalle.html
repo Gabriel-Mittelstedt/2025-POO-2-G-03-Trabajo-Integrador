@@ -51,7 +51,7 @@
                     </div>
                     <div class="col-md-6">
                         <p><strong><i class="bi bi-credit-card"></i> Método de Pago:</strong> 
-                           <span th:text="${pago.metodoPago}"></span></p>
+                           <span th:text="${pago.metodoPagoDisplay}"></span></p>
                         <p><strong><i class="bi bi-hash"></i> Referencia:</strong> 
                            <span th:text="${pago.referencia != null and !#strings.isEmpty(pago.referencia)} ? ${pago.referencia} : 'Sin referencia'"></span></p>
                     </div>

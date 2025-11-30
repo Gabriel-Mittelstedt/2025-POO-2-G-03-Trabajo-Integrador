@@ -23,19 +23,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.AccessLevel;
 
-/**
- * Entidad de dominio que representa un Pago realizado sobre una Factura.
- * 
- * Implementa el patrón de Modelo Rico (Rich Domain Model) donde la entidad
- * contiene tanto datos como comportamiento/lógica de negocio.
- * 
- * Características del modelo rico:
- * - Constructor privado que fuerza el uso de factory methods
- * - Factory methods que validan y establecen el estado inicial correcto
- * - Validaciones de reglas de negocio dentro de la entidad
- * - Métodos de dominio para operaciones complejas
- * - Encapsulación: solo getters públicos, sin setters directos
- */
+
 @Getter
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED) // Solo para JPA

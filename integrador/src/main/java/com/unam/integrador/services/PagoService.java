@@ -379,11 +379,20 @@ public class PagoService {
         int ultimoNumero = reciboRepository.findUltimoNumeroRecibo();
         String numero = String.format("%08d", ultimoNumero + 1);
 
+        // Determinar el método de pago que se mostrará en el recibo.
+        // Si el pago es exclusivamente con saldo a favor (montoTotal == 0
+        // y se aplicó saldoAFavorAplicar > 0), entonces marcar el recibo
+        // como SALDO_A_FAVOR para que el historial lo muestre correctamente.
+        MetodoPago metodoParaRecibo = metodoPago;
+        if (montoTotal.compareTo(BigDecimal.ZERO) == 0 && saldoAFavorAplicar.compareTo(BigDecimal.ZERO) > 0) {
+            metodoParaRecibo = MetodoPago.SALDO_A_FAVOR;
+        }
+
         // Crear el recibo usando el factory method del modelo rico
         Recibo recibo = Recibo.crearRecibo(
             numero,
             montoTotalCombinado,
-            metodoPago,
+            metodoParaRecibo,
             referencia,
             facturasInfo.toString()
         );

@@ -44,6 +44,9 @@ public class PagoController {
     @Autowired
     private com.unam.integrador.repositories.ReciboRepository reciboRepository;
     
+    @Autowired
+    private com.unam.integrador.repositories.PagoRepository pagoRepository;
+    
     /**
      * Muestra la lista de todos los pagos.
      */
@@ -108,7 +111,23 @@ public class PagoController {
             })
             .collect(java.util.stream.Collectors.toList());
 
+        // Determinar cuáles recibos incluyen un pago con 'SALDO_A_FAVOR'
+        java.util.Set<Long> recibosConSaldo = new java.util.HashSet<>();
+        for (com.unam.integrador.model.Recibo r : filtered) {
+            try {
+                if (r.getNumero() != null) {
+                    boolean tieneSaldo = pagoRepository.existsByNumeroReciboAndMetodoPago(r.getNumero(), MetodoPago.SALDO_A_FAVOR);
+                    if (tieneSaldo) {
+                        recibosConSaldo.add(r.getIDRecibo());
+                    }
+                }
+            } catch (Exception e) {
+                // No interrumpir el listado por errores puntuales en la consulta
+            }
+        }
+
         model.addAttribute("recibos", filtered);
+        model.addAttribute("recibosConSaldo", recibosConSaldo);
         return "pagos/lista";
     }
 
@@ -116,7 +135,70 @@ public class PagoController {
     public String verReciboDetalle(@PathVariable Long id, Model model) {
         com.unam.integrador.model.Recibo recibo = reciboRepository.findById(id)
             .orElseThrow(() -> new IllegalArgumentException("Recibo no encontrado con ID: " + id));
+
         model.addAttribute("recibo", recibo);
+
+        // Construir una lista de facturas asociadas al recibo y traer el desglose de pagos
+        java.util.List<com.unam.integrador.model.Factura> facturas = new java.util.ArrayList<>();
+        try {
+            if (recibo.getNumero() != null) {
+                java.util.List<com.unam.integrador.model.Pago> pagos = pagoRepository.findByNumeroRecibo(recibo.getNumero());
+                // Añadir la lista de pagos al modelo para que la vista pueda mostrar el desglose
+                model.addAttribute("pagos", pagos);
+
+                // Evitar facturas duplicadas: varias entradas de Pago pueden referir a la misma Factura
+                java.util.Set<com.unam.integrador.model.Factura> facturasSet = new java.util.LinkedHashSet<>();
+                for (com.unam.integrador.model.Pago p : pagos) {
+                    if (p != null && p.getFactura() != null) {
+                        facturasSet.add(p.getFactura());
+                    }
+                }
+                facturas.addAll(facturasSet);
+            }
+
+            // Si no encontramos pagos, intentar usar la relación 1:1 (pago dentro del recibo)
+            if (facturas.isEmpty() && recibo.getPago() != null && recibo.getPago().getFactura() != null) {
+                facturas.add(recibo.getPago().getFactura());
+            }
+        } catch (Exception e) {
+            // No romper la vista por problemas al recuperar facturas; usaremos el fallback textual
+        }
+
+        // Determinar si en el conjunto de pagos existe al menos un pago con SALDO_A_FAVOR
+        boolean tieneSaldoAFavor = false;
+        java.math.BigDecimal totalSaldoAplicado = java.math.BigDecimal.ZERO;
+        java.util.Map<com.unam.integrador.model.enums.MetodoPago, java.math.BigDecimal> resumenMetodos = new java.util.LinkedHashMap<>();
+        try {
+            java.util.List<com.unam.integrador.model.Pago> pagos = (java.util.List<com.unam.integrador.model.Pago>) model.asMap().get("pagos");
+            // Si el modelo aún no contiene la lista (por algún fallback), intentar recuperarla de la BD
+            if (pagos == null) {
+                if (recibo.getNumero() != null) {
+                    pagos = pagoRepository.findByNumeroRecibo(recibo.getNumero());
+                } else if (recibo.getPago() != null) {
+                    pagos = java.util.Collections.singletonList(recibo.getPago());
+                }
+            }
+            if (pagos != null) {
+                for (com.unam.integrador.model.Pago p : pagos) {
+                    if (p == null) continue;
+                    java.math.BigDecimal monto = p.getMonto() != null ? p.getMonto() : java.math.BigDecimal.ZERO;
+                    // Sumar por método
+                    resumenMetodos.merge(p.getMetodoPago(), monto, java.math.BigDecimal::add);
+                    // Acumular saldo aplicado
+                    if (p.getMetodoPago() == com.unam.integrador.model.enums.MetodoPago.SALDO_A_FAVOR) {
+                        tieneSaldoAFavor = true;
+                        totalSaldoAplicado = totalSaldoAplicado.add(monto);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            // Silenciar y dejar los valores por defecto
+        }
+
+        model.addAttribute("facturas", facturas);
+        model.addAttribute("tieneSaldoAFavor", tieneSaldoAFavor);
+        model.addAttribute("totalSaldoAplicado", totalSaldoAplicado);
+        model.addAttribute("resumenMetodos", resumenMetodos);
         return "pagos/recibo-detalle";
     }
 
@@ -258,11 +340,11 @@ public class PagoController {
      * Recibe los parámetros directamente del formulario HTML sin usar DTO.
      */
     @PostMapping("/registrar-combinado")
-    public String registrarPagoCombinado(
+        public String registrarPagoCombinado(
             @RequestParam(value = "facturasIds", required = false) List<Long> facturasIds,
             @RequestParam(value = "montoTotal", required = false) BigDecimal montoTotal,
             @RequestParam(value = "saldoAFavorAplicar", required = false) BigDecimal saldoAFavorAplicar,
-            @RequestParam("metodoPago") MetodoPago metodoPago,
+            @RequestParam(value = "metodoPago", required = false) MetodoPago metodoPago,
             @RequestParam(value = "referencia", required = false) String referencia,
             @RequestParam(value = "clienteId", required = false) Long clienteId,
             RedirectAttributes redirectAttributes) {
@@ -288,6 +370,17 @@ public class PagoController {
             // Si no se proporcionó montoTotal, usar 0 (solo se aplicará saldo a favor)
             if (montoTotal == null) {
                 montoTotal = BigDecimal.ZERO;
+            }
+
+            // Si el usuario ingresó un monto a pagar pero no seleccionó método,
+            // requerimos que elija uno (no podemos procesar un pago monetario sin método).
+            if (montoTotal.compareTo(BigDecimal.ZERO) > 0 && metodoPago == null) {
+                redirectAttributes.addFlashAttribute("error", "Debe seleccionar un método de pago si ingresa un monto a pagar.");
+                if (clienteId != null) {
+                    redirectAttributes.addFlashAttribute("suggestedMonto", montoTotal);
+                    return "redirect:/pagos/seleccionar-facturas/" + clienteId;
+                }
+                return "redirect:/pagos";
             }
 
             // Llamar al servicio que orquesta las entidades de dominio

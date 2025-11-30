@@ -89,7 +89,13 @@
                                 <td th:text="${recibo.pago != null and recibo.pago.factura != null ? recibo.pago.factura.cliente.nombre : '-'}"></td>
                                 <td th:text="${recibo.numero}"></td>
                                 <td><strong>$<span th:text="${#numbers.formatDecimal(recibo.monto, 1, 'POINT', 2, 'COMMA')}"></span></strong></td>
-                                <td><span class="badge bg-info" th:text="${recibo.metodoPago}"></span></td>
+                                  <td>
+                                    <span class="badge bg-info" th:text="${recibo.metodoPago}"></span>
+                                    <span th:if="${recibosConSaldo != null and recibosConSaldo.contains(recibo.IDRecibo)}"
+                                        class="text-muted mx-2 fw-bold" aria-hidden="true">+</span>
+                                    <span th:if="${recibosConSaldo != null and recibosConSaldo.contains(recibo.IDRecibo)}"
+                                        class="badge bg-warning text-dark">Saldo a favor</span>
+                                  </td>
                                 <td th:text="${recibo.referencia != null and !#strings.isEmpty(recibo.referencia)} ? ${recibo.referencia} : '-'"></td>
                                 <td class="text-center">
                                     <a th:href="@{/pagos/recibo/{id}(id=${recibo.IDRecibo})}" class="btn btn-sm btn-info" title="Ver detalle">

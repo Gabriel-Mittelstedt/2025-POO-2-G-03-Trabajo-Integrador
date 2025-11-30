@@ -19,4 +19,14 @@ public interface PagoRepository extends JpaRepository<Pago, Long> {
      * @return Lista de pagos de la factura
      */
     List<Pago> findByFacturaIdFactura(Long facturaId);
+
+    /**
+     * Busca pagos asociados a un número de recibo (útil para recibos que agrupan varios pagos).
+     */
+    List<Pago> findByNumeroRecibo(String numeroRecibo);
+
+    /**
+     * Indica si existe al menos un pago con el número de recibo dado y el método especificado.
+     */
+    boolean existsByNumeroReciboAndMetodoPago(String numeroRecibo, com.unam.integrador.model.enums.MetodoPago metodoPago);
 }

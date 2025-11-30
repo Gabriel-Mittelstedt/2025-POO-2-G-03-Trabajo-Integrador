@@ -18,9 +18,9 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.AccessLevel;
 
 /**
  * Entidad de dominio que representa un Pago realizado sobre una Factura.
@@ -118,37 +118,31 @@ public class Pago {
     // --- Métodos de Dominio (Comportamiento) ---
     
     /**
-     * Asocia este pago a una factura creando un DetallePago.
-     * Mantiene la consistencia bidireccional de la relación.
-     * 
-     * @param factura La factura a la que se asocia el pago
-     * @param montoAplicado El monto específico del pago que se aplica a esta factura
-     * @return El DetallePago creado
-     * @throws IllegalArgumentException si la factura es nula o el monto es inválido
+     * Agrega un detalle de pago manteniendo la coherencia bidireccional.
+     * Método package-private para uso interno.
      */
-    public DetallePago asociarFactura(Factura factura, BigDecimal montoAplicado) {
-        if (factura == null) {
-            throw new IllegalArgumentException("La factura no puede ser nula");
+    void agregarDetallePago(DetallePago detalle) {
+        if (!this.detallesPago.contains(detalle)) {
+            this.detallesPago.add(detalle);
         }
-        
-        // Crear el detalle de pago usando el factory method (modelo RICO)
-        DetallePago detalle = DetallePago.crear(this, factura, montoAplicado);
-        
-        // Agregar a la lista de detalles
-        this.detallesPago.add(detalle);
-        
-        return detalle;
     }
     
     /**
-     * Obtiene todas las facturas asociadas a este pago.
+     * Retorna la representación del método de pago para mostrar en UI.
+     * Si el pago tiene detalles con SALDO_A_FAVOR, muestra combinación.
      * 
-     * @return Lista de facturas (puede estar vacía)
+     * @return String con método de pago (ej: "EFECTIVO + SALDO A FAVOR")
      */
-    public List<Factura> obtenerFacturas() {
-        return detallesPago.stream()
-            .map(DetallePago::getFactura)
-            .toList();
+    public String getMetodoPagoDisplay() {
+        // Verificar si hay algún detalle con saldo a favor
+        boolean tieneSaldoAFavor = detallesPago.stream()
+                .anyMatch(d -> d.getPago().getMetodoPago() == MetodoPago.SALDO_A_FAVOR);
+        
+        if (tieneSaldoAFavor && this.metodoPago != MetodoPago.SALDO_A_FAVOR) {
+            return this.metodoPago.toString() + " + SALDO A FAVOR";
+        }
+        
+        return this.metodoPago.toString();
     }
     
     /**
@@ -161,24 +155,6 @@ public class Pago {
         return detallesPago.stream()
             .map(DetallePago::getMontoAplicado)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
-    }
-    
-    /**
-     * Calcula el monto restante del pago (no aplicado a facturas).
-     * 
-     * @return Monto restante
-     */
-    public BigDecimal calcularMontoRestante() {
-        return this.monto.subtract(calcularMontoTotalAplicado());
-    }
-    
-    /**
-     * Verifica si el pago ha sido completamente aplicado a facturas.
-     * 
-     * @return true si todo el monto fue aplicado
-     */
-    public boolean estaCompletamenteAplicado() {
-        return calcularMontoRestante().compareTo(BigDecimal.ZERO) == 0;
     }
     
     // --- Métodos de Validación Privados ---

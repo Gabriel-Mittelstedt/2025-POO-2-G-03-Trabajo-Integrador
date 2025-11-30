@@ -1,31 +1,39 @@
 package com.unam.integrador.services;
 
 import java.math.BigDecimal;
-import java.util.List;
+import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.unam.integrador.model.CuentaCliente;
 import com.unam.integrador.model.DetallePago;
 import com.unam.integrador.model.Factura;
 import com.unam.integrador.model.Pago;
 import com.unam.integrador.model.CuentaCliente;
 import com.unam.integrador.model.enums.EstadoFactura;
 import com.unam.integrador.model.enums.MetodoPago;
+import com.unam.integrador.repositories.CuentaClienteRepositorie;
 import com.unam.integrador.repositories.DetallePagoRepository;
 import com.unam.integrador.repositories.FacturaRepository;
 import com.unam.integrador.repositories.PagoRepository;
-import com.unam.integrador.repositories.CuentaClienteRepositorie;
-import java.time.LocalDate;
 
 /**
  * Servicio de aplicación para la gestión de pagos.
  * 
- * Este servicio actúa como orquestador delgado, coordinando las operaciones
- * pero delegando la lógica de negocio a las entidades del dominio (modelo RICO).
+ * Responsabilidad: ORQUESTACIÓN únicamente
+ * - Coordina repositorios y transacciones
+ * - Genera números de recibo
+ * - NO contiene lógica de negocio (delegada a entidades)
+ * 
+ * La lógica de negocio reside en:
+ * - Factura: validaciones, cálculo de estado
+ * - Pago: validaciones, factory method
+ * - DetallePago: validaciones de integridad
  */
 @Service
 public class PagoService {
@@ -55,33 +63,10 @@ public class PagoService {
      */
     @Transactional
     public Pago registrarPagoTotal(Long facturaId, MetodoPago metodoPago, String referencia) {
-        // 1. Obtener factura
         Factura factura = facturaRepository.findById(facturaId)
             .orElseThrow(() -> new IllegalArgumentException("Factura no encontrada con ID: " + facturaId));
         
-        BigDecimal montoTotal = factura.getSaldoPendiente();
-        
-        // 2. Crear pago usando el factory method (modelo RICO)
-        Pago pago = Pago.crearPago(montoTotal, metodoPago, referencia);
-        
-        // 3. Guardar pago para obtener ID
-        Pago pagoGuardado = pagoRepository.save(pago);
-        
-        // 4. Registrar pago en la factura creando el DetallePago (delegar al dominio)
-        DetallePago detalle = factura.registrarPagoTotal(pagoGuardado, montoTotal);
-        
-        // 5. Guardar el detalle
-        detallePagoRepository.save(detalle);
-        
-        // 6. Generar número de recibo y guardarlo en el pago
-        String numeroRecibo = generarNumeroRecibo(pagoGuardado.getIDPago());
-        pagoGuardado.setNumeroRecibo(numeroRecibo);
-        pagoRepository.save(pagoGuardado);
-        
-        // 7. Guardar factura actualizada
-        facturaRepository.save(factura);
-        
-        return pagoGuardado;
+        return registrarPagoInterno(factura, factura.getSaldoPendiente(), metodoPago, referencia);
     }
 
     /**
@@ -96,28 +81,31 @@ public class PagoService {
      */
     @Transactional
     public Pago registrarPagoParcial(Long facturaId, BigDecimal monto, MetodoPago metodoPago, String referencia) {
-        // 1. Obtener factura
         Factura factura = facturaRepository.findById(facturaId)
             .orElseThrow(() -> new IllegalArgumentException("Factura no encontrada con ID: " + facturaId));
         
-        // 2. Crear pago usando el factory method (modelo RICO)
+        return registrarPagoInterno(factura, monto, metodoPago, referencia);
+    }
+    
+    /**
+     * Método interno para registrar un pago (reutilizado por pagoTotal y pagoParcial).
+     * Centraliza la lógica común de registro de pagos.
+     */
+    private Pago registrarPagoInterno(Factura factura, BigDecimal monto, MetodoPago metodoPago, String referencia) {
+        // 1. Crear pago usando el factory method (modelo RICO)
         Pago pago = Pago.crearPago(monto, metodoPago, referencia);
-        
-        // 3. Guardar pago para obtener ID
         Pago pagoGuardado = pagoRepository.save(pago);
         
-        // 4. Registrar pago parcial en la factura creando el DetallePago (delegar al dominio)
-        DetallePago detalle = factura.registrarPagoParcial(pagoGuardado, monto);
-        
-        // 5. Guardar el detalle
+        // 2. Registrar pago en la factura (método unificado que decide estado automáticamente)
+        DetallePago detalle = factura.registrarPago(pagoGuardado, monto);
         detallePagoRepository.save(detalle);
         
-        // 6. Generar número de recibo y guardarlo en el pago
+        // 3. Generar y asignar número de recibo
         String numeroRecibo = generarNumeroRecibo(pagoGuardado.getIDPago());
         pagoGuardado.setNumeroRecibo(numeroRecibo);
         pagoRepository.save(pagoGuardado);
         
-        // 7. Guardar factura actualizada
+        // 4. Guardar factura actualizada
         facturaRepository.save(factura);
         
         return pagoGuardado;
@@ -310,6 +298,11 @@ public class PagoService {
         BigDecimal montoTotalAplicadoSaldoAFavor = BigDecimal.ZERO;
         BigDecimal montoTotalAplicadoMetodoPago = BigDecimal.ZERO;
         
+        // Construir referencia única para evitar duplicados
+        String referenciaUnica = (referencia != null && !referencia.trim().isEmpty()) 
+            ? referencia 
+            : null;
+        
         for (Factura factura : facturas) {
             if (montoRestante.compareTo(BigDecimal.ZERO) <= 0) {
                 break; // Ya no hay más dinero para distribuir
@@ -325,15 +318,11 @@ public class PagoService {
             if (montoRestante.compareTo(saldoAFavorAplicar) <= 0) {
                 // Este pago es completamente con saldo a favor
                 Pago pagoSaldo = Pago.crearPago(montoPago, MetodoPago.SALDO_A_FAVOR, 
-                    "Aplicacion de saldo a favor del cliente");
+                    "Aplicacion de saldo a favor del cliente: Factura " + factura.getSerie() + "-" + 
+                    String.format("%08d", factura.getNroFactura()));
                 pagoRepository.save(pagoSaldo);
                 
-                DetallePago detalle;
-                if (montoPago.compareTo(saldoFactura) >= 0) {
-                    detalle = factura.registrarPagoTotal(pagoSaldo, montoPago);
-                } else {
-                    detalle = factura.registrarPagoParcial(pagoSaldo, montoPago);
-                }
+                DetallePago detalle = factura.registrarPago(pagoSaldo, montoPago);
                 detallePagoRepository.save(detalle);
                 
                 pagosGenerados.add(pagoSaldo);
@@ -349,7 +338,7 @@ public class PagoService {
                         "Aplicacion de saldo a favor del cliente");
                     pagoRepository.save(pagoSaldo);
                     
-                    DetallePago detalleSaldo = factura.registrarPagoParcial(pagoSaldo, porcionSaldoAFavor);
+                    DetallePago detalleSaldo = factura.registrarPago(pagoSaldo, porcionSaldoAFavor);
                     detallePagoRepository.save(detalleSaldo);
                     
                     pagosGenerados.add(pagoSaldo);
@@ -357,15 +346,10 @@ public class PagoService {
                 }
                 
                 if (porcionMetodoPago.compareTo(BigDecimal.ZERO) > 0) {
-                    Pago pagoMetodo = Pago.crearPago(porcionMetodoPago, metodoPago, referencia);
+                    Pago pagoMetodo = Pago.crearPago(porcionMetodoPago, metodoPago, referenciaUnica);
                     pagoRepository.save(pagoMetodo);
                     
-                    DetallePago detalleMetodo;
-                    if (factura.getSaldoPendiente().compareTo(BigDecimal.ZERO) == 0) {
-                        detalleMetodo = factura.registrarPagoTotal(pagoMetodo, porcionMetodoPago);
-                    } else {
-                        detalleMetodo = factura.registrarPagoParcial(pagoMetodo, porcionMetodoPago);
-                    }
+                    DetallePago detalleMetodo = factura.registrarPago(pagoMetodo, porcionMetodoPago);
                     detallePagoRepository.save(detalleMetodo);
                     
                     pagosGenerados.add(pagoMetodo);
@@ -373,15 +357,10 @@ public class PagoService {
                 }
             } else {
                 // Este pago es completamente con el método de pago tradicional
-                Pago pago = Pago.crearPago(montoPago, metodoPago, referencia);
+                Pago pago = Pago.crearPago(montoPago, metodoPago, referenciaUnica);
                 pagoRepository.save(pago);
                 
-                DetallePago detalle;
-                if (montoPago.compareTo(saldoFactura) >= 0) {
-                    detalle = factura.registrarPagoTotal(pago, montoPago);
-                } else {
-                    detalle = factura.registrarPagoParcial(pago, montoPago);
-                }
+                DetallePago detalle = factura.registrarPago(pago, montoPago);
                 detallePagoRepository.save(detalle);
                 
                 pagosGenerados.add(pago);
@@ -393,11 +372,10 @@ public class PagoService {
         }
         
         // 7. Si sobra dinero, crear saldo a favor
-        if (montoRestante.compareTo(BigDecimal.ZERO) > 0) {
+        BigDecimal totalRestante = montoRestante;
+        if (totalRestante.compareTo(BigDecimal.ZERO) > 0) {
             // Registrar el saldo a favor usando el método de dominio
-            cliente.registrarSaldoAFavor(montoRestante);
-            
-            // No se persiste MovimientoSaldo: se registra el saldo en la CuentaCliente y se genera un Recibo
+            cliente.registrarSaldoAFavor(totalRestante);
             cuentaClienteRepository.save(cliente);
         }
         
@@ -494,12 +472,7 @@ public class PagoService {
             pagoRepository.save(pago);
             
             // Registrar pago en la factura con DetallePago
-            DetallePago detalle;
-            if (montoAplicar.compareTo(saldoFactura) >= 0) {
-                detalle = factura.registrarPagoTotal(pago, montoAplicar);
-            } else {
-                detalle = factura.registrarPagoParcial(pago, montoAplicar);
-            }
+            DetallePago detalle = factura.registrarPago(pago, montoAplicar);
             detallePagoRepository.save(detalle);
             facturaRepository.save(factura);
             

@@ -161,8 +161,10 @@ public class PagoController {
         java.util.List<Factura> facturasImpagas = pagoService.listarFacturasImpagasPorCliente(clienteId);
         model.addAttribute("cliente", cliente);
         model.addAttribute("facturas", facturasImpagas);
-        // Agregar métodos de pago disponibles y total adeudado para prellenar el formulario
-        model.addAttribute("metodosPago", MetodoPago.values());
+        // Agregar métodos de pago disponibles (sin SALDO_A_FAVOR) y total adeudado para prellenar el formulario
+        model.addAttribute("metodosPago", java.util.Arrays.stream(MetodoPago.values())
+                .filter(m -> m != MetodoPago.SALDO_A_FAVOR)
+                .toArray(MetodoPago[]::new));
         java.math.BigDecimal totalAdeudado = facturasImpagas.stream()
                 .map(Factura::getSaldoPendiente)
                 .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
@@ -247,7 +249,9 @@ public class PagoController {
         model.addAttribute("cliente", cliente);
         model.addAttribute("facturas", facturasImpagas);
         model.addAttribute("totalAdeudado", totalAdeudado);
-        model.addAttribute("metodosPago", MetodoPago.values());
+        model.addAttribute("metodosPago", java.util.Arrays.stream(MetodoPago.values())
+                .filter(m -> m != MetodoPago.SALDO_A_FAVOR)
+                .toArray(MetodoPago[]::new));
         
         return "pagos/formulario-combinado";
     }
@@ -261,7 +265,7 @@ public class PagoController {
             @RequestParam(value = "facturasIds", required = false) List<Long> facturasIds,
             @RequestParam(value = "montoTotal", required = false) BigDecimal montoTotal,
             @RequestParam(value = "saldoAFavorAplicar", required = false) BigDecimal saldoAFavorAplicar,
-            @RequestParam("metodoPago") MetodoPago metodoPago,
+            @RequestParam(value = "metodoPago", required = false) MetodoPago metodoPago,
             @RequestParam(value = "referencia", required = false) String referencia,
             @RequestParam(value = "clienteId", required = false) Long clienteId,
             RedirectAttributes redirectAttributes) {
@@ -287,6 +291,20 @@ public class PagoController {
             // Si no se proporcionó montoTotal, usar 0 (solo se aplicará saldo a favor)
             if (montoTotal == null) {
                 montoTotal = BigDecimal.ZERO;
+            }
+            
+            // Si no se proporcionó metodoPago y hay monto, es un error
+            if (metodoPago == null && montoTotal.compareTo(BigDecimal.ZERO) > 0) {
+                redirectAttributes.addFlashAttribute("error", "Debe seleccionar un método de pago cuando ingresa un monto");
+                if (clienteId != null) {
+                    return "redirect:/pagos/seleccionar-facturas/" + clienteId;
+                }
+                return "redirect:/pagos";
+            }
+            
+            // Si no hay metodoPago, usar SALDO_A_FAVOR por defecto
+            if (metodoPago == null) {
+                metodoPago = MetodoPago.SALDO_A_FAVOR;
             }
 
             // Llamar al servicio que orquesta las entidades de dominio

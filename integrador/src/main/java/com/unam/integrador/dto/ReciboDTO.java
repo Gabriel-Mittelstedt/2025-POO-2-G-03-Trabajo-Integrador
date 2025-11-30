@@ -48,6 +48,12 @@ public class ReciboDTO {
     private MetodoPago metodoPago;
     
     /**
+     * Método de pago para mostrar en UI (incluye combinaciones).
+     * Ejemplo: "EFECTIVO + SALDO A FAVOR"
+     */
+    private String metodoPagoDisplay;
+    
+    /**
      * Referencia o comprobante del pago (opcional).
      */
     private String referencia;

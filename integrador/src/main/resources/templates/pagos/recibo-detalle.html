@@ -59,7 +59,7 @@
                         <p class="info-value" th:text="${#temporals.format(recibo.fecha, 'dd/MM/yyyy')}"></p>
 
                         <p class="info-label mb-1 mt-3">Método de Pago</p>
-                        <p class="info-value" th:text="${recibo.metodoPago}"></p>
+                        <p class="info-value" th:text="${recibo.metodoPagoDisplay}"></p>
                         
                         <p class="info-label mb-1 mt-3">Cliente</p>
                         <p class="info-value" th:text="${recibo.clienteNombre}"></p>

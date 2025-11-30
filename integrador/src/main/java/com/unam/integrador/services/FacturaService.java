@@ -245,8 +245,8 @@ public class FacturaService {
      * Obtiene el siguiente número de factura para una serie.
      */
     private int obtenerSiguienteNumeroFactura(int serie) {
-        int ultimoNumero = facturaRepository.findUltimoNumeroFactura(serie);
-        return ultimoNumero + 1;
+        Factura ultimaFactura = facturaRepository.findFirstBySerieOrderByNroFacturaDesc(serie);
+        return (ultimaFactura != null) ? ultimaFactura.getNroFactura() + 1 : 1;
     }
 
     /**
@@ -309,8 +309,8 @@ public class FacturaService {
      * Obtiene el siguiente número de nota de crédito para una serie.
      */
     private int obtenerSiguienteNumeroNotaCredito(int serie) {
-        int ultimoNumero = notaCreditoRepository.findUltimoNumeroNotaCredito(serie);
-        return ultimoNumero + 1;
+        NotaCredito ultimaNota = notaCreditoRepository.findFirstBySerieOrderByNroNotaCreditoDesc(serie);
+        return (ultimaNota != null) ? ultimaNota.getNroNotaCredito() + 1 : 1;
     }
 
     /**

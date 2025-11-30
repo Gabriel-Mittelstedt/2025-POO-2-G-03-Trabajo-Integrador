@@ -104,7 +104,7 @@
                         </thead>
                         <tbody>
                             <tr th:each="factura : ${lote.facturas}">
-                                <td><strong th:text="${#strings.concat(T(String).format('%04d', factura.serie), '-', T(String).format('%08d', factura.nroFactura))}"></strong></td>
+                                <td><strong th:text="${#numbers.formatInteger(factura.serie, 4)} + '-' + ${#numbers.formatInteger(factura.nroFactura, 8)}"></strong></td>
                                 <td>
                                     <span th:class="${factura.tipo.name() == 'A' ? 'badge bg-primary' : 
                                                     factura.tipo.name() == 'B' ? 'badge bg-success' : 'badge bg-info'}"

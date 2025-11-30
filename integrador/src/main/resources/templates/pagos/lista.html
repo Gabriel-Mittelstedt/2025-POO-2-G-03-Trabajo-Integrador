@@ -86,7 +86,7 @@
                             <tr th:each="recibo : ${recibos}">
                                 <td><strong th:text="${recibo.IDRecibo}"></strong></td>
                                 <td th:text="${#temporals.format(recibo.fecha, 'dd/MM/yyyy')}"></td>
-                                <td th:text="${recibo.pago != null and recibo.pago.factura != null ? recibo.pago.factura.cliente.nombre : '-'}"></td>
+                                <td th:text="${!#lists.isEmpty(recibo.facturas) && recibo.facturas[0].cliente != null ? recibo.facturas[0].cliente.nombre : '-'}"></td>
                                 <td th:text="${recibo.numero}"></td>
                                 <td><strong>$<span th:text="${#numbers.formatDecimal(recibo.monto, 1, 'POINT', 2, 'COMMA')}"></span></strong></td>
                                   <td>

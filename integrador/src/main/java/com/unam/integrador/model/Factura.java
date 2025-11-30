@@ -69,8 +69,8 @@ public class Factura {
     @OneToMany(mappedBy = "factura", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<NotaCredito> notasCredito = new ArrayList<>();
 
-    @OneToMany(mappedBy = "factura", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Pago> pagos = new ArrayList<>();
+    @OneToMany(mappedBy = "factura", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<PagoFactura> aplicaciones = new ArrayList<>();
 
     /**
      * Lote de facturación masiva al que pertenece esta factura (si aplica).
@@ -327,23 +327,27 @@ public class Factura {
      * @param pago El pago a registrar
      * @throws IllegalStateException si la factura ya está pagada o anulada
      */
-    public void registrarPagoTotal(Pago pago) {
+    public com.unam.integrador.model.PagoFactura registrarPagoTotal(Pago pago) {
         if (this.estado == EstadoFactura.PAGADA_TOTALMENTE) {
             throw new IllegalStateException("La factura ya está totalmente pagada");
         }
         if (this.estado == EstadoFactura.ANULADA) {
             throw new IllegalStateException("No se puede registrar pago en una factura anulada");
         }
-        
-        // Agregar el pago a la lista
-        this.pagos.add(pago);
-        pago.setFactura(this);
-        
+        // Crear la aplicación entre pago y factura (no persistida aquí)
+        PagoFactura pf = new PagoFactura(pago, this, pago.getMonto(), java.time.LocalDate.now(), pago.getReferencia());
+
+        // Asociaciones en memoria
+        this.aplicaciones.add(pf);
+        pago.addAplicacion(pf);
+
         // Actualizar saldo pendiente
         this.saldoPendiente = BigDecimal.ZERO;
-        
+
         // Cambiar estado a pagada totalmente
         this.estado = EstadoFactura.PAGADA_TOTALMENTE;
+
+        return pf;
     }
 
     /**
@@ -354,7 +358,7 @@ public class Factura {
      * @throws IllegalStateException si la factura está anulada o ya pagada totalmente
      * @throws IllegalArgumentException si el monto del pago excede el saldo pendiente
      */
-    public void registrarPagoParcial(Pago pago) {
+    public com.unam.integrador.model.PagoFactura registrarPagoParcial(Pago pago) {
         if (this.estado == EstadoFactura.PAGADA_TOTALMENTE) {
             throw new IllegalStateException("La factura ya está totalmente pagada");
         }
@@ -364,20 +368,24 @@ public class Factura {
         if (pago.getMonto().compareTo(this.saldoPendiente) > 0) {
             throw new IllegalArgumentException("El monto del pago no puede exceder el saldo pendiente");
         }
-        
-        // Agregar el pago a la lista
-        this.pagos.add(pago);
-        pago.setFactura(this);
-        
+        // Crear la aplicación
+        PagoFactura pf = new PagoFactura(pago, this, pago.getMonto(), java.time.LocalDate.now(), pago.getReferencia());
+
+        // Asociaciones en memoria
+        this.aplicaciones.add(pf);
+        pago.addAplicacion(pf);
+
         // Actualizar saldo pendiente
         this.saldoPendiente = this.saldoPendiente.subtract(pago.getMonto());
-        
+
         // Actualizar estado
         if (this.saldoPendiente.compareTo(BigDecimal.ZERO) == 0) {
             this.estado = EstadoFactura.PAGADA_TOTALMENTE;
         } else {
             this.estado = EstadoFactura.PAGADA_PARCIALMENTE;
         }
+
+        return pf;
     }
 
     /**

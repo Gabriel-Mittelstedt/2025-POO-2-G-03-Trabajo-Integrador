@@ -18,7 +18,7 @@ public interface PagoRepository extends JpaRepository<Pago, Long> {
      * @param facturaId ID de la factura
      * @return Lista de pagos de la factura
      */
-    List<Pago> findByFacturaIdFactura(Long facturaId);
+    // use PagoFacturaRepository to query pagos by factura
 
     /**
      * Busca pagos asociados a un número de recibo (útil para recibos que agrupan varios pagos).

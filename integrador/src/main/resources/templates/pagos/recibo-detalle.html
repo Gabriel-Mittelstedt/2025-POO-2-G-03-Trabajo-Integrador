@@ -67,7 +67,7 @@
                         <!-- Información adicional: cliente y resumen de métodos -->
                         <div class="mt-3">
                             <p class="info-label mb-1">Cliente</p>
-                            <p class="info-value" th:text="${recibo.pago != null && recibo.pago.factura != null && recibo.pago.factura.cliente != null ? recibo.pago.factura.cliente.nombre : '-'}"></p>
+                            <p class="info-value" th:text="${!#lists.isEmpty(recibo.facturas) && recibo.facturas[0].cliente != null ? recibo.facturas[0].cliente.nombre : '-'}"></p>
                         </div>
                     </div>
                     <div class="col-md-6">
@@ -78,7 +78,7 @@
                         <p class="info-value" th:text="${recibo.referencia != null and !#strings.isEmpty(recibo.referencia)} ? ${recibo.referencia} : 'Sin referencia'"></p>
 
                         <p class="info-label mb-1 mt-3">CUIT/DNI</p>
-                        <p class="info-value" th:text="${recibo.pago != null && recibo.pago.factura != null && recibo.pago.factura.cliente != null ? recibo.pago.factura.cliente.cuitDni : '-'}"></p>
+                        <p class="info-value" th:text="${!#lists.isEmpty(recibo.facturas) && recibo.facturas[0].cliente != null ? recibo.facturas[0].cliente.cuitDni : '-'}"></p>
                     </div>
                 </div>
 
@@ -91,7 +91,13 @@
                         <div th:each="p : ${pagos}" class="list-group-item d-flex justify-content-between align-items-center">
                             <div>
                                 <div class="fw-semibold" th:text="${p.metodoPago}"></div>
-                                <small class="text-muted">Factura: <a th:href="@{/facturas/{id}(id=${p.factura.idFactura})}" th:text="${p.factura.serie + '-' + #numbers.formatInteger(p.factura.nroFactura,8)}"></a></small>
+                                <small class="text-muted">Factura: 
+                                    <span th:if="${!#lists.isEmpty(p.facturas)}">
+                                        <a th:href="@{/facturas/{id}(id=${p.facturas[0].idFactura})}" th:text="${p.facturas[0].serie + '-' + #numbers.formatInteger(p.facturas[0].nroFactura,8)}"></a>
+                                        <span th:if="${p.facturas.size() > 1}"> (y <span th:text="${p.facturas.size()-1}"></span> más)</span>
+                                    </span>
+                                    <span th:if="${#lists.isEmpty(p.facturas)}">-</span>
+                                </small>
                             </div>
                             <div class="text-end">
                                 <div class="fw-semibold text-success" th:text="${'$' + #numbers.formatDecimal(p.monto,1,'POINT',2,'COMMA')}"></div>

@@ -59,27 +59,32 @@
 
                 <hr>
 
-                <h6><i class="bi bi-file-text"></i> Factura Pagada</h6>
+                <h6><i class="bi bi-file-text"></i> Factura(s) Pagada(s)</h6>
                 <div class="card">
                     <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-4">
-                                <strong>Factura N°:</strong>
-                                <p th:text="${pago.factura.serie + '-' + #numbers.formatInteger(pago.factura.nroFactura, 8)}"></p>
+                        <div th:if="${!#lists.isEmpty(pago.facturas)}">
+                            <div th:each="f, idx : ${pago.facturas}" class="row mb-2">
+                                <div class="col-md-4">
+                                    <strong>Factura N°:</strong>
+                                    <p th:text="${f.serie + '-' + #numbers.formatInteger(f.nroFactura, 8)}"></p>
+                                </div>
+                                <div class="col-md-4">
+                                    <strong>Cliente:</strong>
+                                    <p th:text="${f.cliente != null ? f.cliente.nombre : '-'}"></p>
+                                </div>
+                                <div class="col-md-4">
+                                    <strong>Estado:</strong>
+                                    <span class="badge bg-success" th:text="${f.estado != null ? f.estado.descripcion : '-'}"></span>
+                                </div>
                             </div>
-                            <div class="col-md-4">
-                                <strong>Cliente:</strong>
-                                <p th:text="${pago.factura.cliente.nombre}"></p>
-                            </div>
-                            <div class="col-md-4">
-                                <strong>Estado:</strong>
-                                <span class="badge bg-success" th:text="${pago.factura.estado.descripcion}"></span>
+                            <div class="mt-2">
+                                <a th:each="f : ${pago.facturas}" th:href="@{/facturas/{id}(id=${f.idFactura})}" class="btn btn-sm btn-info me-1">
+                                    <i class="bi bi-eye"></i> Ver Factura
+                                </a>
                             </div>
                         </div>
-                        <div class="mt-2">
-                            <a th:href="@{/facturas/{id}(id=${pago.factura.idFactura})}" class="btn btn-sm btn-info">
-                                <i class="bi bi-eye"></i> Ver Factura
-                            </a>
+                        <div th:if="${#lists.isEmpty(pago.facturas)}">
+                            <p class="text-muted">No hay facturas asociadas a este pago.</p>
                         </div>
                     </div>
                 </div>
@@ -110,8 +115,13 @@
                     <a href="/pagos" class="btn btn-secondary">
                         <i class="bi bi-arrow-left"></i> Volver al Listado
                     </a>
-                    <a th:href="@{/facturas/{id}(id=${pago.factura.idFactura})}" class="btn btn-primary">
-                        <i class="bi bi-file-text"></i> Ver Factura
+                    <span th:if="${!#lists.isEmpty(pago.facturas)}">
+                        <a th:each="f : ${pago.facturas}" th:href="@{/facturas/{id}(id=${f.idFactura})}" class="btn btn-primary me-1">
+                            <i class="bi bi-file-text"></i> Ver Factura
+                        </a>
+                    </span>
+                    <a th:if="${#lists.isEmpty(pago.facturas)}" th:href="@{/facturas}" class="btn btn-primary">
+                        <i class="bi bi-file-text"></i> Ver Facturas
                     </a>
                 </div>
             </div>

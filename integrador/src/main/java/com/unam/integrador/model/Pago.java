@@ -16,21 +16,27 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
-import lombok.Getter;
+import jakarta.persistence.PrePersist;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AccessLevel;
+import lombok.Setter;
+import java.util.ArrayList;
+import java.util.List;
 
 
-@Getter
+@Data
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED) // Solo para JPA
 public class Pago {
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Setter(AccessLevel.NONE)
     private Long IDPago;
     
     @Column(nullable = false)
@@ -39,6 +45,8 @@ public class Pago {
     @Column(nullable = false)
     private LocalDateTime fechaHoraRegistro;
     
+    @NotNull
+    @Positive
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal monto;
     
@@ -50,16 +58,21 @@ public class Pago {
     private String referencia;
     
     // --- Relaciones ---
-    
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "factura_id", nullable = false)
-    private Factura factura;
-    
+
     @OneToOne(mappedBy = "pago", cascade = CascadeType.ALL, orphanRemoval = true)
     private Recibo recibo;
 
     @Column(length = 50)
     private String numeroRecibo;
+
+    @OneToMany(mappedBy = "pago", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<PagoFactura> aplicaciones = new ArrayList<>();
+
+    @PrePersist
+    private void prePersist() {
+        if (this.fechaHoraRegistro == null) this.fechaHoraRegistro = LocalDateTime.now();
+        if (this.fechaPago == null) this.fechaPago = LocalDate.now();
+    }
     
     // --- Constructor privado (fuerza uso de factory methods) ---
     
@@ -101,19 +114,7 @@ public class Pago {
     
     // --- Métodos de Dominio (Comportamiento) ---
     
-    /**
-     * Asocia este pago a una factura.
-     * Mantiene la consistencia bidireccional de la relación.
-     * 
-     * @param factura La factura a la que se asocia el pago
-     * @throws IllegalArgumentException si la factura es nula
-     */
-    public void asociarFactura(Factura factura) {
-        if (factura == null) {
-            throw new IllegalArgumentException("La factura no puede ser nula");
-        }
-        this.factura = factura;
-    }
+    // Nota: la asociación directa Pago->Factura fue removida en favor de PagoFactura.
     
     /**
      * Vincula un recibo a este pago.
@@ -236,19 +237,56 @@ public class Pago {
     // --- Setters controlados solo para uso interno/JPA ---
     // Estos métodos son package-private para permitir su uso desde el service
     // pero evitar el uso indiscriminado desde fuera del paquete
-    
-    /**
-     * Setter interno para la factura (usado por JPA y métodos de dominio).
-     */
-    void setFactura(Factura factura) {
-        this.factura = factura;
-    }
-    
+
     /**
      * Setter interno para el recibo (usado por JPA).
      */
     void setRecibo(Recibo recibo) {
         this.recibo = recibo;
+    }
+
+    // --- Helpers para aplicaciones (PagoFactura) ---
+    public void addAplicacion(PagoFactura pf) {
+        if (pf == null) return;
+        this.aplicaciones.add(pf);
+        // Mantener consistencia bidireccional
+        if (pf.getPago() != this) {
+            pf.setPago(this);
+        }
+    }
+
+    public void removeAplicacion(PagoFactura pf) {
+        if (pf == null) return;
+        this.aplicaciones.remove(pf);
+        if (pf.getPago() == this) {
+            pf.setPago(null);
+        }
+    }
+
+    /**
+     * Conveniencia: retorna la primera factura asociada via aplicaciones (compatibilidad).
+     */
+    public Factura getFactura() {
+        if (this.aplicaciones == null || this.aplicaciones.isEmpty()) return null;
+        PagoFactura pf = this.aplicaciones.get(0);
+        return pf != null ? pf.getFactura() : null;
+    }
+
+    /**
+     * Retorna la lista de facturas asociadas a este pago (una colección).
+     * Útil cuando un pago se aplica a varias facturas.
+     */
+    public java.util.List<Factura> getFacturas() {
+        if (this.aplicaciones == null || this.aplicaciones.isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+        java.util.Set<Factura> set = new java.util.LinkedHashSet<>();
+        for (PagoFactura pf : this.aplicaciones) {
+            if (pf != null && pf.getFactura() != null) {
+                set.add(pf.getFactura());
+            }
+        }
+        return new java.util.ArrayList<>(set);
     }
 
     /**

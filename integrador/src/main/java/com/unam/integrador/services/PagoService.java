@@ -38,6 +38,9 @@ public class PagoService {
     
     @Autowired
     private FacturaRepository facturaRepository;
+
+    @Autowired
+    private com.unam.integrador.repositories.PagoFacturaRepository pagoFacturaRepository;
     
     @Autowired
     private CuentaClienteRepositorie cuentaClienteRepository;
@@ -62,19 +65,24 @@ public class PagoService {
         // 2. Crear pago usando el factory method (modelo RICO)
         Pago pago = Pago.crearPago(factura.getTotal(), metodoPago, referencia);
         
-        // 3. Registrar pago en la factura (delegar al dominio)
-        factura.registrarPagoTotal(pago);
-        
+        // 3. Registrar pago en la factura (crea en memoria PagoFactura)
+        com.unam.integrador.model.PagoFactura pf = factura.registrarPagoTotal(pago);
+
         // 4. Guardar pago
         Pago pagoGuardado = pagoRepository.save(pago);
-        
-        // 5. Generar recibo
+
+        // 5. Persistir aplicación (PagoFactura)
+        // Asociar la instancia persistida de pago al PagoFactura antes de guardar
+        pf.setPago(pagoGuardado);
+        pagoFacturaRepository.save(pf);
+
+        // 6. Generar recibo
         Recibo recibo = generarRecibo(pagoGuardado, factura);
         reciboRepository.save(recibo);
-        
-        // 6. Guardar factura actualizada
+
+        // 7. Guardar factura actualizada
         facturaRepository.save(factura);
-        
+
         return pagoGuardado;
     }
 
@@ -97,19 +105,23 @@ public class PagoService {
         // 2. Crear pago usando el factory method (modelo RICO)
         Pago pago = Pago.crearPago(monto, metodoPago, referencia);
         
-        // 3. Registrar pago parcial en la factura (delegar al dominio)
-        factura.registrarPagoParcial(pago);
-        
+        // 3. Registrar pago parcial en la factura (genera PagoFactura en memoria)
+        com.unam.integrador.model.PagoFactura pf = factura.registrarPagoParcial(pago);
+
         // 4. Guardar pago
         Pago pagoGuardado = pagoRepository.save(pago);
-        
-        // 5. Generar recibo
+
+        // 5. Persistir aplicación
+        pf.setPago(pagoGuardado);
+        pagoFacturaRepository.save(pf);
+
+        // 6. Generar recibo
         Recibo recibo = generarRecibo(pagoGuardado, factura);
         reciboRepository.save(recibo);
-        
-        // 6. Guardar factura actualizada
+
+        // 7. Guardar factura actualizada
         facturaRepository.save(factura);
-        
+
         return pagoGuardado;
     }
     
@@ -138,13 +150,12 @@ public class PagoService {
         return all.stream()
             .filter(p -> {
                 if (clienteNombre != null && !clienteNombre.isBlank()) {
-                    if (p.getFactura() == null || p.getFactura().getCliente() == null || p.getFactura().getCliente().getNombre() == null) {
-                        return false;
-                    }
-                    String nombre = p.getFactura().getCliente().getNombre();
-                    if (!nombre.toLowerCase().contains(clienteNombre.toLowerCase())) {
-                        return false;
-                    }
+                    java.util.List<Factura> facturas = p.getFacturas();
+                    if (facturas == null || facturas.isEmpty()) return false;
+                    boolean match = facturas.stream().anyMatch(f -> f != null && f.getCliente() != null
+                        && f.getCliente().getNombre() != null
+                        && f.getCliente().getNombre().toLowerCase().contains(clienteNombre.toLowerCase()));
+                    if (!match) return false;
                 }
                 return true;
             })
@@ -183,7 +194,8 @@ public class PagoService {
      */
     @Transactional(readOnly = true)
     public List<Pago> listarPorFactura(Long facturaId) {
-        return pagoRepository.findByFacturaIdFactura(facturaId);
+        List<com.unam.integrador.model.PagoFactura> pfs = pagoFacturaRepository.findByFacturaId(facturaId);
+        return pfs.stream().map(com.unam.integrador.model.PagoFactura::getPago).collect(Collectors.toList());
     }
     
     /**
@@ -297,14 +309,18 @@ public class PagoService {
                 // Este pago es completamente con saldo a favor
                 Pago pagoSaldo = Pago.crearPago(montoPago, MetodoPago.SALDO_A_FAVOR, 
                     "Aplicacion de saldo a favor del cliente");
-                
+
+                com.unam.integrador.model.PagoFactura pf = null;
                 if (montoPago.compareTo(saldoFactura) >= 0) {
-                    factura.registrarPagoTotal(pagoSaldo);
+                    pf = factura.registrarPagoTotal(pagoSaldo);
                 } else {
-                    factura.registrarPagoParcial(pagoSaldo);
+                    pf = factura.registrarPagoParcial(pagoSaldo);
                 }
-                
+
                 pagoRepository.save(pagoSaldo);
+                pf.setPago(pagoSaldo);
+                pagoFacturaRepository.save(pf);
+
                 pagosGenerados.add(pagoSaldo);
                 montoTotalAplicadoSaldoAFavor = montoTotalAplicadoSaldoAFavor.add(montoPago);
             } else if (montoRestante.subtract(saldoAFavorAplicar).compareTo(BigDecimal.ZERO) >= 0 
@@ -316,34 +332,40 @@ public class PagoService {
                 if (porcionSaldoAFavor.compareTo(BigDecimal.ZERO) > 0) {
                     Pago pagoSaldo = Pago.crearPago(porcionSaldoAFavor, MetodoPago.SALDO_A_FAVOR, 
                         "Aplicacion de saldo a favor del cliente");
-                    factura.registrarPagoParcial(pagoSaldo);
+                    com.unam.integrador.model.PagoFactura pfSaldo = factura.registrarPagoParcial(pagoSaldo);
                     pagoRepository.save(pagoSaldo);
+                    pfSaldo.setPago(pagoSaldo);
+                    pagoFacturaRepository.save(pfSaldo);
                     pagosGenerados.add(pagoSaldo);
                     montoTotalAplicadoSaldoAFavor = montoTotalAplicadoSaldoAFavor.add(porcionSaldoAFavor);
                 }
                 
                 if (porcionMetodoPago.compareTo(BigDecimal.ZERO) > 0) {
                     Pago pagoMetodo = Pago.crearPago(porcionMetodoPago, metodoPago, referencia);
+                    com.unam.integrador.model.PagoFactura pfMetodo = null;
                     if (factura.getSaldoPendiente().compareTo(BigDecimal.ZERO) == 0) {
-                        factura.registrarPagoTotal(pagoMetodo);
+                        pfMetodo = factura.registrarPagoTotal(pagoMetodo);
                     } else {
-                        factura.registrarPagoParcial(pagoMetodo);
+                        pfMetodo = factura.registrarPagoParcial(pagoMetodo);
                     }
                     pagoRepository.save(pagoMetodo);
+                    pfMetodo.setPago(pagoMetodo);
+                    pagoFacturaRepository.save(pfMetodo);
                     pagosGenerados.add(pagoMetodo);
                     montoTotalAplicadoMetodoPago = montoTotalAplicadoMetodoPago.add(porcionMetodoPago);
                 }
             } else {
                 // Este pago es completamente con el método de pago tradicional
                 Pago pago = Pago.crearPago(montoPago, metodoPago, referencia);
-                
+                com.unam.integrador.model.PagoFactura pf = null;
                 if (montoPago.compareTo(saldoFactura) >= 0) {
-                    factura.registrarPagoTotal(pago);
+                    pf = factura.registrarPagoTotal(pago);
                 } else {
-                    factura.registrarPagoParcial(pago);
+                    pf = factura.registrarPagoParcial(pago);
                 }
-                
                 pagoRepository.save(pago);
+                pf.setPago(pago);
+                pagoFacturaRepository.save(pf);
                 pagosGenerados.add(pago);
                 montoTotalAplicadoMetodoPago = montoTotalAplicadoMetodoPago.add(montoPago);
             }
@@ -490,16 +512,19 @@ public class PagoService {
             Pago pago = Pago.crearPago(montoAplicar, MetodoPago.SALDO_A_FAVOR, 
                 "Aplicacion de saldo a favor del cliente");
             
-            // Registrar pago en la factura
+            // Registrar pago en la factura y persistir la aplicación
+            com.unam.integrador.model.PagoFactura pfAplicacion = null;
             if (montoAplicar.compareTo(saldoFactura) >= 0) {
-                factura.registrarPagoTotal(pago);
+                pfAplicacion = factura.registrarPagoTotal(pago);
             } else {
-                factura.registrarPagoParcial(pago);
+                pfAplicacion = factura.registrarPagoParcial(pago);
             }
-            
+
             pagoRepository.save(pago);
+            pfAplicacion.setPago(pago);
+            pagoFacturaRepository.save(pfAplicacion);
             facturaRepository.save(factura);
-            
+
             pagosGenerados.add(pago);
             montoTotalAplicado = montoTotalAplicado.add(montoAplicar);
             saldoRestante = saldoRestante.subtract(montoAplicar);

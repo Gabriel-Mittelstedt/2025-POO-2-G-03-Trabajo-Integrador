@@ -156,4 +156,13 @@ public class Recibo {
     void setPago(Pago pago) {
         this.pago = pago;
     }
+
+    /**
+     * Conveniencia: retorna la lista de facturas asociadas a este recibo
+     * recorriendo los pagos relacionados (si los hubiera).
+     */
+    public java.util.List<Factura> getFacturas() {
+        if (this.pago == null) return java.util.Collections.emptyList();
+        return this.pago.getFacturas();
+    }
 }

@@ -88,10 +88,12 @@ public class PagoController {
         java.util.List<com.unam.integrador.model.Recibo> filtered = all.stream()
             .filter(r -> {
                 if (clienteNombre != null && !clienteNombre.isBlank()) {
-                    if (r.getPago() == null || r.getPago().getFactura() == null || r.getPago().getFactura().getCliente() == null) return false;
-                    String nombre = r.getPago().getFactura().getCliente().getNombre();
-                    if (nombre == null) return false;
-                    if (!nombre.toLowerCase().contains(clienteNombre.toLowerCase())) return false;
+                    java.util.List<Factura> facturas = r.getFacturas();
+                    if (facturas == null || facturas.isEmpty()) return false;
+                    boolean match = facturas.stream().anyMatch(f -> f != null && f.getCliente() != null
+                        && f.getCliente().getNombre() != null
+                        && f.getCliente().getNombre().toLowerCase().contains(clienteNombre.toLowerCase()));
+                    if (!match) return false;
                 }
                 return true;
             })
@@ -141,25 +143,27 @@ public class PagoController {
         // Construir una lista de facturas asociadas al recibo y traer el desglose de pagos
         java.util.List<com.unam.integrador.model.Factura> facturas = new java.util.ArrayList<>();
         try {
-            if (recibo.getNumero() != null) {
-                java.util.List<com.unam.integrador.model.Pago> pagos = pagoRepository.findByNumeroRecibo(recibo.getNumero());
-                // Añadir la lista de pagos al modelo para que la vista pueda mostrar el desglose
-                model.addAttribute("pagos", pagos);
+                if (recibo.getNumero() != null) {
+                    java.util.List<com.unam.integrador.model.Pago> pagos = pagoRepository.findByNumeroRecibo(recibo.getNumero());
+                    // Añadir la lista de pagos al modelo para que la vista pueda mostrar el desglose
+                    model.addAttribute("pagos", pagos);
 
-                // Evitar facturas duplicadas: varias entradas de Pago pueden referir a la misma Factura
-                java.util.Set<com.unam.integrador.model.Factura> facturasSet = new java.util.LinkedHashSet<>();
-                for (com.unam.integrador.model.Pago p : pagos) {
-                    if (p != null && p.getFactura() != null) {
-                        facturasSet.add(p.getFactura());
+                    // Evitar facturas duplicadas: varias entradas de Pago pueden referir a la misma Factura
+                    java.util.Set<com.unam.integrador.model.Factura> facturasSet = new java.util.LinkedHashSet<>();
+                    for (com.unam.integrador.model.Pago p : pagos) {
+                        if (p == null) continue;
+                        java.util.List<com.unam.integrador.model.Factura> fs = p.getFacturas();
+                        if (fs != null) {
+                            facturasSet.addAll(fs);
+                        }
                     }
+                    facturas.addAll(facturasSet);
                 }
-                facturas.addAll(facturasSet);
-            }
 
-            // Si no encontramos pagos, intentar usar la relación 1:1 (pago dentro del recibo)
-            if (facturas.isEmpty() && recibo.getPago() != null && recibo.getPago().getFactura() != null) {
-                facturas.add(recibo.getPago().getFactura());
-            }
+                // Si no encontramos pagos, intentar usar la relación en el recibo
+                if (facturas.isEmpty() && recibo.getPago() != null) {
+                    facturas.addAll(recibo.getFacturas());
+                }
         } catch (Exception e) {
             // No romper la vista por problemas al recuperar facturas; usaremos el fallback textual
         }

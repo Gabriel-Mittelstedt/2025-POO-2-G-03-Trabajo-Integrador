@@ -13,6 +13,7 @@ import com.unam.integrador.model.Factura;
 import com.unam.integrador.model.Pago;
 import com.unam.integrador.model.Recibo;
 import com.unam.integrador.model.CuentaCliente;
+import com.unam.integrador.model.enums.EstadoFactura;
 import com.unam.integrador.model.enums.MetodoPago;
 import com.unam.integrador.repositories.FacturaRepository;
 import com.unam.integrador.repositories.PagoRepository;
@@ -414,7 +415,12 @@ public class PagoService {
      */
     @Transactional(readOnly = true)
     public List<Factura> listarFacturasImpagasPorCliente(Long clienteId) {
-        return facturaRepository.findFacturasImpagasByCliente(clienteId);
+        List<EstadoFactura> estadosImpagas = List.of(
+            EstadoFactura.PENDIENTE, 
+            EstadoFactura.VENCIDA, 
+            EstadoFactura.PAGADA_PARCIALMENTE
+        );
+        return facturaRepository.findByClienteIdAndEstadoInOrderByFechaEmisionAsc(clienteId, estadosImpagas);
     }
     
     /**

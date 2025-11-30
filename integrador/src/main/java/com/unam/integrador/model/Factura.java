@@ -17,27 +17,50 @@ import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Entidad que representa una factura en el sistema.
+ * Modelo RICO: encapsula toda la lógica de negocio relacionada con facturas,
+ * incluyendo cálculos, validaciones y cambios de estado.
+ * 
+ * Responsabilidades:
+ * - Gestionar items de facturación
+ * - Calcular totales, IVA y descuentos
+ * - Controlar estados (PENDIENTE, VENCIDA, PAGADA, ANULADA)
+ * - Validar condiciones de negocio
+ * - Registrar pagos y notas de crédito
+ * 
+ * @author Sistema ERP Facturación
+ * @version 1.0
+ */
 @Data
 @Entity
 @NoArgsConstructor
 public class Factura {
     
+    /** Identificador único de la factura (clave primaria). */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idFactura;
 
+    /** Serie de la factura según el tipo (A=1, B=2, C=3). */
     @Column(nullable = false)
     private int serie;
 
+    /** Número secuencial de la factura dentro de su serie. */
     @Column(nullable = false)
     private int nroFactura;
 
+    /** Cliente al que se le emite la factura. */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cliente_id", nullable = false)
     private CuentaCliente cliente;
 
     // --- Atributos de la Factura ---
+    
+    /** Fecha en que se emite la factura. */
     private LocalDate fechaEmision;
+    
+    /** Fecha límite para el pago de la factura. */
     private LocalDate fechaVencimiento;
     
     /**
@@ -46,29 +69,46 @@ public class Factura {
      */
     private LocalDate periodo;
 
+    /** Tipo de factura (A, B o C) según condiciones fiscales. */
     @Enumerated(EnumType.STRING)
     private TipoFactura tipo;
     
+    /** Estado actual de la factura (PENDIENTE, VENCIDA, PAGADA_PARCIALMENTE, PAGADA_TOTALMENTE, ANULADA). */
     @Enumerated(EnumType.STRING)
     private EstadoFactura estado;
 
     // --- Campos Calculados y Opcionales ---
-    // Se inicializan en 0 o null y se calculan con un método.
+    
+    /** Suma de todos los items sin IVA ni descuentos. */
     private BigDecimal subtotal;
+    
+    /** Porcentaje de descuento aplicado (0-100). */
     private double descuento;
+    
+    /** Justificación del descuento aplicado (obligatorio si hay descuento). */
     private String motivoDescuento;
+    
+    /** Suma del IVA de todos los items. */
     private BigDecimal totalIva;
+    
+    /** Monto que aún falta pagar de la factura. */
     private BigDecimal saldoPendiente;
+    
+    /** Importe final de la factura (subtotal - descuento + IVA). */
     private BigDecimal total;
 
     //--Relaciones--
+    
+    /** Líneas de detalle de la factura (servicios facturados). */
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @JoinColumn(name = "factura_id") 
     private List<ItemFactura> detalleFactura = new ArrayList<>();
 
+    /** Notas de crédito asociadas (generadas por anulaciones). */
     @OneToMany(mappedBy = "factura", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<NotaCredito> notasCredito = new ArrayList<>();
 
+    /** Pagos aplicados a esta factura. */
     @OneToMany(mappedBy = "factura", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Pago> pagos = new ArrayList<>();
 
@@ -80,7 +120,18 @@ public class Factura {
     @JoinColumn(name = "lote_facturacion_id")
     private LoteFacturacion loteFacturacion;
 
-    //CONSTRUCTOR
+    /**
+     * Constructor principal para crear una factura.
+     * Inicializa todos los campos obligatorios y establece valores por defecto.
+     * 
+     * @param serie Serie de la factura (1=A, 2=B, 3=C)
+     * @param nroFactura Número secuencial de la factura
+     * @param cliente Cliente al que se factura
+     * @param fechaEmision Fecha de emisión de la factura
+     * @param fechaVencimiento Fecha límite de pago
+     * @param periodo Período facturado (se ajusta al día 1 del mes)
+     * @param tipo Tipo de factura (A, B o C)
+     */
     public Factura(int serie, int nroFactura, CuentaCliente cliente, LocalDate fechaEmision, 
                    LocalDate fechaVencimiento, LocalDate periodo, TipoFactura tipo) {
         

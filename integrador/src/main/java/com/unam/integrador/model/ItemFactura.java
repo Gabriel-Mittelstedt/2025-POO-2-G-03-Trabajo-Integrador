@@ -8,45 +8,77 @@ import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Representa una línea de detalle en una factura.
+ * Modelo RICO: encapsula la lógica de cálculo de precios, IVA y totales.
+ * 
+ * Cada item representa un servicio facturado con su precio, cantidad,
+ * alícuota de IVA y cálculos derivados (subtotal, IVA, total).
+ * 
+ * Soporta facturación proporcional mediante el factory method crearProporcional().
+ * 
+ * @author Sistema ERP Facturación
+ * @version 1.0
+ */
 @Data
 @Entity
 @NoArgsConstructor
 public class ItemFactura {
     
+    /** Identificador único del item (clave primaria). */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     // --- Datos del servicio al momento de facturar ---
+    
+    /** Descripción del servicio facturado. */
     @Column(nullable = false)
     private String descripcion;
 
+    /** Precio unitario del servicio (puede ser proporcional). */
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal precioUnitario;
 
+    /** Cantidad de unidades facturadas (normalmente 1 para servicios). */
     @Column(nullable = false)
     private int cantidad;
 
+    /** Alícuota de IVA aplicable al servicio. */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private TipoAlicuotaIVA alicuotaIVA;
 
     // --- Campos calculados ---
+    
+    /** Subtotal del item (precio unitario × cantidad). */
     @Column(precision = 10, scale = 2)
     private BigDecimal subtotal;
 
+    /** Monto del IVA calculado según la alícuota. */
     @Column(precision = 10, scale = 2)
     private BigDecimal montoIva;
 
+    /** Total del item (subtotal + IVA). */
     @Column(precision = 10, scale = 2)
     private BigDecimal total;
 
     // --- Relaciones ---
+    
+    /** Factura a la que pertenece este item. */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "factura_id")
     private Factura factura;
 
-    // --- Constructor ---
+    /**
+     * Constructor para crear un item de factura.
+     * Los valores calculados se inicializan en cero y deben calcularse con calcular().
+     * 
+     * @param descripcion Descripción del servicio
+     * @param precioUnitario Precio por unidad
+     * @param cantidad Número de unidades
+     * @param alicuotaIVA Alícuota de IVA a aplicar
+     */
     public ItemFactura(String descripcion, BigDecimal precioUnitario, int cantidad, 
                        TipoAlicuotaIVA alicuotaIVA) {
         this.descripcion = descripcion;
@@ -101,14 +133,20 @@ public class ItemFactura {
     }
 
     /**
-     * Constructor para items con facturación proporcional.
-     * Calcula automáticamente el precio proporcional basado en los días efectivos.
+     * Factory Method para crear items con facturación proporcional.
+     * Calcula automáticamente el precio proporcional basado en los días efectivos del período.
+     * 
+     * Fórmula: precio_proporcional = precio_mensual × (días_efectivos / días_del_mes)
+     * 
+     * Ejemplo: Servicio de $10000/mes del 15 al 30 de noviembre (16 días de 30)
+     * = $10000 × (16/30) = $5333.33
      * 
      * @param descripcionBase Descripción base del servicio
-     * @param precioMensual Precio mensual del servicio
-     * @param cantidad Cantidad del item (normalmente 1)
+     * @param precioMensual Precio mensual completo del servicio
+     * @param cantidad Cantidad del item (normalmente 1 para servicios)
      * @param alicuotaIVA Alícuota de IVA a aplicar
-     * @param periodo Período de facturación con días efectivos
+     * @param periodo Período de facturación con días efectivos calculados
+     * @return ItemFactura con precio proporcional y descripción ajustada
      */
     public static ItemFactura crearProporcional(
             String descripcionBase, 

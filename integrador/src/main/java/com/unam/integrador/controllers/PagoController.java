@@ -1,12 +1,12 @@
 package com.unam.integrador.controllers;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
-import java.time.LocalDate;
-import java.time.format.DateTimeParseException;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -15,14 +15,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import com.unam.integrador.dto.ReciboDTO;
 import com.unam.integrador.model.CuentaCliente;
 import com.unam.integrador.model.Factura;
 import com.unam.integrador.model.Pago;
-import com.unam.integrador.model.Recibo;
 import com.unam.integrador.model.enums.MetodoPago;
 import com.unam.integrador.services.CuentaClienteService;
 import com.unam.integrador.services.FacturaService;
 import com.unam.integrador.services.PagoService;
+import com.unam.integrador.services.ReciboService;
 
 /**
  * Controlador web para la gestión de pagos.
@@ -42,7 +43,7 @@ public class PagoController {
     private CuentaClienteService cuentaClienteService;
     
     @Autowired
-    private com.unam.integrador.repositories.ReciboRepository reciboRepository;
+    private ReciboService reciboService;
     
     /**
      * Muestra la lista de todos los pagos.
@@ -75,47 +76,22 @@ public class PagoController {
         model.addAttribute("desde", desdeStr);
         model.addAttribute("hasta", hastaStr);
 
-        // Variables finales para usar dentro de lambdas (evita error "must be final or effectively final")
-        final java.time.LocalDate desdeF = desde;
-        final java.time.LocalDate hastaF = hasta;
-
-        // Listar recibos (uno por fila) y aplicar filtros equivalentes
-        java.util.List<com.unam.integrador.model.Recibo> all = reciboRepository.findAll();
-
-        java.util.List<com.unam.integrador.model.Recibo> filtered = all.stream()
-            .filter(r -> {
-                if (clienteNombre != null && !clienteNombre.isBlank()) {
-                    if (r.getPago() == null || r.getPago().getFactura() == null || r.getPago().getFactura().getCliente() == null) return false;
-                    String nombre = r.getPago().getFactura().getCliente().getNombre();
-                    if (nombre == null) return false;
-                    if (!nombre.toLowerCase().contains(clienteNombre.toLowerCase())) return false;
-                }
-                return true;
-            })
-            .filter(r -> {
-                if (desdeF != null) {
-                    if (r.getFecha() == null) return false;
-                    if (r.getFecha().isBefore(desdeF)) return false;
-                }
-                return true;
-            })
-            .filter(r -> {
-                if (hastaF != null) {
-                    if (r.getFecha() == null) return false;
-                    if (r.getFecha().isAfter(hastaF)) return false;
-                }
-                return true;
-            })
+        // Usar ReciboService para generar recibos dinámicamente desde los pagos
+        List<Pago> pagos = pagoService.listarFiltrados(clienteNombre, desde, hasta);
+        
+        // Generar ReciboDTO para cada pago
+        List<ReciboDTO> recibos = pagos.stream()
+            .map(pago -> reciboService.generarReciboDesdePago(pago))
             .collect(java.util.stream.Collectors.toList());
 
-        model.addAttribute("recibos", filtered);
+        model.addAttribute("recibos", recibos);
         return "pagos/lista";
     }
 
     @GetMapping("/recibo/{id}")
     public String verReciboDetalle(@PathVariable Long id, Model model) {
-        com.unam.integrador.model.Recibo recibo = reciboRepository.findById(id)
-            .orElseThrow(() -> new IllegalArgumentException("Recibo no encontrado con ID: " + id));
+        // Generar el ReciboDTO dinámicamente desde el Pago
+        ReciboDTO recibo = reciboService.generarReciboPorPagoId(id);
         model.addAttribute("recibo", recibo);
         return "pagos/recibo-detalle";
     }
@@ -291,7 +267,7 @@ public class PagoController {
             }
 
             // Llamar al servicio que orquesta las entidades de dominio
-            Recibo recibo = pagoService.registrarPagoCombinado(
+            String numeroRecibo = pagoService.registrarPagoCombinado(
                 facturasIds,
                 montoTotal,
                 saldoAFavorAplicar,
@@ -300,7 +276,7 @@ public class PagoController {
             );
 
             redirectAttributes.addFlashAttribute("mensaje",
-                "Pago combinado registrado exitosamente. Recibo N° " + recibo.getNumero() + " generado.");
+                "Pago combinado registrado exitosamente. Recibo N° " + numeroRecibo + " generado.");
             return "redirect:/pagos";
         } catch (IllegalStateException | IllegalArgumentException e) {
             redirectAttributes.addFlashAttribute("error", e.getMessage());

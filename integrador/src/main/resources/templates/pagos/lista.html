@@ -84,15 +84,15 @@
                         </thead>
                         <tbody>
                             <tr th:each="recibo : ${recibos}">
-                                <td><strong th:text="${recibo.IDRecibo}"></strong></td>
+                                <td><strong th:text="${recibo.pagoId}"></strong></td>
                                 <td th:text="${#temporals.format(recibo.fecha, 'dd/MM/yyyy')}"></td>
-                                <td th:text="${recibo.pago != null and recibo.pago.factura != null ? recibo.pago.factura.cliente.nombre : '-'}"></td>
+                                <td th:text="${recibo.clienteNombre != null ? recibo.clienteNombre : '-'}"></td>
                                 <td th:text="${recibo.numero}"></td>
                                 <td><strong>$<span th:text="${#numbers.formatDecimal(recibo.monto, 1, 'POINT', 2, 'COMMA')}"></span></strong></td>
                                 <td><span class="badge bg-info" th:text="${recibo.metodoPago}"></span></td>
                                 <td th:text="${recibo.referencia != null and !#strings.isEmpty(recibo.referencia)} ? ${recibo.referencia} : '-'"></td>
                                 <td class="text-center">
-                                    <a th:href="@{/pagos/recibo/{id}(id=${recibo.IDRecibo})}" class="btn btn-sm btn-info" title="Ver detalle">
+                                    <a th:href="@{/pagos/recibo/{id}(id=${recibo.pagoId})}" class="btn btn-sm btn-info" title="Ver detalle">
                                         <i class="bi bi-eye"></i> Ver
                                     </a>
                                 </td>

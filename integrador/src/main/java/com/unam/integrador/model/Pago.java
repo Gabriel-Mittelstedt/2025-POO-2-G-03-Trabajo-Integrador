@@ -7,7 +7,6 @@ import java.time.LocalDateTime;
 
 import com.unam.integrador.model.enums.MetodoPago;
 
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -18,7 +17,6 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToOne;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.AccessLevel;
@@ -66,10 +64,12 @@ public class Pago {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "factura_id", nullable = false)
     private Factura factura;
-    
-    @OneToOne(mappedBy = "pago", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Recibo recibo;
 
+    /**
+     * Número de recibo asociado a este pago.
+     * Permite agrupar múltiples pagos bajo un mismo recibo (pagos combinados).
+     * El recibo se genera dinámicamente, no se persiste como entidad.
+     */
     @Column(length = 50)
     private String numeroRecibo;
     
@@ -125,24 +125,6 @@ public class Pago {
             throw new IllegalArgumentException("La factura no puede ser nula");
         }
         this.factura = factura;
-    }
-    
-    /**
-     * Vincula un recibo a este pago.
-     * Mantiene la consistencia de la relación uno-a-uno.
-     * 
-     * @param recibo El recibo generado para este pago
-     * @throws IllegalArgumentException si el recibo es nulo
-     * @throws IllegalStateException si ya existe un recibo asociado
-     */
-    public void vincularRecibo(Recibo recibo) {
-        if (recibo == null) {
-            throw new IllegalArgumentException("El recibo no puede ser nulo");
-        }
-        if (this.recibo != null) {
-            throw new IllegalStateException("Este pago ya tiene un recibo asociado");
-        }
-        this.recibo = recibo;
     }
     
     /**
@@ -254,13 +236,6 @@ public class Pago {
      */
     void setFactura(Factura factura) {
         this.factura = factura;
-    }
-    
-    /**
-     * Setter interno para el recibo (usado por JPA).
-     */
-    void setRecibo(Recibo recibo) {
-        this.recibo = recibo;
     }
 
     /**

@@ -19,4 +19,13 @@ public interface PagoRepository extends JpaRepository<Pago, Long> {
      * @return Lista de pagos de la factura
      */
     List<Pago> findByFacturaIdFactura(Long facturaId);
+    
+    /**
+     * Busca todos los pagos que comparten el mismo número de recibo.
+     * Útil para reconstruir recibos consolidados de pagos combinados.
+     * 
+     * @param numeroRecibo Número de recibo compartido
+     * @return Lista de pagos con ese número de recibo
+     */
+    List<Pago> findByNumeroRecibo(String numeroRecibo);
 }

@@ -11,15 +11,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.unam.integrador.model.Factura;
 import com.unam.integrador.model.Pago;
-import com.unam.integrador.model.Recibo;
 import com.unam.integrador.model.CuentaCliente;
 import com.unam.integrador.model.enums.MetodoPago;
 import com.unam.integrador.repositories.FacturaRepository;
 import com.unam.integrador.repositories.PagoRepository;
-import com.unam.integrador.repositories.ReciboRepository;
 import com.unam.integrador.repositories.CuentaClienteRepositorie;
 import java.time.LocalDate;
-// MovimientoSaldo removed: trazabilidad a través de Pagos/Recibos
 
 /**
  * Servicio de aplicación para la gestión de pagos.
@@ -34,9 +31,6 @@ public class PagoService {
     private PagoRepository pagoRepository;
     
     @Autowired
-    private ReciboRepository reciboRepository;
-    
-    @Autowired
     private FacturaRepository facturaRepository;
     
     @Autowired
@@ -46,7 +40,7 @@ public class PagoService {
     
     /**
      * Registra un pago total de una factura.
-     * Genera un recibo automáticamente.
+     * Genera un número de recibo y lo almacena en el pago.
      * 
      * @param facturaId ID de la factura a pagar
      * @param metodoPago Método de pago utilizado
@@ -65,12 +59,13 @@ public class PagoService {
         // 3. Registrar pago en la factura (delegar al dominio)
         factura.registrarPagoTotal(pago);
         
-        // 4. Guardar pago
+        // 4. Guardar pago para obtener ID
         Pago pagoGuardado = pagoRepository.save(pago);
         
-        // 5. Generar recibo
-        Recibo recibo = generarRecibo(pagoGuardado, factura);
-        reciboRepository.save(recibo);
+        // 5. Generar número de recibo y guardarlo en el pago
+        String numeroRecibo = generarNumeroRecibo(pagoGuardado.getIDPago());
+        pagoGuardado.setNumeroRecibo(numeroRecibo);
+        pagoRepository.save(pagoGuardado);
         
         // 6. Guardar factura actualizada
         facturaRepository.save(factura);
@@ -80,7 +75,7 @@ public class PagoService {
 
     /**
      * Registra un pago parcial de una factura.
-     * Genera un recibo automáticamente.
+     * Genera un número de recibo y lo almacena en el pago.
      * 
      * @param facturaId ID de la factura a pagar
      * @param monto Monto del pago parcial
@@ -100,12 +95,13 @@ public class PagoService {
         // 3. Registrar pago parcial en la factura (delegar al dominio)
         factura.registrarPagoParcial(pago);
         
-        // 4. Guardar pago
+        // 4. Guardar pago para obtener ID
         Pago pagoGuardado = pagoRepository.save(pago);
         
-        // 5. Generar recibo
-        Recibo recibo = generarRecibo(pagoGuardado, factura);
-        reciboRepository.save(recibo);
+        // 5. Generar número de recibo y guardarlo en el pago
+        String numeroRecibo = generarNumeroRecibo(pagoGuardado.getIDPago());
+        pagoGuardado.setNumeroRecibo(numeroRecibo);
+        pagoRepository.save(pagoGuardado);
         
         // 6. Guardar factura actualizada
         facturaRepository.save(factura);
@@ -206,7 +202,7 @@ public class PagoService {
      * @throws IllegalArgumentException si hay errores en las validaciones
      */
     @Transactional
-    public Recibo registrarPagoCombinado(
+    public String registrarPagoCombinado(
             List<Long> facturasIds, 
             BigDecimal montoTotal, 
             BigDecimal saldoAFavorAplicar,
@@ -361,50 +357,16 @@ public class PagoService {
             cuentaClienteRepository.save(cliente);
         }
         
-        // 8. Generar un único recibo que agrupe todas las facturas pagadas
-        StringBuilder facturasInfo = new StringBuilder();
-        facturasInfo.append(facturas.stream()
-            .map(f -> String.format("Factura %d-%08d ($%s)", 
-                f.getSerie(), f.getNroFactura(), f.getTotal()))
-            .collect(Collectors.joining(", ")));
+        // 8. Generar un único número de recibo compartido para todos los pagos
+        String numeroRecibo = generarNumeroReciboSecuencial();
         
-        if (saldoAFavorAplicar.compareTo(BigDecimal.ZERO) > 0) {
-            facturasInfo.append(String.format(" - Saldo a favor aplicado: $%s", saldoAFavorAplicar));
-        }
-        if (montoRestante.compareTo(BigDecimal.ZERO) > 0) {
-            facturasInfo.append(String.format(" - Nuevo saldo a favor: $%s", montoRestante));
-        }
-        
-        // Generar número de recibo
-        int ultimoNumero = reciboRepository.findUltimoNumeroRecibo();
-        String numero = String.format("%08d", ultimoNumero + 1);
-
-        // Crear el recibo usando el factory method del modelo rico
-        Recibo recibo = Recibo.crearRecibo(
-            numero,
-            montoTotalCombinado,
-            metodoPago,
-            referencia,
-            facturasInfo.toString()
-        );
-
-        // Asociar el recibo al primer pago (por convención) para cumplir la
-        // restricción de la entidad Recibo (pago no nulo). Además, guardamos
-        // el número de recibo en cada pago generado para que el historial muestre
-        // claramente que varios pagos pertenecen al mismo recibo.
-        if (!pagosGenerados.isEmpty()) {
-            recibo.asociarPago(pagosGenerados.get(0));
-        }
-
-        Recibo reciboGuardado = reciboRepository.save(recibo);
-
-        // Guardar el número de recibo en todos los pagos generados
+        // Asignar el mismo número de recibo a todos los pagos generados
         for (Pago p : pagosGenerados) {
-            p.setNumeroRecibo(reciboGuardado.getNumero());
+            p.setNumeroRecibo(numeroRecibo);
             pagoRepository.save(p);
         }
 
-        return reciboGuardado;
+        return numeroRecibo;
     }
     
     /**
@@ -428,7 +390,7 @@ public class PagoService {
      * @throws IllegalStateException si el cliente no tiene saldo a favor suficiente
      */
     @Transactional
-    public Recibo aplicarSaldoAFavor(Long clienteId, List<Long> facturasIds) {
+    public String aplicarSaldoAFavor(Long clienteId, List<Long> facturasIds) {
         // 1. Obtener cliente y validar que tenga saldo a favor
         CuentaCliente cliente = cuentaClienteRepository.findById(clienteId)
             .orElseThrow(() -> new IllegalArgumentException("Cliente no encontrado con ID: " + clienteId));
@@ -496,64 +458,41 @@ public class PagoService {
             saldoRestante = saldoRestante.subtract(montoAplicar);
         }
         
-        // 6. Actualizar el saldo del cliente (la trazabilidad queda en los Pagos y Recibos generados)
+        // 6. Actualizar el saldo del cliente
         cliente.aplicarSaldoAFavor(montoTotalAplicado);
         cuentaClienteRepository.save(cliente);
         
-        // 7. Generar recibo
-        String facturasInfo = facturas.stream()
-            .map(f -> String.format("Factura %d-%08d", f.getSerie(), f.getNroFactura()))
-            .collect(Collectors.joining(", "));
+        // 7. Generar número de recibo compartido para todos los pagos
+        String numeroRecibo = generarNumeroReciboSecuencial();
         
-        facturasInfo += String.format(" - Aplicacion de saldo a favor: $%s", montoTotalAplicado);
-        
-        int ultimoNumero = reciboRepository.findUltimoNumeroRecibo();
-        String numero = String.format("%08d", ultimoNumero + 1);
-        
-        Recibo recibo = Recibo.crearRecibo(
-            numero,
-            montoTotalAplicado,
-            MetodoPago.SALDO_A_FAVOR,
-            "Aplicacion de saldo a favor",
-            facturasInfo
-        );
-        
-        if (!pagosGenerados.isEmpty()) {
-            recibo.asociarPago(pagosGenerados.get(0));
-        }
-
-        Recibo reciboGuardado = reciboRepository.save(recibo);
-
         // Guardar el número de recibo en todos los pagos generados para trazabilidad
         for (Pago p : pagosGenerados) {
-            p.setNumeroRecibo(reciboGuardado.getNumero());
+            p.setNumeroRecibo(numeroRecibo);
             pagoRepository.save(p);
         }
 
-        // No hay MovimientoSaldo; retornamos el recibo generado
-        return reciboGuardado;
+        return numeroRecibo;
     }
     
     // --- Métodos privados auxiliares ---
     
     /**
-     * Genera un recibo para un pago.
+     * Genera un número de recibo secuencial.
+     * Usa un contador simple basado en el máximo ID de pago actual.
      */
-    private Recibo generarRecibo(Pago pago, Factura factura) {
-        // Generar número de recibo
-        int ultimoNumero = reciboRepository.findUltimoNumeroRecibo();
-        String numero = String.format("%08d", ultimoNumero + 1);
-
-        // Asociar facturas
-        String facturaInfo = String.format("Factura %d-%08d", 
-            factura.getSerie(), factura.getNroFactura());
-
-        // Crear recibo a través del factory del modelo rico
-        Recibo recibo = Recibo.crearRecibo(numero, pago.getMonto(), pago.getMetodoPago(), pago.getReferencia(), facturaInfo);
-
-        // Asociar pago y mantener consistencia bidireccional
-        recibo.asociarPago(pago);
-
-        return recibo;
+    private String generarNumeroReciboSecuencial() {
+        Long maxId = pagoRepository.findAll().stream()
+            .map(Pago::getIDPago)
+            .max(Long::compareTo)
+            .orElse(0L);
+        
+        return String.format("%08d", maxId + 1);
+    }
+    
+    /**
+     * Genera un número de recibo basado en el ID del pago.
+     */
+    private String generarNumeroRecibo(Long pagoId) {
+        return String.format("%08d", pagoId);
     }
 }

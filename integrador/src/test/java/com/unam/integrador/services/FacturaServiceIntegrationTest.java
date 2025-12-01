@@ -1,22 +1,33 @@
 package com.unam.integrador.services;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.BeforeEach;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.transaction.annotation.Transactional;
-
-import com.unam.integrador.model.*;
-import com.unam.integrador.model.enums.*;
-import com.unam.integrador.repositories.*;
-
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.unam.integrador.model.CuentaCliente;
+import com.unam.integrador.model.Factura;
+import com.unam.integrador.model.LoteFacturacion;
+import com.unam.integrador.model.Servicio;
+import com.unam.integrador.model.ServicioContratado;
+import com.unam.integrador.model.enums.EstadoCuenta;
+import com.unam.integrador.model.enums.EstadoFactura;
+import com.unam.integrador.model.enums.TipoAlicuotaIVA;
+import com.unam.integrador.model.enums.TipoCondicionIVA;
+import com.unam.integrador.repositories.CuentaClienteRepositorie;
+import com.unam.integrador.repositories.ServicioRepository;
 
 /**
  * Tests de integración para FacturaService.

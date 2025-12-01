@@ -173,5 +173,39 @@ public class CuentaClienteService {
         return clienteRepository.findByNombreContainingIgnoreCase(nombre);
     }
     
+    /**
+     * Busca clientes por nombre, CUIT/DNI o email.
+     * Realiza una búsqueda parcial en los tres campos.
+     * 
+     * @param criterio el texto a buscar en nombre, CUIT/DNI o email
+     * @return lista de clientes que coinciden con el criterio
+     */
+    @Transactional(readOnly = true)
+    public List<CuentaCliente> buscarClientes(String criterio) {
+        if (criterio == null || criterio.trim().isEmpty()) {
+            return obtenerTodosLosClientes();
+        }
+        
+        String criterioBusqueda = criterio.trim();
+        return clienteRepository.findByNombreContainingIgnoreCaseOrCuitDniContainingOrEmailContainingIgnoreCase(
+            criterioBusqueda, criterioBusqueda, criterioBusqueda);
+    }
+    
+    /**
+     * Obtiene los servicios disponibles para asignar a un cliente.
+     * Filtra los servicios activos que el cliente no tiene contratados.
+     * 
+     * @param clienteId el ID del cliente
+     * @return lista de servicios disponibles para asignar
+     * @throws IllegalArgumentException si el cliente no existe
+     */
+    @Transactional(readOnly = true)
+    public List<com.unam.integrador.model.Servicio> obtenerServiciosDisponiblesParaCliente(Long clienteId) {
+        CuentaCliente cliente = obtenerClientePorId(clienteId);
+        
+        return servicioRepository.findByActivoTrue().stream()
+            .filter(servicio -> !cliente.tieneServicioContratadoActivo(servicio))
+            .toList();
+    }
 
 }

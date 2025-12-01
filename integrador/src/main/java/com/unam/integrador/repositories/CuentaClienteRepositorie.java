@@ -34,4 +34,14 @@ public interface CuentaClienteRepositorie extends JpaRepository<CuentaCliente, L
      * @return lista de clientes que coinciden
      */
     java.util.List<CuentaCliente> findByNombreContainingIgnoreCase(String nombre);
+    
+    /**
+     * Busca clientes por nombre, CUIT/DNI o email (búsqueda parcial, ignorando mayúsculas)
+     * @param nombre fragmento del nombre
+     * @param cuitDni fragmento del CUIT/DNI
+     * @param email fragmento del email
+     * @return lista de clientes que coinciden con alguno de los criterios
+     */
+    java.util.List<CuentaCliente> findByNombreContainingIgnoreCaseOrCuitDniContainingOrEmailContainingIgnoreCase(
+        String nombre, String cuitDni, String email);
 }

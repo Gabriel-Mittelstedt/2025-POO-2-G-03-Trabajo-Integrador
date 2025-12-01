@@ -10,7 +10,9 @@ import com.unam.integrador.model.enums.EstadoFactura;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 /**
  * Entidad que representa un lote de facturación masiva.
@@ -84,6 +86,8 @@ public class LoteFacturacion {
     /**
      * Lista de facturas generadas en este lote.
      */
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     @OneToMany(mappedBy = "loteFacturacion", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Factura> facturas = new ArrayList<>();
     

@@ -26,6 +26,7 @@ import jakarta.validation.constraints.Size;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.Setter;
+import lombok.ToString;
 
 /**
  * Entidad que representa una cuenta de cliente en el sistema ERP de facturación.
@@ -125,6 +126,7 @@ public class CuentaCliente {
      * Historial de cambios de estado de la cuenta.
      */
     @OneToMany(mappedBy = "cliente", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ToString.Exclude
     private List<CambioEstadoCuenta> historialCambiosEstado = new ArrayList<>();
     
     /**

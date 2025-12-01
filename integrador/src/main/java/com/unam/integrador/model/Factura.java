@@ -26,8 +26,9 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import lombok.AccessLevel;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.ToString;
 
 /**
  * Entidad que representa una factura en el sistema.
@@ -63,6 +64,8 @@ public class Factura {
     private int nroFactura;
 
     /** Cliente al que se le emite la factura. */
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cliente_id", nullable = false)
     private CuentaCliente cliente;
@@ -132,6 +135,8 @@ public class Factura {
      * Lote de facturación masiva al que pertenece esta factura (si aplica).
      * Null para facturas individuales.
      */
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "lote_facturacion_id")
     private LoteFacturacion loteFacturacion;

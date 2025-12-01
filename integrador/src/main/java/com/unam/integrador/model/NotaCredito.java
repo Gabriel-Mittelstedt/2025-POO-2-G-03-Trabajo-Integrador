@@ -7,7 +7,9 @@ import com.unam.integrador.model.enums.TipoFactura;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 /**
  * Representa una nota de crédito emitida para anular una factura.
@@ -60,6 +62,8 @@ public class NotaCredito {
     private TipoFactura tipo;
 
     /** Factura que se anula con esta nota de crédito. */
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "factura_id", nullable = false) 
     private Factura factura;

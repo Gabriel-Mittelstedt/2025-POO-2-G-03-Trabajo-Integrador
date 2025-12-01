@@ -95,9 +95,15 @@ public class FacturaService {
         // 6. Validar cliente activo (delegar al dominio)
         factura.validarClienteActivo();
         
-        // 7. Agregar items desde servicios contratados
+        // 7. Agregar items desde servicios contratados ACTIVOS
+        // Solo se facturan servicios que puedan facturarse (lógica delegada al modelo)
         for (ServicioContratado servicioContratado : serviciosContratados) {
             Servicio servicio = servicioContratado.getServicio();
+            
+            // Verificar si el servicio puede facturarse (delegar al dominio)
+            if (!servicio.puedeFacturarse()) {
+                continue; // Saltar servicios inactivos
+            }
             
             ItemFactura item = new ItemFactura(
                 servicio.getNombre(),                       // descripcion

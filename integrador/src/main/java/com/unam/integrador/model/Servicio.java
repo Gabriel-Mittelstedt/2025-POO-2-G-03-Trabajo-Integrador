@@ -160,6 +160,15 @@ public class Servicio {
     }
     
     /**
+     * Determina si el servicio puede ser facturado.
+     * Un servicio solo puede facturarse si está activo.
+     * @return true si el servicio puede facturarse, false en caso contrario
+     */
+    public boolean puedeFacturarse() {
+        return this.activo;
+    }
+    
+    /**
      * Modifica los datos del servicio con validaciones.
      * Permite actualizar nombre, descripción, precio y alícuota IVA.
      * @param nuevoNombre Nuevo nombre del servicio

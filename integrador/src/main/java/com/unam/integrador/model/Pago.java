@@ -23,7 +23,6 @@ import lombok.ToString;
 
 /**
  * Entidad de dominio que representa un Pago realizado sobre una Factura.
- * 
  */
 @Getter
 @Entity
@@ -68,7 +67,6 @@ public class Pago {
     
     /**
      * Constructor privado que inicializa un Pago.
-     * Solo accesible a través de los factory methods estáticos.
      * 
      * @param monto Monto del pago
      * @param metodoPago Método de pago utilizado
@@ -103,7 +101,6 @@ public class Pago {
     
     /**
      * Agrega un detalle de pago manteniendo la coherencia bidireccional.
-     * Método package-private para uso interno.
      */
     void agregarDetallePago(DetallePago detalle) {
         if (!this.detallesPago.contains(detalle)) {
@@ -127,8 +124,6 @@ public class Pago {
         
         return total;
     }
-    
-    // --- Métodos de Validación Privados ---
     
     /**
      * Valida que el monto sea mayor a cero.

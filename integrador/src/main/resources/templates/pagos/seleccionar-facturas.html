@@ -34,14 +34,14 @@
         <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
             <div>
                 <h5 class="mb-0">Seleccionar Facturas - <span th:text="${cliente.nombre}"></span></h5>
-                <small class="text-muted">CUIT/DNI: <span th:text="${cliente.cuitDni}"></span></small>
+                <small class="text-white-50">CUIT/DNI: <span class="fw-bold text-white" th:text="${cliente.cuitDni}"></span></small>
             </div>
             <div>
                 <a th:href="@{/clientes/{id}(id=${cliente.id})}" class="btn btn-light">Volver al Cliente</a>
             </div>
         </div>
         <div class="card-body">
-            <p class="text-muted">Marque las facturas que desea incluir en el registro de pago. (UI-only)</p>
+            <p class="text-muted">Marque las facturas que desea incluir en el registro de pago.</p>
             <!-- Mostrar error si viene como flash attribute -->
             <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
                 <i class="bi bi-exclamation-triangle-fill"></i>
@@ -113,12 +113,14 @@
                             <label class="form-label">Monto a pagar</label>
                             <input type="number" id="montoTotal" name="montoTotal" 
                                 class="form-control" step="0.01" min="0" inputmode="decimal" 
-                                placeholder="Ingrese monto a pagar" autocomplete="off" />
+                                placeholder="Ingrese monto a pagar" autocomplete="off" 
+                                max="99999999.99" />
                             <small class="text-muted">Monto a pagar con el método de pago seleccionado</small>
                         </div>
                         <div class="mb-2">
                             <label class="form-label">Método de pago</label>
-                            <select name="metodoPago" class="form-select">
+                            <select id="metodoPago" name="metodoPago" class="form-select">
+                                <option value="" selected disabled>Seleccionar método de pago</option>
                                 <option th:each="m : ${metodosPago}" th:value="${m}" th:text="${m}"></option>
                             </select>
                         </div>
@@ -165,33 +167,48 @@
 <script>
     // Actualizar resumen del pago y validar input de saldo a favor
     function formatoMoneda(valor) {
-        return '$' + Number(valor || 0).toFixed(2).replace('.', ',');
+        const num = parseFloat(valor);
+        if (isNaN(num)) return '$0,00';
+        return '$' + num.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, '.').replace('.', ',').replace(/(\d),(\d{2})$/, '$1.$2');
     }
 
-    function actualizarResumen() {
-        const saldoInput = document.getElementById('saldoAFavorAplicar');
-        const montoInput = document.getElementById('montoTotal');
-        let saldoAFavor = parseFloat(saldoInput?.value || 0);
-        const montoAdicional = parseFloat(montoInput?.value || 0);
+    function parseMoneda(valor) {
+        if (!valor) return 0;
+        const num = parseFloat(valor);
+        return isNaN(num) ? 0 : num;
+    }
 
-        const max = parseFloat(saldoInput?.getAttribute('max') || 0);
-        const disponible = parseFloat(saldoInput?.dataset?.saldo || 0);
+    // Variable para mantener el saldo pendiente inicial de las facturas seleccionadas
+    let pendienteSeleccionadoInicial = 0;
 
-        // Clamp a max permitido
-        if (!isNaN(max) && saldoAFavor > max) {
-            saldoAFavor = max;
-            saldoInput.value = max.toFixed(2);
-        }
+    // Límite máximo permitido por la DB: numeric(10,2) -> 99,999,999.99
+    const MAX_DB_VALUE = 99999999.99;
 
+    // Formatea un número para asignarlo al input con dos decimales
+    function formatInputValueForNumber(v) {
+        if (isNaN(v) || v === null) return '0.00';
+        return Number(v).toFixed(2);
+    }
+
+    // Calcula la suma de saldos de las facturas marcadas y actualiza elementos
+    function actualizarPendienteSeleccionado() {
         // Sumar saldos pendientes de facturas seleccionadas
         let pendienteTotal = 0;
-        document.querySelectorAll('input[name="facturasIds"]:checked').forEach(function(chk) {
-            const v = parseFloat(chk.dataset?.saldoPendiente || 0);
-            if (!isNaN(v)) pendienteTotal += v;
+        const checkboxes = document.querySelectorAll('input[name="facturasIds"]:checked');
+        checkboxes.forEach(function(chk) {
+            const saldo = parseMoneda(chk.getAttribute('data-saldo-pendiente'));
+            pendienteTotal += saldo;
         });
 
+        pendienteSeleccionadoInicial = pendienteTotal;
+
+        const saldoInput = document.getElementById('saldoAFavorAplicar');
+        const disponible = parseMoneda(saldoInput?.getAttribute('data-saldo'));
+
         // Recalcular máximo aplicable: mínimo entre disponible y suma de saldos pendientes seleccionados
-        const nuevoMax = Math.max(0, Math.min(disponible || 0, pendienteTotal || 0));
+        let nuevoMax = Math.min(disponible, pendienteSeleccionadoInicial);
+        // Nunca permitir un max mayor al permitido por la DB
+        nuevoMax = Math.min(nuevoMax, MAX_DB_VALUE);
         if (saldoInput) {
             saldoInput.setAttribute('max', nuevoMax.toFixed(2));
         }
@@ -200,45 +217,139 @@
             maxMostrarEl.textContent = formatoMoneda(nuevoMax);
         }
 
-        // Si el valor actual excede el nuevo max, ajustarlo
-        if (!isNaN(saldoAFavor) && saldoAFavor > nuevoMax) {
+        // Actualizar visualización del saldo pendiente (ESTÁTICO mientras se editan montos)
+        const resumenPendienteEl = document.getElementById('resumenSaldoPendiente');
+        if (resumenPendienteEl) resumenPendienteEl.textContent = formatoMoneda(pendienteSeleccionadoInicial);
+
+        // Actualizar el resto del resumen (saldo a favor / monto adicional / total aplicado)
+        actualizarResumen();
+    }
+
+    // Actualiza los totales dependientes de los inputs (no toca el campo 'Saldo pendiente' estático)
+    function actualizarResumen() {
+        const saldoInput = document.getElementById('saldoAFavorAplicar');
+        const montoInput = document.getElementById('montoTotal');
+        
+        let saldoAFavor = parseMoneda(saldoInput?.value);
+        let montoAdicional = parseMoneda(montoInput?.value);
+
+        // Si no hay saldo seleccionado, pendienteSeleccionadoInicial será 0
+        const pendienteTotal = pendienteSeleccionadoInicial;
+
+        // Si el valor actual excede el max calculado por la selección previa, ajustarlo
+        const disponible = parseMoneda(saldoInput?.getAttribute('data-saldo'));
+        let nuevoMax = Math.min(disponible, pendienteTotal);
+        nuevoMax = Math.min(nuevoMax, MAX_DB_VALUE);
+        if (saldoInput) {
+            saldoInput.setAttribute('max', nuevoMax.toFixed(2));
+        }
+        if (saldoAFavor > nuevoMax) {
             saldoAFavor = nuevoMax;
-            if (saldoInput) saldoInput.value = nuevoMax.toFixed(2);
+            if (saldoInput) {
+                saldoInput.value = formatInputValueForNumber(nuevoMax);
+            }
+        }
+
+        // Clampear monto adicional al máximo permitido por la DB
+        if (montoAdicional > MAX_DB_VALUE) {
+            montoAdicional = MAX_DB_VALUE;
+            if (montoInput) {
+                montoInput.value = formatInputValueForNumber(MAX_DB_VALUE);
+            }
         }
 
         // Calcular cuánto del saldo pendiente queda luego de aplicar saldo a favor y monto adicional
-        const aplicado = (isNaN(saldoAFavor) ? 0 : saldoAFavor) + (isNaN(montoAdicional) ? 0 : montoAdicional);
-        const pendienteRestante = Math.max(0, pendienteTotal - aplicado);
+        const totalAplicado = saldoAFavor + montoAdicional;
+        const pendienteRestante = Math.max(0, pendienteTotal - totalAplicado);
 
-        const total = (isNaN(saldoAFavor) ? 0 : saldoAFavor) + (isNaN(montoAdicional) ? 0 : montoAdicional);
-        const restante = Math.max(0, (disponible || 0) - (isNaN(saldoAFavor) ? 0 : saldoAFavor));
+        // Actualizar visualización (no tocamos 'resumenSaldoPendiente' para mantenerlo estático)
+        const resumenSaldoEl = document.getElementById('resumenSaldoAFavor');
+        const resumenAdicionalEl = document.getElementById('resumenMontoAdicional');
+        const resumenTotalEl = document.getElementById('resumenTotal');
+        const resumenPendienteEl = document.getElementById('resumenSaldoPendiente');
 
-        document.getElementById('resumenSaldoAFavor').textContent = formatoMoneda(saldoAFavor);
-        document.getElementById('resumenSaldoPendiente').textContent = formatoMoneda(pendienteRestante);
-        document.getElementById('resumenMontoAdicional').textContent = formatoMoneda(montoAdicional);
-        document.getElementById('resumenTotal').textContent = formatoMoneda(total);
+        if (resumenSaldoEl) resumenSaldoEl.textContent = formatoMoneda(saldoAFavor);
+        if (resumenAdicionalEl) resumenAdicionalEl.textContent = formatoMoneda(montoAdicional);
+        if (resumenTotalEl) resumenTotalEl.textContent = formatoMoneda(totalAplicado);
+
+        // Dejar el campo resumenSaldoPendiente mostrando el saldo inicial, pero si no hay selección, mostrar $0.00
+        if (!resumenPendienteEl) return;
+        if (pendienteSeleccionadoInicial === 0) {
+            resumenPendienteEl.textContent = formatoMoneda(0);
+        } else {
+            // mantenerlo estático: no lo sobreescribimos con pendienteRestante aquí
+            // (pendienteRestante puede seguir usándose para validaciones en el servidor)
+        }
     }
 
-    // Agregar listeners
-    document.addEventListener('DOMContentLoaded', function() {
+    // Clampear cualquier input tipo number que tenga max definido, evitando superar DB limit
+    function clampInputToDbMax(inputEl) {
+        if (!inputEl) return;
+        const rawMax = parseFloat(inputEl.getAttribute('max'));
+        const maxAllowed = isNaN(rawMax) ? MAX_DB_VALUE : Math.min(rawMax, MAX_DB_VALUE);
+        const val = parseMoneda(inputEl.value);
+        if (val > maxAllowed) {
+            inputEl.value = formatInputValueForNumber(maxAllowed);
+        }
+    }
+
+    // Validar formulario antes de enviar
+    function validarFormulario(event) {
+        const montoInput = document.getElementById('montoTotal');
+        const metodoPagoSelect = document.getElementById('metodoPago');
+        const monto = parseMoneda(montoInput?.value);
+        
+        // Si hay monto ingresado, validar que se haya seleccionado método de pago
+        if (monto > 0 && (!metodoPagoSelect.value || metodoPagoSelect.value === '')) {
+            event.preventDefault();
+            alert('Debe seleccionar un método de pago cuando ingresa un monto a pagar.');
+            metodoPagoSelect.focus();
+            metodoPagoSelect.classList.add('is-invalid');
+            return false;
+        }
+        
+        metodoPagoSelect.classList.remove('is-invalid');
+        return true;
+    }
+
+    // Inicializar listeners
+    function inicializarEventos() {
         const saldoInput = document.getElementById('saldoAFavorAplicar');
         const montoInput = document.getElementById('montoTotal');
+        const form = document.querySelector('form');
 
-        // Listeners para checkboxes de facturas
-        document.querySelectorAll('input[name="facturasIds"]').forEach(function(chk) {
-            chk.addEventListener('change', actualizarResumen);
+        // Listener para validación del formulario
+        if (form) {
+            form.addEventListener('submit', validarFormulario);
+        }
+
+        // Listeners para checkboxes de facturas: actualizar saldo seleccionado (campo SALDO PENDIENTE estático)
+        const checkboxes = document.querySelectorAll('input[name="facturasIds"]');
+        checkboxes.forEach(function(chk) {
+            chk.addEventListener('change', actualizarPendienteSeleccionado);
         });
 
+        // Listeners para inputs: clamp al máximo y actualizar resumen (pero no cambiar saldo pendiente mostrado)
         if (saldoInput) {
-            saldoInput.addEventListener('input', actualizarResumen);
+            saldoInput.addEventListener('input', function() { clampInputToDbMax(saldoInput); actualizarResumen(); });
+            saldoInput.addEventListener('change', function() { clampInputToDbMax(saldoInput); actualizarResumen(); });
         }
         if (montoInput) {
-            montoInput.addEventListener('input', actualizarResumen);
+            montoInput.addEventListener('input', function() { clampInputToDbMax(montoInput); actualizarResumen(); });
+            montoInput.addEventListener('change', function() { clampInputToDbMax(montoInput); actualizarResumen(); });
         }
 
-        // Inicializar resumen
-        actualizarResumen();
-    });
+        // Inicializar resumen y saldo seleccionado inmediatamente
+        actualizarPendienteSeleccionado();
+    }
+
+    // Ejecutar cuando el DOM esté listo
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', inicializarEventos);
+    } else {
+        // DOM ya está listo
+        inicializarEventos();
+    }
 </script>
 </body>
 </html>

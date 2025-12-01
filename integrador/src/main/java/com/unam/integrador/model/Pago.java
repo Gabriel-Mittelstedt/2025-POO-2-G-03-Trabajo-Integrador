@@ -1,9 +1,10 @@
 package com.unam.integrador.model;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.unam.integrador.model.enums.MetodoPago;
 
@@ -12,7 +13,6 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -74,6 +74,11 @@ public class Pago {
     @OneToOne(mappedBy = "pago", cascade = CascadeType.ALL, orphanRemoval = true)
     private Recibo recibo;
 
+    /**
+     * Número de recibo asociado a este pago.
+     * Permite agrupar múltiples pagos bajo un mismo recibo (pagos combinados).
+     * El recibo se genera dinámicamente, no se persiste como entidad.
+     */
     @Column(length = 50)
     private String numeroRecibo;
     
@@ -118,77 +123,30 @@ public class Pago {
     // --- Métodos de Dominio (Comportamiento) ---
     
     /**
-     * Asocia este pago a una factura.
-     * Mantiene la consistencia bidireccional de la relación.
-     * 
-     * @param factura La factura a la que se asocia el pago
-     * @throws IllegalArgumentException si la factura es nula
+     * Agrega un detalle de pago manteniendo la coherencia bidireccional.
+     * Método package-private para uso interno.
      */
-    public void asociarFactura(Factura factura) {
-        if (factura == null) {
-            throw new IllegalArgumentException("La factura no puede ser nula");
+    void agregarDetallePago(DetallePago detalle) {
+        if (!this.detallesPago.contains(detalle)) {
+            this.detallesPago.add(detalle);
         }
-        this.factura = factura;
     }
     
     /**
-     * Vincula un recibo a este pago.
-     * Mantiene la consistencia de la relación uno-a-uno.
+     * Calcula el monto total aplicado de este pago.
+     * Suma todos los montos aplicados en los detalles de pago.
      * 
-     * @param recibo El recibo generado para este pago
-     * @throws IllegalArgumentException si el recibo es nulo
-     * @throws IllegalStateException si ya existe un recibo asociado
+     * @return Monto total aplicado
      */
-    public void vincularRecibo(Recibo recibo) {
-        if (recibo == null) {
-            throw new IllegalArgumentException("El recibo no puede ser nulo");
+    public BigDecimal calcularMontoTotalAplicado() {
+        BigDecimal total = BigDecimal.ZERO;
+        
+        for (DetallePago detalle : detallesPago) {
+            BigDecimal montoDetalle = detalle.getMontoAplicado();
+            total = total.add(montoDetalle);
         }
-        if (this.recibo != null) {
-            throw new IllegalStateException("Este pago ya tiene un recibo asociado");
-        }
-        this.recibo = recibo;
-    }
-    
-    /**
-     * Verifica si el pago cubre completamente el monto especificado.
-     * Útil para validar pagos totales.
-     * 
-     * @param montoTotal El monto a verificar
-     * @return true si el monto del pago es igual o mayor al monto total
-     */
-    public boolean cubreMonto(BigDecimal montoTotal) {
-        if (montoTotal == null) {
-            return false;
-        }
-        return this.monto.compareTo(montoTotal) >= 0;
-    }
-    
-    /**
-     * Verifica si el pago es parcial respecto al monto total especificado.
-     * 
-     * @param montoTotal El monto total a comparar
-     * @return true si el pago es menor al monto total
-     */
-    public boolean esPagoParcial(BigDecimal montoTotal) {
-        if (montoTotal == null) {
-            return false;
-        }
-        return this.monto.compareTo(montoTotal) < 0;
-    }
-    
-    /**
-     * Verifica si el monto del pago es válido para el saldo pendiente.
-     * El pago no debe exceder el saldo pendiente.
-     * 
-     * @param saldoPendiente El saldo pendiente de la factura
-     * @return true si el pago es válido
-     */
-    public boolean esMontoValido(BigDecimal saldoPendiente) {
-        if (saldoPendiente == null) {
-            return false;
-        }
-        // El pago no debe ser mayor al saldo pendiente
-        return this.monto.compareTo(saldoPendiente) <= 0;
+        
+        return total;
     }
     
     // --- Métodos de Validación Privados ---
@@ -205,23 +163,6 @@ public class Pago {
         }
         if (monto.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("El monto del pago debe ser mayor a cero");
-        }
-        // Validación para respetar la definición de la columna: precision=10, scale=2
-        final int maxPrecision = 10;
-        final int maxScale = 2;
-        if (monto.scale() > maxScale) {
-            throw new IllegalArgumentException(
-                    String.format("Monto inválido: máximo %d decimales permitidos (ej: 12345.67).", maxScale));
-        }
-        // Comprobar dígitos enteros (precision - scale) para evitar overflow en DB numeric(10,2)
-        final int maxIntegerDigits = maxPrecision - maxScale; // 8
-        int integerDigits = monto.abs().setScale(0, RoundingMode.DOWN).toBigInteger().toString().length();
-        if (integerDigits > maxIntegerDigits) {
-            throw new IllegalArgumentException(
-                    String.format(
-                            "Monto inválido: la parte entera no puede tener más de %d dígitos. " +
-                                    "Valor máximo permitido: 99,999,999.99.",
-                            maxIntegerDigits));
         }
     }
     
@@ -252,20 +193,6 @@ public class Pago {
     // --- Setters controlados solo para uso interno/JPA ---
     // Estos métodos son package-private para permitir su uso desde el service
     // pero evitar el uso indiscriminado desde fuera del paquete
-    
-    /**
-     * Setter interno para la factura (usado por JPA y métodos de dominio).
-     */
-    void setFactura(Factura factura) {
-        this.factura = factura;
-    }
-    
-    /**
-     * Setter interno para el recibo (usado por JPA).
-     */
-    void setRecibo(Recibo recibo) {
-        this.recibo = recibo;
-    }
 
     /**
      * Setter package-private para asignar el número de recibo cuando un recibo

@@ -6,9 +6,7 @@ import com.unam.integrador.model.enums.TipoAlicuotaIVA;
 
 import jakarta.persistence.*;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
 
 /**
  * Representa una línea de detalle en una factura.
@@ -68,8 +66,6 @@ public class ItemFactura {
     // --- Relaciones ---
     
     /** Factura a la que pertenece este item. */
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "factura_id")
     private Factura factura;

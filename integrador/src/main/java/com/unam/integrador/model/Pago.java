@@ -16,14 +16,10 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToOne;
-import lombok.EqualsAndHashCode;
+import jakarta.persistence.OneToMany;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
-import lombok.AccessLevel;
 
 /**
  * Entidad de dominio que representa un Pago realizado sobre una Factura.
@@ -65,14 +61,12 @@ public class Pago {
     
     // --- Relaciones ---
     
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "factura_id", nullable = false)
-    private Factura factura;
-    
-    @OneToOne(mappedBy = "pago", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Recibo recibo;
+    /**
+     * Detalles de pago que indican a qué facturas se aplicó este pago.
+     * Un pago puede aplicarse a múltiples facturas (pago combinado).
+     */
+    @OneToMany(mappedBy = "pago", cascade = CascadeType.ALL, orphanRemoval = true)
+    private final List<DetallePago> detallesPago = new ArrayList<>();
 
     /**
      * Número de recibo asociado a este pago.

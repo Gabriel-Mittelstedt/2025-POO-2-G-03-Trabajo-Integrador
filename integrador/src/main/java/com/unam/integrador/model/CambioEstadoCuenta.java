@@ -19,9 +19,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.AccessLevel;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import lombok.Setter;
-import lombok.ToString;
 
 /**
  * Entidad que registra el historial de cambios de estado de una cuenta de cliente.
@@ -42,8 +40,6 @@ public class CambioEstadoCuenta {
      * Cliente cuyo estado fue modificado.
      */
     @NotNull(message = "El cliente es obligatorio")
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
     @ManyToOne
     @JoinColumn(name = "cliente_id", nullable = false)
     private CuentaCliente cliente;

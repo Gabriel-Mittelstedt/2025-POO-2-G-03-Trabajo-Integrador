@@ -54,6 +54,7 @@
                         <ul class="list-unstyled">
                             <li><i class="bi bi-file-text text-primary"></i> <strong>Cantidad de facturas:</strong> <span class="badge bg-info" th:text="${lote.cantidadFacturas}"></span></li>
                             <li><i class="bi bi-currency-dollar text-primary"></i> <strong>Monto total:</strong> <span class="fw-bold">$<span th:text="${#numbers.formatDecimal(lote.montoTotal, 1, 2)}"></span></span></li>
+                            <li><i class="bi bi-person text-primary"></i> <strong>Usuario que ejecutó:</strong> <span th:text="${lote.usuarioEjecucion}"></span></li>
                         </ul>
                     </div>
                 </div>

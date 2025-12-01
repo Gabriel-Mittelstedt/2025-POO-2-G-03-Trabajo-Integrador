@@ -4,7 +4,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -87,10 +86,10 @@ public class ReciboService {
             }
         }
         
-        // Generar número de recibo (usar numeroRecibo del pago o generar uno)
-        String numeroRecibo = pago.getNumeroRecibo() != null 
+        // Generar número de recibo
+        String numeroRecibo = (pago.getNumeroRecibo() != null) 
             ? pago.getNumeroRecibo() 
-            : generarNumeroRecibo(pago.getIDPago());
+            : String.format("%08d", pago.getIDPago());
         
         // Generar desglose de pagos (un pago puede tener múltiples detalles aplicados a diferentes facturas)
         List<ReciboDTO.DetallePagoDTO> desglosePagos = new ArrayList<>();
@@ -133,9 +132,10 @@ public class ReciboService {
      */
     @Transactional(readOnly = true)
     public ReciboDTO generarReciboPorPagoId(Long pagoId) {
-        Pago pago = pagoRepository.findById(pagoId)
-            .orElseThrow(() -> new IllegalArgumentException("Pago no encontrado con ID: " + pagoId));
-        
+        Pago pago = pagoRepository.findById(pagoId).orElse(null);
+        if (pago == null) {
+            throw new IllegalArgumentException("Pago no encontrado con ID: " + pagoId);
+        }
         return generarReciboDesdePago(pago);
     }
     
@@ -178,22 +178,29 @@ public class ReciboService {
         }
         
         // Consolidar información de todos los pagos
-        BigDecimal montoTotal = pagos.stream()
-            .map(Pago::getMonto)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal montoTotal = BigDecimal.ZERO;
+        for (Pago pago : pagos) {
+            montoTotal = montoTotal.add(pago.getMonto());
+        }
         
         // Tomar la fecha del primer pago
         LocalDate fecha = pagos.get(0).getFechaPago();
         
-        // Tomar el método de pago del primer pago (pueden ser mixtos)
-        // En caso de pago combinado, se muestra el método principal
-        var metodoPago = pagos.get(0).getMetodoPago();
+        // Tomar el método de pago del primer pago
+        MetodoPago metodoPago = pagos.get(0).getMetodoPago();
         
         // Consolidar referencias
-        String referencia = pagos.stream()
-            .map(Pago::getReferencia)
-            .filter(r -> r != null && !r.trim().isEmpty())
-            .collect(Collectors.joining("; "));
+        StringBuilder referenciaSb = new StringBuilder();
+        for (Pago pago : pagos) {
+            String ref = pago.getReferencia();
+            if (ref != null && !ref.trim().isEmpty()) {
+                if (referenciaSb.length() > 0) {
+                    referenciaSb.append("; ");
+                }
+                referenciaSb.append(ref);
+            }
+        }
+        String referencia = referenciaSb.toString();
         
         // Consolidar facturas asociadas
         List<Long> facturasIds = new ArrayList<>();
@@ -278,20 +285,6 @@ public class ReciboService {
     }
     
     /**
-     * Genera un número de recibo basado en el ID del pago.
-     * Formato: 8 dígitos con ceros a la izquierda.
-     * 
-     * @param pagoId ID del pago
-     * @return Número de recibo formateado
-     */
-    private String generarNumeroRecibo(Long pagoId) {
-        if (pagoId == null) {
-            throw new IllegalArgumentException("El ID del pago no puede ser nulo");
-        }
-        return String.format("%08d", pagoId);
-    }
-    
-    /**
      * Calcula el método de pago para mostrar cuando hay múltiples pagos consolidados.
      * Si hay saldo a favor usado, muestra la combinación.
      * 
@@ -338,10 +331,13 @@ public class ReciboService {
     @Transactional(readOnly = true)
     public List<ReciboDTO> listarTodosLosRecibos() {
         List<Pago> pagos = pagoRepository.findAll();
+        List<ReciboDTO> recibos = new ArrayList<>();
         
-        return pagos.stream()
-            .map(this::generarReciboDesdePago)
-            .collect(Collectors.toList());
+        for (Pago pago : pagos) {
+            recibos.add(generarReciboDesdePago(pago));
+        }
+        
+        return recibos;
     }
     
     /**
@@ -357,22 +353,29 @@ public class ReciboService {
         }
         
         List<Pago> pagos = pagoRepository.findAll();
+        List<ReciboDTO> recibos = new ArrayList<>();
+        String nombreBusqueda = clienteNombre.toLowerCase();
         
-        return pagos.stream()
-            .filter(pago -> {
-                // Obtener los detalles de pago para verificar si alguna factura pertenece al cliente
-                List<DetallePago> detalles = detallePagoRepository.findByPagoIDPago(pago.getIDPago());
-                
-                return detalles.stream().anyMatch(detalle -> {
-                    Factura factura = detalle.getFactura();
-                    if (factura == null || factura.getCliente() == null) {
-                        return false;
-                    }
+        for (Pago pago : pagos) {
+            List<DetallePago> detalles = detallePagoRepository.findByPagoIDPago(pago.getIDPago());
+            boolean coincide = false;
+            
+            for (DetallePago detalle : detalles) {
+                Factura factura = detalle.getFactura();
+                if (factura != null && factura.getCliente() != null) {
                     String nombre = factura.getCliente().getNombre();
-                    return nombre != null && nombre.toLowerCase().contains(clienteNombre.toLowerCase());
-                });
-            })
-            .map(this::generarReciboDesdePago)
-            .collect(Collectors.toList());
+                    if (nombre != null && nombre.toLowerCase().contains(nombreBusqueda)) {
+                        coincide = true;
+                        break;
+                    }
+                }
+            }
+            
+            if (coincide) {
+                recibos.add(generarReciboDesdePago(pago));
+            }
+        }
+        
+        return recibos;
     }
 }

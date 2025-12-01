@@ -1,7 +1,6 @@
 package com.unam.integrador.model;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
@@ -165,45 +164,6 @@ public class DetallePago {
             throw new IllegalArgumentException("El monto aplicado debe ser mayor a cero");
         }
         
-        // Validación para respetar la definición de la columna: precision=10, scale=2
-        final int maxPrecision = 10;
-        final int maxScale = 2;
-        
-        if (montoAplicado.scale() > maxScale) {
-            throw new IllegalArgumentException(
-                String.format("Monto inválido: máximo %d decimales permitidos (ej: 12345.67).", maxScale));
-        }
-        
-        // Comprobar dígitos enteros (precision - scale) para evitar overflow en DB numeric(10,2)
-        final int maxIntegerDigits = maxPrecision - maxScale; // 8
-        int integerDigits = montoAplicado.abs().setScale(0, RoundingMode.DOWN).toBigInteger().toString().length();
-        
-        if (integerDigits > maxIntegerDigits) {
-            throw new IllegalArgumentException(
-                String.format(
-                    "Monto inválido: la parte entera no puede tener más de %d dígitos. " +
-                    "Valor máximo permitido: 99,999,999.99.",
-                    maxIntegerDigits));
-        }
     }
     
-    /**
-     * Valida que el monto aplicado no exceda el saldo pendiente de la factura.
-     * 
-     * @param montoAplicado Monto a aplicar
-     * @param factura Factura a la que se aplica
-     * @throws IllegalArgumentException si el monto excede el saldo pendiente
-     */
-    private void validarMontoContraSaldoPendiente(BigDecimal montoAplicado, Factura factura) {
-        if (factura.getSaldoPendiente() == null) {
-            throw new IllegalStateException("La factura no tiene saldo pendiente calculado");
-        }
-        
-        if (montoAplicado.compareTo(factura.getSaldoPendiente()) > 0) {
-            throw new IllegalArgumentException(
-                String.format(
-                    "El monto aplicado ($%s) no puede exceder el saldo pendiente de la factura ($%s)",
-                    montoAplicado, factura.getSaldoPendiente()));
-        }
-    }
 }

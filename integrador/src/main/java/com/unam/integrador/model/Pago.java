@@ -24,17 +24,10 @@ import lombok.ToString;
 /**
  * Entidad de dominio que representa un Pago realizado sobre una Factura.
  * 
-
- * Características del modelo rico:
- * - Constructor privado que fuerza el uso de factory methods
- * - Factory methods que validan y establecen el estado inicial correcto
- * - Validaciones de reglas de negocio dentro de la entidad
- * - Métodos de dominio para operaciones complejas
-
  */
 @Getter
 @Entity
-@NoArgsConstructor(access = AccessLevel.PROTECTED) // Solo para JPA
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Pago {
     
     @Id
@@ -72,7 +65,6 @@ public class Pago {
     @Column(length = 50)
     private String numeroRecibo;
     
-    // --- Constructor privado (fuerza uso de factory methods) ---
     
     /**
      * Constructor privado que inicializa un Pago.
@@ -93,7 +85,6 @@ public class Pago {
         this.fechaPago = LocalDate.now();
     }
     
-    // --- Factory Methods (Métodos de Fábrica) ---
     
     /**
      * Crea un nuevo pago validando todas las reglas de negocio.
@@ -109,7 +100,6 @@ public class Pago {
         return new Pago(monto, metodoPago, referencia);
     }
     
-    // --- Métodos de Dominio (Comportamiento) ---
     
     /**
      * Agrega un detalle de pago manteniendo la coherencia bidireccional.

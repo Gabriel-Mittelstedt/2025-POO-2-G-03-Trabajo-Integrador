@@ -90,8 +90,8 @@
                                 <td><span class="badge bg-info" th:text="${recibo.metodoPagoDisplay}"></span></td>
                                 <td th:text="${recibo.referencia != null and !#strings.isEmpty(recibo.referencia)} ? ${recibo.referencia} : '-'"></td>
                                 <td class="text-center">
-                                    <!-- Si hay múltiples pagos bajo el mismo recibo, abrir por número; si no, por id -->
-                                    <a th:href="${recibo.facturasIds != null and #lists.size(recibo.facturasIds) > 1} ? @{'/pagos/recibo/numero/' + ${recibo.numero}} : @{'/pagos/recibo/' + ${recibo.pagoId}}" class="btn btn-sm btn-info" title="Ver detalle">
+                                    <!-- Siempre abrir por número de recibo para mostrar todos los pagos consolidados (incluyendo pagos combinados) -->
+                                    <a th:href="@{'/pagos/recibo/numero/' + ${recibo.numero}}" class="btn btn-sm btn-info" title="Ver detalle">
                                         <i class="bi bi-eye"></i> Ver
                                     </a>
                                 </td>

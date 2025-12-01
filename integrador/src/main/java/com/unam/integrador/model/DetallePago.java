@@ -95,7 +95,7 @@ public class DetallePago {
         validarPago(pago);
         validarFactura(factura);
         validarMontoAplicado(montoAplicado);
-        validarMontoContraSaldoPendiente(montoAplicado, factura);
+       
         
         this.pago = pago;
         this.factura = factura;

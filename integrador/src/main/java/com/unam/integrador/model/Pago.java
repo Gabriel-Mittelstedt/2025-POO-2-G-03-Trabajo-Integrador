@@ -135,8 +135,15 @@ public class Pago {
      */
     public String getMetodoPagoDisplay() {
         // Verificar si hay algún detalle con saldo a favor
-        boolean tieneSaldoAFavor = detallesPago.stream()
-                .anyMatch(d -> d.getPago().getMetodoPago() == MetodoPago.SALDO_A_FAVOR);
+        boolean tieneSaldoAFavor = false;
+        
+        for (DetallePago detalle : detallesPago) {
+            Pago pagoDelDetalle = detalle.getPago();
+            if (pagoDelDetalle.getMetodoPago() == MetodoPago.SALDO_A_FAVOR) {
+                tieneSaldoAFavor = true;
+                break;
+            }
+        }
         
         if (tieneSaldoAFavor && this.metodoPago != MetodoPago.SALDO_A_FAVOR) {
             return this.metodoPago.toString() + " + SALDO A FAVOR";
@@ -152,9 +159,14 @@ public class Pago {
      * @return Monto total aplicado
      */
     public BigDecimal calcularMontoTotalAplicado() {
-        return detallesPago.stream()
-            .map(DetallePago::getMontoAplicado)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal total = BigDecimal.ZERO;
+        
+        for (DetallePago detalle : detallesPago) {
+            BigDecimal montoDetalle = detalle.getMontoAplicado();
+            total = total.add(montoDetalle);
+        }
+        
+        return total;
     }
     
     // --- Métodos de Validación Privados ---
@@ -171,23 +183,6 @@ public class Pago {
         }
         if (monto.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("El monto del pago debe ser mayor a cero");
-        }
-        // Validación para respetar la definición de la columna: precision=10, scale=2
-        final int maxPrecision = 10;
-        final int maxScale = 2;
-        if (monto.scale() > maxScale) {
-            throw new IllegalArgumentException(
-                    String.format("Monto inválido: máximo %d decimales permitidos (ej: 12345.67).", maxScale));
-        }
-        // Comprobar dígitos enteros (precision - scale) para evitar overflow en DB numeric(10,2)
-        final int maxIntegerDigits = maxPrecision - maxScale; // 8
-        int integerDigits = monto.abs().setScale(0, RoundingMode.DOWN).toBigInteger().toString().length();
-        if (integerDigits > maxIntegerDigits) {
-            throw new IllegalArgumentException(
-                    String.format(
-                            "Monto inválido: la parte entera no puede tener más de %d dígitos. " +
-                                    "Valor máximo permitido: 99,999,999.99.",
-                            maxIntegerDigits));
         }
     }
     

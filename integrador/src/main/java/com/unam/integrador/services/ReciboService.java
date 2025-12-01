@@ -229,33 +229,33 @@ public class ReciboService {
             }
         }
         
-        // Agregar observaciones si hay pagos con método SALDO_A_FAVOR
-        StringBuilder observaciones = new StringBuilder();
-        BigDecimal saldoAFavorAplicado = pagos.stream()
-            .filter(p -> p.getMetodoPago() != null && 
-                        p.getMetodoPago().name().equals("SALDO_A_FAVOR"))
-            .map(Pago::getMonto)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
-        
-        if (saldoAFavorAplicado.compareTo(BigDecimal.ZERO) > 0) {
-            observaciones.append(String.format("Saldo a favor aplicado: $%s", saldoAFavorAplicado));
-        }
         
         // Generar desglose de pagos consolidado
         List<ReciboDTO.DetallePagoDTO> desglosePagos = new ArrayList<>();
         for (Pago pago : pagos) {
             List<DetallePago> detalles = detallePagoRepository.findByPagoIDPago(pago.getIDPago());
             
-            for (DetallePago detalle : detalles) {
-                Factura factura = detalle.getFactura();
-                String numeroFactura = String.format("%d-%08d", factura.getSerie(), factura.getNroFactura());
-                
+            if (detalles.isEmpty()) {
+                // Pago sin detalles (ej: excedente que se convierte en saldo a favor)
                 desglosePagos.add(ReciboDTO.DetallePagoDTO.builder()
                     .metodoPago(pago.getMetodoPago())
-                    .numeroFactura(numeroFactura)
-                    .facturaId(factura.getIdFactura())
-                    .monto(detalle.getMontoAplicado())
+                    .numeroFactura("Excedente generado")
+                    .facturaId(null)
+                    .monto(pago.getMonto())
                     .build());
+            } else {
+                // Pago con detalles aplicados a facturas
+                for (DetallePago detalle : detalles) {
+                    Factura factura = detalle.getFactura();
+                    String numeroFactura = String.format("%d-%08d", factura.getSerie(), factura.getNroFactura());
+                    
+                    desglosePagos.add(ReciboDTO.DetallePagoDTO.builder()
+                        .metodoPago(pago.getMetodoPago())
+                        .numeroFactura(numeroFactura)
+                        .facturaId(factura.getIdFactura())
+                        .monto(detalle.getMontoAplicado())
+                        .build());
+                }
             }
         }
         
@@ -272,7 +272,7 @@ public class ReciboService {
             .clienteCuitDni(clienteCuitDni)
             .clienteId(clienteId)
             .pagoId(pagos.get(0).getIDPago()) // ID del primer pago para referencia
-            .observaciones(observaciones.length() > 0 ? observaciones.toString() : null)
+            .observaciones(null)
             .desglosePagos(desglosePagos)
             .build();
     }
@@ -299,16 +299,31 @@ public class ReciboService {
      * @return String con método de pago para display
      */
     private String calcularMetodoPagoDisplay(List<Pago> pagos) {
-        boolean tieneSaldoAFavor = pagos.stream()
-                .anyMatch(p -> p.getMetodoPago() == MetodoPago.SALDO_A_FAVOR);
+        // Verificar si hay saldo a favor APLICADO (con detalles de pago asociados)
+        boolean tieneSaldoAFavorAplicado = false;
+        for (Pago pago : pagos) {
+            if (pago.getMetodoPago() == MetodoPago.SALDO_A_FAVOR) {
+                List<DetallePago> detalles = detallePagoRepository.findByPagoIDPago(pago.getIDPago());
+                if (!detalles.isEmpty()) {
+                    tieneSaldoAFavorAplicado = true;
+                    break;
+                }
+            }
+        }
         
-        MetodoPago metodoPrincipal = pagos.stream()
-                .filter(p -> p.getMetodoPago() != MetodoPago.SALDO_A_FAVOR)
-                .findFirst()
-                .map(Pago::getMetodoPago)
-                .orElse(MetodoPago.SALDO_A_FAVOR);
+        MetodoPago metodoPrincipal = null;
+        for (Pago pago : pagos) {
+            if (pago.getMetodoPago() != MetodoPago.SALDO_A_FAVOR) {
+                metodoPrincipal = pago.getMetodoPago();
+                break;
+            }
+        }
         
-        if (tieneSaldoAFavor && metodoPrincipal != MetodoPago.SALDO_A_FAVOR) {
+        if (metodoPrincipal == null) {
+            metodoPrincipal = MetodoPago.SALDO_A_FAVOR;
+        }
+        
+        if (tieneSaldoAFavorAplicado && metodoPrincipal != MetodoPago.SALDO_A_FAVOR) {
             return metodoPrincipal.toString() + " + SALDO A FAVOR";
         }
         

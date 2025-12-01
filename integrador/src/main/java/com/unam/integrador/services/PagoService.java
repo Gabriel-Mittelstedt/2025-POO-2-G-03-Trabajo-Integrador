@@ -90,22 +90,36 @@ public class PagoService {
     /**
      * Método interno para registrar un pago (reutilizado por pagoTotal y pagoParcial).
      * Centraliza la lógica común de registro de pagos.
+     * Maneja automáticamente el excedente creándolo como saldo a favor.
      */
     private Pago registrarPagoInterno(Factura factura, BigDecimal monto, MetodoPago metodoPago, String referencia) {
+        CuentaCliente cliente = factura.getCliente();
+        BigDecimal saldoPendiente = factura.getSaldoPendiente();
+        
+        // Determinar monto a aplicar y excedente
+        BigDecimal montoAAplicar = monto.min(saldoPendiente);
+        BigDecimal excedente = monto.subtract(montoAAplicar);
+        
         // 1. Crear pago usando el factory method (modelo RICO)
-        Pago pago = Pago.crearPago(monto, metodoPago, referencia);
+        Pago pago = Pago.crearPago(montoAAplicar, metodoPago, referencia);
         Pago pagoGuardado = pagoRepository.save(pago);
         
-        // 2. Registrar pago en la factura (método unificado que decide estado automáticamente)
-        DetallePago detalle = factura.registrarPago(pagoGuardado, monto);
+        // 2. Registrar pago en la factura
+        DetallePago detalle = factura.registrarPago(pagoGuardado, montoAAplicar);
         detallePagoRepository.save(detalle);
         
-        // 3. Generar y asignar número de recibo
+        // 3. Si hay excedente, crear saldo a favor
+        if (excedente.compareTo(BigDecimal.ZERO) > 0) {
+            cliente.registrarSaldoAFavor(excedente);
+            cuentaClienteRepository.save(cliente);
+        }
+        
+        // 4. Generar y asignar número de recibo
         String numeroRecibo = generarNumeroRecibo(pagoGuardado.getIDPago());
         pagoGuardado.setNumeroRecibo(numeroRecibo);
         pagoRepository.save(pagoGuardado);
         
-        // 4. Guardar factura actualizada
+        // 5. Guardar factura actualizada
         facturaRepository.save(factura);
         
         return pagoGuardado;
@@ -230,69 +244,31 @@ public class PagoService {
             MetodoPago metodoPago, 
             String referencia) {
         
-        // 1. Validar parámetros
-        if (saldoAFavorAplicar == null) {
-            saldoAFavorAplicar = BigDecimal.ZERO;
-        }
-        if (montoTotal == null) {
-            montoTotal = BigDecimal.ZERO;
-        }
+        // 1. Validar parámetros básicos
+        if (saldoAFavorAplicar == null) saldoAFavorAplicar = BigDecimal.ZERO;
+        if (montoTotal == null) montoTotal = BigDecimal.ZERO;
         
         BigDecimal montoTotalCombinado = montoTotal.add(saldoAFavorAplicar);
         
         if (montoTotalCombinado.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("El monto total del pago (incluyendo saldo a favor) debe ser mayor a cero");
+            throw new IllegalArgumentException("El monto total debe ser mayor a cero");
         }
         
-        // 2. Obtener todas las facturas seleccionadas
+        // 2. Obtener facturas
         List<Factura> facturas = facturaRepository.findAllById(facturasIds);
-        
         if (facturas.isEmpty()) {
-            throw new IllegalArgumentException("No se encontraron facturas con los IDs proporcionados");
+            throw new IllegalArgumentException("No se encontraron facturas");
         }
         
-        if (facturas.size() != facturasIds.size()) {
-            throw new IllegalArgumentException("Algunas facturas no existen en el sistema");
-        }
-        
-        // 3. Validar que todas las facturas sean del mismo cliente
         CuentaCliente cliente = facturas.get(0).getCliente();
-        boolean todasDelMismoCliente = facturas.stream()
-            .allMatch(f -> f.getCliente().getId().equals(cliente.getId()));
         
-        if (!todasDelMismoCliente) {
-            throw new IllegalArgumentException("Todas las facturas deben pertenecer al mismo cliente");
-        }
-        
-        // 4. Validar que todas las facturas estén impagas (pendientes o pagadas parcialmente)
-        boolean todasImpagas = facturas.stream()
-            .allMatch(f -> f.getSaldoPendiente().compareTo(BigDecimal.ZERO) > 0);
-        
-        if (!todasImpagas) {
-            throw new IllegalArgumentException("Solo se pueden pagar facturas con saldo pendiente");
-        }
-        
-        // 5. Validar y aplicar saldo a favor si corresponde
+        // 3. Aplicar saldo a favor si corresponde (la entidad valida)
         if (saldoAFavorAplicar.compareTo(BigDecimal.ZERO) > 0) {
-            if (!cliente.tieneSaldoAFavor()) {
-                throw new IllegalStateException("El cliente no tiene saldo a favor disponible");
-            }
-            
-            BigDecimal saldoDisponible = cliente.getSaldoAFavor();
-            if (saldoAFavorAplicar.compareTo(saldoDisponible) > 0) {
-                throw new IllegalArgumentException(
-                    String.format("El monto de saldo a favor a aplicar ($%s) excede el saldo disponible ($%s)", 
-                        saldoAFavorAplicar, saldoDisponible));
-            }
-            
-            // Actualizar el saldo del cliente
             cliente.aplicarSaldoAFavor(saldoAFavorAplicar);
             cuentaClienteRepository.save(cliente);
-            
-            // No se persiste MovimientoSaldo: la trazabilidad se mantiene con Pagos y Recibos
         }
         
-        // 6. Distribuir el pago entre las facturas
+        // 4. Distribuir el pago entre las facturas
         BigDecimal montoRestante = montoTotalCombinado;
         List<Pago> pagosGenerados = new ArrayList<>();
         BigDecimal montoTotalAplicadoSaldoAFavor = BigDecimal.ZERO;
@@ -317,9 +293,7 @@ public class PagoService {
             // Si aún hay saldo a favor sin aplicar completamente
             if (montoRestante.compareTo(saldoAFavorAplicar) <= 0) {
                 // Este pago es completamente con saldo a favor
-                Pago pagoSaldo = Pago.crearPago(montoPago, MetodoPago.SALDO_A_FAVOR, 
-                    "Aplicacion de saldo a favor del cliente: Factura " + factura.getSerie() + "-" + 
-                    String.format("%08d", factura.getNroFactura()));
+                Pago pagoSaldo = Pago.crearPago(montoPago, MetodoPago.SALDO_A_FAVOR, null);
                 pagoRepository.save(pagoSaldo);
                 
                 DetallePago detalle = factura.registrarPago(pagoSaldo, montoPago);
@@ -334,8 +308,7 @@ public class PagoService {
                 BigDecimal porcionMetodoPago = montoPago.subtract(porcionSaldoAFavor);
                 
                 if (porcionSaldoAFavor.compareTo(BigDecimal.ZERO) > 0) {
-                    Pago pagoSaldo = Pago.crearPago(porcionSaldoAFavor, MetodoPago.SALDO_A_FAVOR, 
-                        "Aplicacion de saldo a favor del cliente");
+                    Pago pagoSaldo = Pago.crearPago(porcionSaldoAFavor, MetodoPago.SALDO_A_FAVOR, null);
                     pagoRepository.save(pagoSaldo);
                     
                     DetallePago detalleSaldo = factura.registrarPago(pagoSaldo, porcionSaldoAFavor);
@@ -371,15 +344,18 @@ public class PagoService {
             montoRestante = montoRestante.subtract(montoPago);
         }
         
-        // 7. Si sobra dinero, crear saldo a favor
-        BigDecimal totalRestante = montoRestante;
-        if (totalRestante.compareTo(BigDecimal.ZERO) > 0) {
-            // Registrar el saldo a favor usando el método de dominio
-            cliente.registrarSaldoAFavor(totalRestante);
+        // 5. Si sobra dinero, crear saldo a favor
+        if (montoRestante.compareTo(BigDecimal.ZERO) > 0) {
+            cliente.registrarSaldoAFavor(montoRestante);
             cuentaClienteRepository.save(cliente);
+            
+            // Crear un pago de tipo SALDO_A_FAVOR para representar el excedente en el recibo
+            Pago pagoExcedente = Pago.crearPago(montoRestante, MetodoPago.SALDO_A_FAVOR, null);
+            pagoRepository.save(pagoExcedente);
+            pagosGenerados.add(pagoExcedente);
         }
         
-        // 8. Generar un único número de recibo compartido para todos los pagos
+        // 6. Generar número de recibo
         String numeroRecibo = generarNumeroReciboSecuencial();
         
         // Asignar el mismo número de recibo a todos los pagos generados
@@ -418,40 +394,18 @@ public class PagoService {
      */
     @Transactional
     public String aplicarSaldoAFavor(Long clienteId, List<Long> facturasIds) {
-        // 1. Obtener cliente y validar que tenga saldo a favor
+        // 1. Obtener cliente y facturas
         CuentaCliente cliente = cuentaClienteRepository.findById(clienteId)
-            .orElseThrow(() -> new IllegalArgumentException("Cliente no encontrado con ID: " + clienteId));
+            .orElseThrow(() -> new IllegalArgumentException("Cliente no encontrado"));
         
-        if (!cliente.tieneSaldoAFavor()) {
-            throw new IllegalStateException("El cliente no tiene saldo a favor disponible");
+        List<Factura> facturas = facturaRepository.findAllById(facturasIds);
+        if (facturas.isEmpty()) {
+            throw new IllegalArgumentException("No se encontraron facturas");
         }
         
         BigDecimal saldoDisponible = cliente.getSaldoAFavor();
         
-        // 2. Obtener facturas
-        List<Factura> facturas = facturaRepository.findAllById(facturasIds);
-        
-        if (facturas.isEmpty()) {
-            throw new IllegalArgumentException("No se encontraron facturas con los IDs proporcionados");
-        }
-        
-        // 3. Validar que todas las facturas sean del cliente
-        boolean todasDelCliente = facturas.stream()
-            .allMatch(f -> f.getCliente().getId().equals(clienteId));
-        
-        if (!todasDelCliente) {
-            throw new IllegalArgumentException("Todas las facturas deben pertenecer al cliente seleccionado");
-        }
-        
-        // 4. Validar que todas las facturas tengan saldo pendiente
-        boolean todasImpagas = facturas.stream()
-            .allMatch(f -> f.getSaldoPendiente().compareTo(BigDecimal.ZERO) > 0);
-        
-        if (!todasImpagas) {
-            throw new IllegalArgumentException("Solo se puede aplicar saldo a facturas con saldo pendiente");
-        }
-        
-        // 5. Aplicar el saldo a las facturas
+        // 2. Aplicar el saldo a las facturas
         BigDecimal saldoRestante = saldoDisponible;
         BigDecimal montoTotalAplicado = BigDecimal.ZERO;
         List<Pago> pagosGenerados = new ArrayList<>();
@@ -467,8 +421,7 @@ public class PagoService {
                 : saldoRestante;
             
             // Crear pago con método SALDO_A_FAVOR
-            Pago pago = Pago.crearPago(montoAplicar, MetodoPago.SALDO_A_FAVOR, 
-                "Aplicacion de saldo a favor del cliente");
+            Pago pago = Pago.crearPago(montoAplicar, MetodoPago.SALDO_A_FAVOR, null);
             pagoRepository.save(pago);
             
             // Registrar pago en la factura con DetallePago
@@ -481,11 +434,11 @@ public class PagoService {
             saldoRestante = saldoRestante.subtract(montoAplicar);
         }
         
-        // 6. Actualizar el saldo del cliente
+        // 3. Actualizar el saldo del cliente
         cliente.aplicarSaldoAFavor(montoTotalAplicado);
         cuentaClienteRepository.save(cliente);
         
-        // 7. Generar número de recibo compartido para todos los pagos
+        // 4. Generar número de recibo
         String numeroRecibo = generarNumeroReciboSecuencial();
         
         // Guardar el número de recibo en todos los pagos generados para trazabilidad

@@ -98,16 +98,20 @@
                                         </div>
                                         <div>
                                             <div class="fw-semibold mb-1">
-                                                <a th:href="@{'/facturas/' + ${detalle.facturaId}}" 
-                                                   th:text="'Factura ' + ${detalle.numeroFactura}"
-                                                   class="text-decoration-none"
-                                                   style="color: #0d6efd; position: relative; z-index: 10;"
-                                                   onmouseover="this.style.textDecoration='underline'"
-                                                   onmouseout="this.style.textDecoration='none'"></a>
+                                                <!-- Si tiene facturaId, mostrar link; si no, mostrar texto sin link (excedente) -->
+                                                <span th:if="${detalle.facturaId != null}">
+                                                    <a th:href="@{'/facturas/' + ${detalle.facturaId}}" 
+                                                       th:text="'Factura ' + ${detalle.numeroFactura}"
+                                                       class="text-decoration-none"
+                                                       style="color: #0d6efd; position: relative; z-index: 10;"
+                                                       onmouseover="this.style.textDecoration='underline'"
+                                                       onmouseout="this.style.textDecoration='none'"></a>
+                                                </span>
+                                                <span th:if="${detalle.facturaId == null}" th:text="${detalle.numeroFactura}" class="text-success"></span>
                                             </div>
                                             <small class="text-muted">
-                                                <i class="bi bi-file-earmark-text me-1"></i>
-                                                Aplicado a esta factura
+                                                <i th:class="${detalle.facturaId != null ? 'bi bi-file-earmark-text me-1' : 'bi bi-wallet2 me-1'}"></i>
+                                                <span th:text="${detalle.facturaId != null ? 'Aplicado a esta factura' : 'Saldo a favor generado'}"></span>
                                             </small>
                                         </div>
                                     </div>

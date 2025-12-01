@@ -431,11 +431,8 @@ public class Factura {
         if (monto == null || monto.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("El monto del pago debe ser mayor a cero");
         }
-        if (monto.compareTo(this.saldoPendiente) > 0) {
-            throw new IllegalArgumentException(
-                String.format("El monto del pago ($%s) no puede exceder el saldo pendiente ($%s)",
-                    monto, this.saldoPendiente));
-        }
+        // NOTA: Ya no validamos que el monto no exceda el saldo pendiente
+        // El excedente se maneja en el Service creándolo como saldo a favor
     }
     
     /**

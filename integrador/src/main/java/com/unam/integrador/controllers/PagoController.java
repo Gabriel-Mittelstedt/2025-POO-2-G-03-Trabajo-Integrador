@@ -83,7 +83,7 @@ public class PagoController {
         // Agrupar pagos por número de recibo para evitar duplicados
         Map<String, List<Pago>> pagosPorRecibo = new java.util.HashMap<>();
         for (Pago pago : pagos) {
-            String clave = (pago.getNumeroRecibo() != null) ? pago.getNumeroRecibo() : String.valueOf(pago.getIDPago());
+            String clave = (pago.getNumeroRecibo() != null) ? pago.getNumeroRecibo() : String.valueOf(pago.getIdPago());
             if (!pagosPorRecibo.containsKey(clave)) {
                 pagosPorRecibo.put(clave, new java.util.ArrayList<>());
             }

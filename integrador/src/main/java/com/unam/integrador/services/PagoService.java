@@ -88,7 +88,7 @@ public class PagoService {
             }
             // Filtro por cliente
             if (clienteNombre != null && !clienteNombre.isBlank() && cumpleFiltros) {
-                List<DetallePago> detalles = detallePagoRepository.findByPagoIDPago(pago.getIDPago());
+                List<DetallePago> detalles = detallePagoRepository.findByPagoIdPago(pago.getIdPago());
                 boolean clienteEncontrado = false;
                 
                 for (DetallePago detalle : detalles) {

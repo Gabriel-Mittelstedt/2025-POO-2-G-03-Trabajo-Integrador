@@ -21,7 +21,7 @@ public interface DetallePagoRepository extends JpaRepository<DetallePago, Long> 
      * @param pagoId ID del pago
      * @return Lista de detalles de pago
      */
-    List<DetallePago> findByPagoIDPago(Long pagoId);
+    List<DetallePago> findByPagoIdPago(Long pagoId);
     
     /**
      * Busca todos los detalles asociados a una factura específica.

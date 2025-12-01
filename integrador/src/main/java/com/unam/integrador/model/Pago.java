@@ -108,22 +108,6 @@ public class Pago {
         }
     }
     
-    /**
-     * Calcula el monto total aplicado de este pago.
-     * Suma todos los montos aplicados en los detalles de pago.
-     * 
-     * @return Monto total aplicado
-     */
-    public BigDecimal calcularMontoTotalAplicado() {
-        BigDecimal total = BigDecimal.ZERO;
-        
-        for (DetallePago detalle : detallesPago) {
-            BigDecimal montoDetalle = detalle.getMontoAplicado();
-            total = total.add(montoDetalle);
-        }
-        
-        return total;
-    }
     
     /**
      * Valida que el monto sea mayor a cero.

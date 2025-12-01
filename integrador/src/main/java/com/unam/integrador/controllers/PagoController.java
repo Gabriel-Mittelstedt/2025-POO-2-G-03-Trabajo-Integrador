@@ -81,23 +81,30 @@ public class PagoController {
         List<Pago> pagos = pagoService.listarFiltrados(clienteNombre, desde, hasta);
         
         // Agrupar pagos por número de recibo para evitar duplicados
-        Map<String, List<Pago>> pagosPorRecibo = pagos.stream()
-            .collect(java.util.stream.Collectors.groupingBy(
-                pago -> pago.getNumeroRecibo() != null ? pago.getNumeroRecibo() : String.valueOf(pago.getIDPago())
-            ));
+        Map<String, List<Pago>> pagosPorRecibo = new java.util.HashMap<>();
+        for (Pago pago : pagos) {
+            String clave = (pago.getNumeroRecibo() != null) ? pago.getNumeroRecibo() : String.valueOf(pago.getIDPago());
+            if (!pagosPorRecibo.containsKey(clave)) {
+                pagosPorRecibo.put(clave, new java.util.ArrayList<>());
+            }
+            pagosPorRecibo.get(clave).add(pago);
+        }
         
         // Generar un ReciboDTO por cada grupo de pagos con el mismo número de recibo
-        List<ReciboDTO> recibos = pagosPorRecibo.values().stream()
-            .map(gruposPagos -> {
-                if (gruposPagos.size() == 1) {
-                    return reciboService.generarReciboDesdePago(gruposPagos.get(0));
-                } else {
-                    String numeroRecibo = gruposPagos.get(0).getNumeroRecibo();
-                    return reciboService.generarReciboDesdeMultiplesPagos(gruposPagos, numeroRecibo);
-                }
-            })
-            .sorted((r1, r2) -> r2.getNumero().compareTo(r1.getNumero())) // Ordenar por número de recibo descendente
-            .collect(java.util.stream.Collectors.toList());
+        List<ReciboDTO> recibos = new java.util.ArrayList<>();
+        for (List<Pago> gruposPagos : pagosPorRecibo.values()) {
+            ReciboDTO recibo;
+            if (gruposPagos.size() == 1) {
+                recibo = reciboService.generarReciboDesdePago(gruposPagos.get(0));
+            } else {
+                String numeroRecibo = gruposPagos.get(0).getNumeroRecibo();
+                recibo = reciboService.generarReciboDesdeMultiplesPagos(gruposPagos, numeroRecibo);
+            }
+            recibos.add(recibo);
+        }
+        
+        // Ordenar por número de recibo descendente
+        recibos.sort((r1, r2) -> r2.getNumero().compareTo(r1.getNumero()));
 
         model.addAttribute("recibos", recibos);
         return "pagos/lista";
@@ -162,12 +169,18 @@ public class PagoController {
         model.addAttribute("cliente", cliente);
         model.addAttribute("facturas", facturasImpagas);
         // Agregar métodos de pago disponibles (sin SALDO_A_FAVOR) y total adeudado para prellenar el formulario
-        model.addAttribute("metodosPago", java.util.Arrays.stream(MetodoPago.values())
-                .filter(m -> m != MetodoPago.SALDO_A_FAVOR)
-                .toArray(MetodoPago[]::new));
-        java.math.BigDecimal totalAdeudado = facturasImpagas.stream()
-                .map(Factura::getSaldoPendiente)
-                .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
+        List<MetodoPago> metodosPagoDisponibles = new java.util.ArrayList<>();
+        for (MetodoPago m : MetodoPago.values()) {
+            if (m != MetodoPago.SALDO_A_FAVOR) {
+                metodosPagoDisponibles.add(m);
+            }
+        }
+        model.addAttribute("metodosPago", metodosPagoDisponibles.toArray(new MetodoPago[0]));
+        
+        java.math.BigDecimal totalAdeudado = java.math.BigDecimal.ZERO;
+        for (Factura factura : facturasImpagas) {
+            totalAdeudado = totalAdeudado.add(factura.getSaldoPendiente());
+        }
         model.addAttribute("totalAdeudado", totalAdeudado);
         // Calcular el máximo de saldo a favor que puede aplicarse: no debe exceder
         // ni el saldo disponible del cliente ni el total adeudado de las facturas
@@ -242,16 +255,22 @@ public class PagoController {
         }
         
         // Calcular el total adeudado
-        BigDecimal totalAdeudado = facturasImpagas.stream()
-            .map(Factura::getSaldoPendiente)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal totalAdeudado = BigDecimal.ZERO;
+        for (Factura factura : facturasImpagas) {
+            totalAdeudado = totalAdeudado.add(factura.getSaldoPendiente());
+        }
         
         model.addAttribute("cliente", cliente);
         model.addAttribute("facturas", facturasImpagas);
         model.addAttribute("totalAdeudado", totalAdeudado);
-        model.addAttribute("metodosPago", java.util.Arrays.stream(MetodoPago.values())
-                .filter(m -> m != MetodoPago.SALDO_A_FAVOR)
-                .toArray(MetodoPago[]::new));
+        
+        List<MetodoPago> metodosPagoDisponibles = new java.util.ArrayList<>();
+        for (MetodoPago m : MetodoPago.values()) {
+            if (m != MetodoPago.SALDO_A_FAVOR) {
+                metodosPagoDisponibles.add(m);
+            }
+        }
+        model.addAttribute("metodosPago", metodosPagoDisponibles.toArray(new MetodoPago[0]));
         
         return "pagos/formulario-combinado";
     }

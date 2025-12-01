@@ -1,7 +1,6 @@
 package com.unam.integrador.model;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -125,31 +124,6 @@ public class Pago {
         if (!this.detallesPago.contains(detalle)) {
             this.detallesPago.add(detalle);
         }
-    }
-    
-    /**
-     * Retorna la representación del método de pago para mostrar en UI.
-     * Si el pago tiene detalles con SALDO_A_FAVOR, muestra combinación.
-     * 
-     * @return String con método de pago (ej: "EFECTIVO + SALDO A FAVOR")
-     */
-    public String getMetodoPagoDisplay() {
-        // Verificar si hay algún detalle con saldo a favor
-        boolean tieneSaldoAFavor = false;
-        
-        for (DetallePago detalle : detallesPago) {
-            Pago pagoDelDetalle = detalle.getPago();
-            if (pagoDelDetalle.getMetodoPago() == MetodoPago.SALDO_A_FAVOR) {
-                tieneSaldoAFavor = true;
-                break;
-            }
-        }
-        
-        if (tieneSaldoAFavor && this.metodoPago != MetodoPago.SALDO_A_FAVOR) {
-            return this.metodoPago.toString() + " + SALDO A FAVOR";
-        }
-        
-        return this.metodoPago.toString();
     }
     
     /**

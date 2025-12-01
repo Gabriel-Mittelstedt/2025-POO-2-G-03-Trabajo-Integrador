@@ -465,30 +465,6 @@ public class Factura {
         }
         // Si el saldo es igual al total, mantiene el estado actual (PENDIENTE o VENCIDA)
     }
-    
-    /**
-     * Obtiene todos los pagos aplicados a esta factura.
-     * 
-     * @return Lista de pagos (puede estar vacía)
-     */
-    public List<Pago> obtenerPagos() {
-        return detallesPago.stream()
-            .map(DetallePago::getPago)
-            .distinct()
-            .toList();
-    }
-    
-    /**
-     * Calcula el monto total pagado de esta factura.
-     * Suma todos los montos aplicados de los detalles de pago.
-     * 
-     * @return Monto total pagado
-     */
-    public BigDecimal calcularMontoPagado() {
-        return detallesPago.stream()
-            .map(DetallePago::getMontoAplicado)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
-    }
 
     /**
      * Valida si la factura puede ser anulada.

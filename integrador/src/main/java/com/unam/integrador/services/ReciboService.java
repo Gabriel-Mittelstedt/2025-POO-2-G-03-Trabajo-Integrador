@@ -110,7 +110,7 @@ public class ReciboService {
             .fecha(pago.getFechaPago())
             .monto(pago.getMonto())
             .metodoPago(pago.getMetodoPago())
-            .metodoPagoDisplay(pago.getMetodoPagoDisplay())
+            .metodoPagoDisplay(pago.getMetodoPago().toString())
             .referencia(pago.getReferencia())
             .facturasAsociadas(facturasInfo.toString())
             .facturasIds(facturasIds)

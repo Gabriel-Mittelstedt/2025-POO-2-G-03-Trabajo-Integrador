@@ -41,9 +41,11 @@
                     
                     <div class="mb-3">
                         <label for="periodo" class="form-label"><i class="bi bi-calendar-month me-1"></i>Período *</label>
-                        <input type="text" class="form-control" id="periodo" th:field="*{periodo}" 
-                               placeholder="Ej: Noviembre 2024" required>
-                        <small class="form-text text-muted">Ejemplo: "Noviembre 2024", "Diciembre 2024", etc.</small>
+                        <select class="form-select" id="periodo" th:field="*{periodo}" required>
+                            <option value="">-- Seleccione un período --</option>
+                            <option th:each="p : ${periodos}" th:value="${p}" th:text="${p}"></option>
+                        </select>
+                        <small class="form-text text-muted">Seleccione el período mensual a facturar</small>
                         <div th:if="${#fields.hasErrors('periodo')}" class="text-danger" th:errors="*{periodo}"></div>
                     </div>
 
@@ -52,14 +54,6 @@
                         <input type="date" class="form-control" id="fechaVencimiento" th:field="*{fechaVencimiento}" required>
                         <small class="text-muted">Fecha límite para el pago de todas las facturas</small>
                         <div th:if="${#fields.hasErrors('fechaVencimiento')}" class="text-danger" th:errors="*{fechaVencimiento}"></div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="usuario" class="form-label"><i class="bi bi-person me-1"></i>Usuario que ejecuta *</label>
-                        <input type="text" class="form-control" id="usuario" th:field="*{usuario}" 
-                               placeholder="Nombre del usuario" required>
-                        <small class="text-muted">Ingrese su nombre de usuario</small>
-                        <div th:if="${#fields.hasErrors('usuario')}" class="text-danger" th:errors="*{usuario}"></div>
                     </div>
 
                     <div class="alert alert-warning">

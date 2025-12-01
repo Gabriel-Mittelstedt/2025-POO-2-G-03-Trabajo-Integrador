@@ -5,101 +5,147 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Detalle de Lote de Facturación</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <nav class="navbar navbar-expand-lg">
         <div class="container-fluid">
-            <a class="navbar-brand" href="/">ERP Facturación</a>
+            <a class="navbar-brand" href="/">
+                <i class="bi bi-building"></i> ERP Facturación
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="/clientes"><i class="bi bi-people"></i> Clientes</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/servicios"><i class="bi bi-grid"></i> Servicios</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/facturas"><i class="bi bi-file-text"></i> Facturas</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="/facturacion-masiva"><i class="bi bi-files"></i> Facturación Masiva</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/pagos"><i class="bi bi-cash-coin"></i> Pagos</a></li>
+                </ul>
+            </div>
         </div>
     </nav>
 
     <div class="container mt-4">
-        <div class="row">
-            <div class="col-md-8">
-                <h1>Detalle de Lote de Facturación</h1>
+        <div class="page-header d-flex justify-content-between align-items-center">
+            <div>
+                <h1><i class="bi bi-file-earmark-spreadsheet-fill text-primary"></i> Detalle de Lote #<span th:text="${lote.id}"></span></h1>
+                <p class="text-muted mb-0">Período: <span th:text="${lote.periodo}"></span></p>
             </div>
-            <div class="col-md-4 text-end">
-                <a href="/facturacion-masiva" class="btn btn-secondary">Volver</a>
-            </div>
+            <a href="/facturacion-masiva" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Volver a Lotes
+            </a>
         </div>
 
         <div th:if="${mensaje}" class="alert alert-success alert-dismissible fade show mt-3" role="alert">
-            <span th:text="${mensaje}"></span>
+            <i class="bi bi-check-circle-fill"></i> <span th:text="${mensaje}"></span>
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
 
         <div th:if="${error}" class="alert alert-danger alert-dismissible fade show mt-3" role="alert">
-            <span th:text="${error}"></span>
+            <i class="bi bi-exclamation-triangle-fill"></i> <span th:text="${error}"></span>
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
 
+        <!-- Información del Lote -->
         <div class="card mt-3">
             <div class="card-header" th:classappend="${lote.anulado ? 'bg-danger text-white' : 'bg-primary text-white'}">
-                <h5>Lote #<span th:text="${lote.id}"></span> - <span th:text="${lote.periodo}"></span></h5>
+                <h5 class="mb-0">
+                    <i th:class="${lote.anulado ? 'bi bi-x-circle' : 'bi bi-check-circle'}"></i>
+                    Información del Lote - <span th:text="${lote.anulado ? 'ANULADO' : 'ACTIVO'}"></span>
+                </h5>
             </div>
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-6">
-                        <p><strong>Período:</strong> <span th:text="${lote.periodo}"></span></p>
-                        <p><strong>Fecha de Ejecución:</strong> <span th:text="${#temporals.format(lote.fechaEjecucion, 'dd/MM/yyyy HH:mm:ss')}"></span></p>
-                        <p><strong>Fecha de Vencimiento:</strong> <span th:text="${#temporals.format(lote.fechaVencimiento, 'dd/MM/yyyy')}"></span></p>
-                        <p><strong>Usuario:</strong> <span th:text="${lote.usuarioEjecucion}"></span></p>
+                        <p><i class="bi bi-calendar-month text-primary"></i> <strong>Período:</strong> <span th:text="${lote.periodo}"></span></p>
+                        <p><i class="bi bi-clock text-primary"></i> <strong>Fecha de Ejecución:</strong> <span th:text="${#temporals.format(lote.fechaEjecucion, 'dd/MM/yyyy HH:mm:ss')}"></span></p>
+                        <p><i class="bi bi-calendar-x text-primary"></i> <strong>Fecha de Vencimiento:</strong> <span th:text="${#temporals.format(lote.fechaVencimiento, 'dd/MM/yyyy')}"></span></p>
                     </div>
                     <div class="col-md-6">
-                        <p><strong>Cantidad de Facturas:</strong> <span th:text="${lote.cantidadFacturas}"></span></p>
-                        <p><strong>Monto Total:</strong> $<span th:text="${#numbers.formatDecimal(lote.montoTotal, 1, 2)}"></span></p>
-                        <p><strong>Estado:</strong> 
+                        <p><i class="bi bi-file-text text-primary"></i> <strong>Cantidad de Facturas:</strong> <span class="badge bg-info" th:text="${lote.cantidadFacturas}"></span></p>
+                        <p><i class="bi bi-currency-dollar text-primary"></i> <strong>Monto Total:</strong> <span class="fs-5 fw-bold">$<span th:text="${#numbers.formatDecimal(lote.montoTotal, 1, 2)}"></span></span></p>
+                        <p><i class="bi bi-info-circle text-primary"></i> <strong>Estado:</strong> 
                             <span th:class="${lote.anulado ? 'badge bg-danger' : 'badge bg-success'}"
                                   th:text="${lote.anulado ? 'Anulado' : 'Activo'}"></span>
                         </p>
-                        <p th:if="${lote.anulado}">
-                            <strong>Fecha de Anulación:</strong> <span th:text="${#temporals.format(lote.fechaAnulacion, 'dd/MM/yyyy HH:mm:ss')}"></span><br>
-                            <strong>Motivo:</strong> <span th:text="${lote.motivoAnulacion}"></span>
-                        </p>
                     </div>
                 </div>
 
-                <hr>
-
-                <h5>Facturas del Lote</h5>
-                <table class="table table-sm table-striped">
-                    <thead>
-                        <tr>
-                            <th>Número</th>
-                            <th>Tipo</th>
-                            <th>Cliente</th>
-                            <th>Total</th>
-                            <th>Estado</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr th:each="factura : ${lote.facturas}">
-                            <td th:text="${factura.numeroFactura}"></td>
-                            <td><span class="badge bg-secondary" th:text="${factura.tipoFactura.name()}"></span></td>
-                            <td th:text="${factura.cliente.nombre}"></td>
-                            <td>$<span th:text="${#numbers.formatDecimal(factura.total, 1, 2)}"></span></td>
-                            <td>
-                                <span th:class="${factura.estado.name() == 'PAGADA_TOTALMENTE' ? 'badge bg-success' : 
-                                                factura.estado.name() == 'PENDIENTE' ? 'badge bg-warning' :
-                                                factura.estado.name() == 'VENCIDA' ? 'badge bg-danger' :
-                                                factura.estado.name() == 'PAGADA_PARCIALMENTE' ? 'badge bg-info' :
-                                                'badge bg-dark'}"
-                                      th:text="${factura.estado.descripcion}"></span>
-                            </td>
-                            <td>
-                                <a th:href="@{/facturas/{id}(id=${factura.idFactura})}" class="btn btn-sm btn-info">Ver</a>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-
-                <div class="mt-3" th:if="${!lote.anulado}">
-                    <a th:href="@{/facturacion-masiva/{id}/confirmar-anulacion(id=${lote.id})}" class="btn btn-danger">
-                        Anular Lote Completo
-                    </a>
+                <!-- Información de anulación si aplica -->
+                <div th:if="${lote.anulado}" class="alert alert-danger mt-3">
+                    <h6><i class="bi bi-exclamation-triangle"></i> Información de Anulación</h6>
+                    <p class="mb-1"><strong>Fecha de Anulación:</strong> <span th:text="${#temporals.format(lote.fechaAnulacion, 'dd/MM/yyyy HH:mm:ss')}"></span></p>
+                    <p class="mb-0"><strong>Motivo:</strong> <span th:text="${lote.motivoAnulacion}"></span></p>
                 </div>
             </div>
+        </div>
+
+        <!-- Listado de Facturas del Lote -->
+        <div class="card mt-4">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0"><i class="bi bi-list-ul"></i> Facturas del Lote (<span th:text="${lote.cantidadFacturas}"></span>)</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th><i class="bi bi-hash"></i> Número</th>
+                                <th><i class="bi bi-tag"></i> Tipo</th>
+                                <th><i class="bi bi-person"></i> Cliente</th>
+                                <th><i class="bi bi-currency-dollar"></i> Total</th>
+                                <th><i class="bi bi-info-circle"></i> Estado</th>
+                                <th class="text-center"><i class="bi bi-gear"></i> Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="factura : ${lote.facturas}">
+                                <td><strong th:text="${#numbers.formatInteger(factura.serie, 4)} + '-' + ${#numbers.formatInteger(factura.nroFactura, 8)}"></strong></td>
+                                <td>
+                                    <span th:class="${factura.tipo.name() == 'A' ? 'badge bg-primary' : 
+                                                    factura.tipo.name() == 'B' ? 'badge bg-success' : 'badge bg-info'}"
+                                          th:text="${'Factura ' + factura.tipo.name()}"></span>
+                                </td>
+                                <td th:text="${factura.cliente.nombre}"></td>
+                                <td><strong>$<span th:text="${#numbers.formatDecimal(factura.total, 1, 2)}"></span></strong></td>
+                                <td>
+                                    <span th:class="${factura.estado.name() == 'PAGADA_TOTALMENTE' ? 'badge bg-success' : 
+                                                    factura.estado.name() == 'PENDIENTE' ? 'badge bg-warning text-dark' :
+                                                    factura.estado.name() == 'VENCIDA' ? 'badge bg-danger' :
+                                                    factura.estado.name() == 'PAGADA_PARCIALMENTE' ? 'badge bg-info' :
+                                                    'badge bg-dark'}"
+                                          th:text="${factura.estado.descripcion}"></span>
+                                </td>
+                                <td class="text-center">
+                                    <a th:href="@{/facturas/{id}(id=${factura.idFactura})}" class="btn btn-sm btn-info" title="Ver detalle">
+                                        <i class="bi bi-eye"></i> Ver
+                                    </a>
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(lote.facturas)}">
+                                <td colspan="6" class="text-center py-4 text-muted">
+                                    <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                                    <p class="mt-2">No hay facturas en este lote</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Botón de Anulación -->
+        <div class="mt-4 mb-5" th:if="${!lote.anulado}">
+            <a th:href="@{/facturacion-masiva/{id}/confirmar-anulacion(id=${lote.id})}" class="btn btn-danger btn-lg">
+                <i class="bi bi-x-circle"></i> Anular Lote Completo
+            </a>
+            <small class="text-muted d-block mt-2">
+                Esta acción anulará todas las facturas del lote y generará las notas de crédito correspondientes.
+            </small>
         </div>
     </div>
 

@@ -1,5 +1,7 @@
 package com.unam.integrador.controllers;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -35,10 +37,22 @@ public class CuentaClienteController {
     
     /**
      * Muestra la lista de todos los clientes.
+     * Soporta búsqueda por nombre, CUIT/DNI o email mediante el parámetro 'busqueda'.
      */
     @GetMapping
-    public String listarClientes(Model model) {
-        model.addAttribute("clientes", clienteService.obtenerTodosLosClientes());
+    public String listarClientes(@org.springframework.web.bind.annotation.RequestParam(required = false) String busqueda, 
+                                  Model model) {
+        List<CuentaCliente> clientes;
+        
+        if (busqueda != null && !busqueda.trim().isEmpty()) {
+            clientes = clienteService.buscarClientes(busqueda);
+            model.addAttribute("mensajeBusqueda", 
+                "Resultados de búsqueda para: '" + busqueda + "' (" + clientes.size() + " encontrados)");
+        } else {
+            clientes = clienteService.obtenerTodosLosClientes();
+        }
+        
+        model.addAttribute("clientes", clientes);
         return "clientes/lista";
     }
     
@@ -151,11 +165,7 @@ public class CuentaClienteController {
     @GetMapping("/{id}/servicios/asignar")
     public String mostrarFormularioAsignarServicio(@PathVariable Long id, Model model) {
         CuentaCliente cliente = clienteService.obtenerClientePorId(id);
-        
-        // Filtrar servicios que ya están contratados activamente
-        var serviciosDisponibles = servicioService.listarActivos().stream()
-            .filter(servicio -> !cliente.tieneServicioContratadoActivo(servicio))
-            .toList();
+        var serviciosDisponibles = clienteService.obtenerServiciosDisponiblesParaCliente(id);
         
         model.addAttribute("cliente", cliente);
         model.addAttribute("servicios", serviciosDisponibles);

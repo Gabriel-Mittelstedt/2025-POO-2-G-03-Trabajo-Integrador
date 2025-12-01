@@ -26,6 +26,7 @@ import jakarta.validation.constraints.Size;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.Setter;
+import lombok.ToString;
 
 /**
  * Entidad que representa una cuenta de cliente en el sistema ERP de facturación.
@@ -119,15 +120,15 @@ public class CuentaCliente {
      * Lista de servicios contratados por este cliente.
      */
     @OneToMany(mappedBy = "cliente", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ToString.Exclude
     private List<ServicioContratado> serviciosContratados = new ArrayList<>();
     
     /**
      * Historial de cambios de estado de la cuenta.
      */
     @OneToMany(mappedBy = "cliente", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ToString.Exclude
     private List<CambioEstadoCuenta> historialCambiosEstado = new ArrayList<>();
-    
-    // Historial de movimientos eliminado: la trazabilidad se realiza con Pagos y Recibos
     
     /**
      * Callback ejecutado antes de persistir la entidad en la base de datos.
@@ -298,7 +299,8 @@ public class CuentaCliente {
     public boolean puedeFacturar() {
         return this.estado == EstadoCuenta.ACTIVA;
     }
-    
+
+        
     /**
      * Obtiene el saldo a favor del cliente.
      * Un saldo negativo indica que el cliente tiene crédito a favor.

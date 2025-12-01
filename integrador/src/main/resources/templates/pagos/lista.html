@@ -42,16 +42,39 @@
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
 
+        <!-- Filtros: nombre de cliente y rango de fechas (estilo similar a la pantalla de facturas) -->
+        <div class="card mt-1 mb-3">
+            <div class="card-body">
+                <form method="get" action="/pagos" class="row g-3 align-items-center">
+                    <div class="col-lg-6 col-md-7">
+                        <input type="text" name="clienteNombre" class="form-control" placeholder="Buscar por nombre de cliente"
+                               th:value="${clienteNombre}">
+                    </div>
+                    <div class="col-lg-2 col-md-2">
+                        <input type="date" name="desde" class="form-control" th:value="${desde}">
+                    </div>
+                    <div class="col-lg-2 col-md-2">
+                        <input type="date" name="hasta" class="form-control" th:value="${hasta}">
+                    </div>
+                    <div class="col-lg-2 col-md-1 d-flex align-items-center justify-content-end gap-2">
+                        <button type="submit" class="btn btn-dark d-flex align-items-center py-2 px-3">
+                            <i class="bi bi-funnel me-2"></i> Filtrar
+                        </button>
+                        <a th:href="@{/pagos}" class="btn btn-outline-secondary py-2 px-3 ms-1">Limpiar</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
         <div class="card">
             <div class="card-body p-0">
                 <div class="table-responsive">
                     <table class="table table-hover mb-0">
                         <thead>
                             <tr>
-                                <th><i class="bi bi-hash"></i> ID</th>
+                                <th><i class="bi bi-receipt"></i> Recibo</th>
                                 <th><i class="bi bi-calendar"></i> Fecha</th>
                                 <th><i class="bi bi-person"></i> Cliente</th>
-                                <th><i class="bi bi-file-text"></i> Factura</th>
                                 <th><i class="bi bi-currency-dollar"></i> Monto</th>
                                 <th><i class="bi bi-credit-card"></i> Método</th>
                                 <th><i class="bi bi-hash"></i> Referencia</th>
@@ -59,24 +82,24 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr th:each="pago : ${pagos}">
-                                <td><strong th:text="${pago.IDPago}"></strong></td>
-                                <td th:text="${#temporals.format(pago.fechaPago, 'dd/MM/yyyy')}"></td>
-                                <td th:text="${pago.factura.cliente.nombre}"></td>
-                                <td th:text="${pago.factura.serie + '-' + #numbers.formatInteger(pago.factura.nroFactura, 8)}"></td>
-                                <td><strong>$<span th:text="${#numbers.formatDecimal(pago.monto, 1, 'POINT', 2, 'COMMA')}"></span></strong></td>
-                                <td><span class="badge bg-info" th:text="${pago.metodoPago}"></span></td>
-                                <td th:text="${pago.referencia != null and !#strings.isEmpty(pago.referencia)} ? ${pago.referencia} : '-'"></td>
+                            <tr th:each="recibo, idxStat : ${recibos}">
+                                <td><strong th:text="${recibo.numero}"></strong></td>
+                                <td th:text="${#temporals.format(recibo.fecha, 'dd/MM/yyyy')}"></td>
+                                <td th:text="${recibo.clienteNombre != null ? recibo.clienteNombre : '-'}"></td>
+                                <td><strong>$<span th:text="${#numbers.formatDecimal(recibo.monto, 1, 'POINT', 2, 'COMMA')}"></span></strong></td>
+                                <td><span class="badge bg-info" th:text="${recibo.metodoPagoDisplay}"></span></td>
+                                <td th:text="${recibo.referencia != null and !#strings.isEmpty(recibo.referencia)} ? ${recibo.referencia} : '-'"></td>
                                 <td class="text-center">
-                                    <a th:href="@{/pagos/{id}(id=${pago.IDPago})}" class="btn btn-sm btn-info" title="Ver detalle">
+                                    <!-- Siempre abrir por número de recibo para mostrar todos los pagos consolidados (incluyendo pagos combinados) -->
+                                    <a th:href="@{'/pagos/recibo/numero/' + ${recibo.numero}}" class="btn btn-sm btn-info" title="Ver detalle">
                                         <i class="bi bi-eye"></i> Ver
                                     </a>
                                 </td>
                             </tr>
-                            <tr th:if="${#lists.isEmpty(pagos)}">
-                                <td colspan="8" class="text-center py-5">
+                            <tr th:if="${#lists.isEmpty(recibos)}">
+                                <td colspan="7" class="text-center py-5">
                                     <i class="bi bi-inbox" style="font-size: 3rem; color: #ccc;"></i>
-                                    <p class="text-muted mt-3">No se encontraron pagos registrados</p>
+                                    <p class="text-muted mt-3">No se encontraron recibos registrados</p>
                                 </td>
                             </tr>
                         </tbody>

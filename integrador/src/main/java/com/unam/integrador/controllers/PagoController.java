@@ -1,7 +1,10 @@
 package com.unam.integrador.controllers;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -13,14 +16,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import com.unam.integrador.dto.ReciboDTO;
 import com.unam.integrador.model.CuentaCliente;
 import com.unam.integrador.model.Factura;
 import com.unam.integrador.model.Pago;
-import com.unam.integrador.model.Recibo;
 import com.unam.integrador.model.enums.MetodoPago;
 import com.unam.integrador.services.CuentaClienteService;
 import com.unam.integrador.services.FacturaService;
 import com.unam.integrador.services.PagoService;
+import com.unam.integrador.services.ReciboService;
 
 /**
  * Controlador web para la gestión de pagos.
@@ -39,19 +43,93 @@ public class PagoController {
     @Autowired
     private CuentaClienteService cuentaClienteService;
     
+    @Autowired
+    private ReciboService reciboService;
+    
     /**
      * Muestra la lista de todos los pagos.
      */
     @GetMapping
-    public String listarPagos(Model model) {
-        model.addAttribute("pagos", pagoService.listarTodos());
+    public String listarPagos(
+            @RequestParam(value = "clienteNombre", required = false) String clienteNombre,
+            @RequestParam(value = "desde", required = false) String desdeStr,
+            @RequestParam(value = "hasta", required = false) String hastaStr,
+            Model model) {
+
+        LocalDate desde = null;
+        LocalDate hasta = null;
+        try {
+            if (desdeStr != null && !desdeStr.isBlank()) {
+                desde = LocalDate.parse(desdeStr);
+            }
+        } catch (DateTimeParseException e) {
+            model.addAttribute("error", "Fecha 'desde' inválida. Use YYYY-MM-DD.");
+        }
+        try {
+            if (hastaStr != null && !hastaStr.isBlank()) {
+                hasta = LocalDate.parse(hastaStr);
+            }
+        } catch (DateTimeParseException e) {
+            model.addAttribute("error", "Fecha 'hasta' inválida. Use YYYY-MM-DD.");
+        }
+
+        model.addAttribute("clienteNombre", clienteNombre);
+        model.addAttribute("desde", desdeStr);
+        model.addAttribute("hasta", hastaStr);
+
+        // Usar ReciboService para generar recibos dinámicamente desde los pagos
+        List<Pago> pagos = pagoService.listarFiltrados(clienteNombre, desde, hasta);
+        
+        // Agrupar pagos por número de recibo para evitar duplicados
+        Map<String, List<Pago>> pagosPorRecibo = new java.util.HashMap<>();
+        for (Pago pago : pagos) {
+            String clave = (pago.getNumeroRecibo() != null) ? pago.getNumeroRecibo() : String.valueOf(pago.getIDPago());
+            if (!pagosPorRecibo.containsKey(clave)) {
+                pagosPorRecibo.put(clave, new java.util.ArrayList<>());
+            }
+            pagosPorRecibo.get(clave).add(pago);
+        }
+        
+        // Generar un ReciboDTO por cada grupo de pagos con el mismo número de recibo
+        List<ReciboDTO> recibos = new java.util.ArrayList<>();
+        for (List<Pago> gruposPagos : pagosPorRecibo.values()) {
+            ReciboDTO recibo;
+            if (gruposPagos.size() == 1) {
+                recibo = reciboService.generarReciboDesdePago(gruposPagos.get(0));
+            } else {
+                String numeroRecibo = gruposPagos.get(0).getNumeroRecibo();
+                recibo = reciboService.generarReciboDesdeMultiplesPagos(gruposPagos, numeroRecibo);
+            }
+            recibos.add(recibo);
+        }
+        
+        // Ordenar por número de recibo descendente
+        recibos.sort((r1, r2) -> r2.getNumero().compareTo(r1.getNumero()));
+
+        model.addAttribute("recibos", recibos);
         return "pagos/lista";
+    }
+
+    @GetMapping("/recibo/{id}")
+    public String verReciboDetalle(@PathVariable Long id, Model model) {
+        // Generar el ReciboDTO dinámicamente desde el Pago
+        ReciboDTO recibo = reciboService.generarReciboPorPagoId(id);
+        model.addAttribute("recibo", recibo);
+        return "pagos/recibo-detalle";
+    }
+    
+    @GetMapping("/recibo/numero/{numero}")
+    public String verReciboDetalleConsolidado(@PathVariable String numero, Model model) {
+        // Generar el ReciboDTO consolidado desde múltiples pagos con el mismo número de recibo
+        ReciboDTO recibo = reciboService.generarReciboConsolidado(numero);
+        model.addAttribute("recibo", recibo);
+        return "pagos/recibo-detalle";
     }
 
     /**
      * Muestra un formulario simple para buscar cliente por nombre.
-     */
-    /**
+     *
+     *
      * Procesa el formulario de búsqueda por nombre y redirige a la pantalla
      * de facturas mostrando la ventana emergente. No existe una página
      * independiente para buscar cliente: toda la interacción ocurre en el
@@ -80,7 +158,7 @@ public class PagoController {
 
     /**
      * Muestra la pantalla de selección de facturas impagas para un cliente.
-     * (UI-only: permite seleccionar varias facturas, sin procesar el pago)
+     * Permite seleccionar varias facturas, sin procesar el pago)
      */
     @GetMapping("/seleccionar-facturas/{clienteId}")
     public String mostrarSeleccionFacturas(@PathVariable Long clienteId,
@@ -90,11 +168,20 @@ public class PagoController {
         java.util.List<Factura> facturasImpagas = pagoService.listarFacturasImpagasPorCliente(clienteId);
         model.addAttribute("cliente", cliente);
         model.addAttribute("facturas", facturasImpagas);
-        // Agregar métodos de pago disponibles y total adeudado para prellenar el formulario
-        model.addAttribute("metodosPago", MetodoPago.values());
-        java.math.BigDecimal totalAdeudado = facturasImpagas.stream()
-                .map(Factura::getSaldoPendiente)
-                .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
+        
+        // Agregar métodos de pago disponibles (sin SALDO_A_FAVOR) y total adeudado para prellenar el formulario
+        List<MetodoPago> metodosPagoDisponibles = new java.util.ArrayList<>();
+        for (MetodoPago m : MetodoPago.values()) {
+            if (m != MetodoPago.SALDO_A_FAVOR) {
+                metodosPagoDisponibles.add(m);
+            }
+        }
+        model.addAttribute("metodosPago", metodosPagoDisponibles.toArray(new MetodoPago[0]));
+        
+        java.math.BigDecimal totalAdeudado = java.math.BigDecimal.ZERO;
+        for (Factura factura : facturasImpagas) {
+            totalAdeudado = totalAdeudado.add(factura.getSaldoPendiente());
+        }
         model.addAttribute("totalAdeudado", totalAdeudado);
         // Calcular el máximo de saldo a favor que puede aplicarse: no debe exceder
         // ni el saldo disponible del cliente ni el total adeudado de las facturas
@@ -169,14 +256,22 @@ public class PagoController {
         }
         
         // Calcular el total adeudado
-        BigDecimal totalAdeudado = facturasImpagas.stream()
-            .map(Factura::getSaldoPendiente)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal totalAdeudado = BigDecimal.ZERO;
+        for (Factura factura : facturasImpagas) {
+            totalAdeudado = totalAdeudado.add(factura.getSaldoPendiente());
+        }
         
         model.addAttribute("cliente", cliente);
         model.addAttribute("facturas", facturasImpagas);
         model.addAttribute("totalAdeudado", totalAdeudado);
-        model.addAttribute("metodosPago", MetodoPago.values());
+        
+        List<MetodoPago> metodosPagoDisponibles = new java.util.ArrayList<>();
+        for (MetodoPago m : MetodoPago.values()) {
+            if (m != MetodoPago.SALDO_A_FAVOR) {
+                metodosPagoDisponibles.add(m);
+            }
+        }
+        model.addAttribute("metodosPago", metodosPagoDisponibles.toArray(new MetodoPago[0]));
         
         return "pagos/formulario-combinado";
     }
@@ -190,7 +285,7 @@ public class PagoController {
             @RequestParam(value = "facturasIds", required = false) List<Long> facturasIds,
             @RequestParam(value = "montoTotal", required = false) BigDecimal montoTotal,
             @RequestParam(value = "saldoAFavorAplicar", required = false) BigDecimal saldoAFavorAplicar,
-            @RequestParam("metodoPago") MetodoPago metodoPago,
+            @RequestParam(value = "metodoPago", required = false) MetodoPago metodoPago,
             @RequestParam(value = "referencia", required = false) String referencia,
             @RequestParam(value = "clienteId", required = false) Long clienteId,
             RedirectAttributes redirectAttributes) {
@@ -217,9 +312,23 @@ public class PagoController {
             if (montoTotal == null) {
                 montoTotal = BigDecimal.ZERO;
             }
+            
+            // Si no se proporcionó metodoPago y hay monto, es un error
+            if (metodoPago == null && montoTotal.compareTo(BigDecimal.ZERO) > 0) {
+                redirectAttributes.addFlashAttribute("error", "Debe seleccionar un método de pago cuando ingresa un monto");
+                if (clienteId != null) {
+                    return "redirect:/pagos/seleccionar-facturas/" + clienteId;
+                }
+                return "redirect:/pagos";
+            }
+            
+            // Si no hay metodoPago, usar SALDO_A_FAVOR por defecto
+            if (metodoPago == null) {
+                metodoPago = MetodoPago.SALDO_A_FAVOR;
+            }
 
             // Llamar al servicio que orquesta las entidades de dominio
-            Recibo recibo = pagoService.registrarPagoCombinado(
+            String numeroRecibo = pagoService.registrarPagoCombinado(
                 facturasIds,
                 montoTotal,
                 saldoAFavorAplicar,
@@ -228,7 +337,7 @@ public class PagoController {
             );
 
             redirectAttributes.addFlashAttribute("mensaje",
-                "Pago combinado registrado exitosamente. Recibo N° " + recibo.getNumero() + " generado.");
+                "Pago combinado registrado exitosamente. Recibo N° " + numeroRecibo + " generado.");
             return "redirect:/pagos";
         } catch (IllegalStateException | IllegalArgumentException e) {
             redirectAttributes.addFlashAttribute("error", e.getMessage());

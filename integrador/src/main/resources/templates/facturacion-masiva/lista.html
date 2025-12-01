@@ -57,7 +57,6 @@
                                 <th><i class="bi bi-calendar-x"></i> Vencimiento</th>
                                 <th><i class="bi bi-file-text"></i> Facturas</th>
                                 <th><i class="bi bi-currency-dollar"></i> Monto Total</th>
-                                <th><i class="bi bi-person"></i> Usuario</th>
                                 <th><i class="bi bi-info-circle"></i> Estado</th>
                                 <th class="text-center"><i class="bi bi-gear"></i> Acciones</th>
                             </tr>
@@ -70,7 +69,6 @@
                                 <td th:text="${#temporals.format(lote.fechaVencimiento, 'dd/MM/yyyy')}"></td>
                                 <td><span class="badge bg-secondary" th:text="${lote.cantidadFacturas}"></span></td>
                                 <td><strong>$<span th:text="${#numbers.formatDecimal(lote.montoTotal, 1, 2)}"></span></strong></td>
-                                <td th:text="${lote.usuarioEjecucion}"></td>
                                 <td>
                                     <span th:class="${lote.anulado ? 'badge bg-danger' : 'badge bg-success'}"
                                           th:text="${lote.anulado ? 'Anulado' : 'Activo'}"></span>
@@ -82,7 +80,7 @@
                                 </td>
                             </tr>
                             <tr th:if="${#lists.isEmpty(lotes)}">
-                                <td colspan="9" class="text-center py-5">
+                                <td colspan="8" class="text-center py-5">
                                     <i class="bi bi-inbox" style="font-size: 3rem; color: #ccc;"></i>
                                     <p class="text-muted mt-3">No se encontraron lotes de facturación</p>
                                     <a href="/facturacion-masiva/nuevo" class="btn btn-success">

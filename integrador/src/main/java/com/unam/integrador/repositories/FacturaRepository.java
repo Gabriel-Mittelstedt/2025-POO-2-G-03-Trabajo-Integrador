@@ -1,11 +1,10 @@
 package com.unam.integrador.repositories;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.unam.integrador.model.Factura;
@@ -42,10 +41,10 @@ public interface FacturaRepository extends JpaRepository<Factura, Long> {
     
     /**
      * Busca facturas por período.
-     * @param periodo Período de facturación (ej: "2025-11 o Noviembre 2025")
+     * @param periodo Período de facturación como LocalDate
      * @return Lista de facturas de ese período
      */
-    List<Factura> findByPeriodo(String periodo);
+    List<Factura> findByPeriodo(LocalDate periodo);
     
     /**
      * Busca facturas por cliente y estado.
@@ -57,11 +56,11 @@ public interface FacturaRepository extends JpaRepository<Factura, Long> {
     
     /**
      * Obtiene el último número de factura para una serie específica.
+     * Query Method: Spring genera automáticamente la consulta.
      * @param serie Serie de la factura
-     * @return Último número de factura o 0 si no existe
+     * @return Última factura de esa serie ordenada por número descendente, o null si no existe
      */
-    @Query("SELECT COALESCE(MAX(f.nroFactura), 0) FROM Factura f WHERE f.serie = :serie")
-    int findUltimoNumeroFactura(@Param("serie") int serie);
+    Factura findFirstBySerieOrderByNroFacturaDesc(int serie);
     
     /**
      * Busca una factura por serie y número.
@@ -72,13 +71,20 @@ public interface FacturaRepository extends JpaRepository<Factura, Long> {
     Optional<Factura> findBySerieAndNroFactura(int serie, int nroFactura);
     
     /**
-     * Busca facturas impagas (pendientes o pagadas parcialmente) de un cliente.
-     * Útil para pago combinado de múltiples facturas.
+     * Busca facturas impagas (pendientes, vencidas o pagadas parcialmente) de un cliente.
+     * Query Method: Spring genera automáticamente la consulta.
      * @param clienteId ID del cliente
-     * @return Lista de facturas impagas del cliente
+     * @param estados Lista de estados considerados como "impagas"
+     * @return Lista de facturas impagas del cliente ordenadas por fecha de emisión
      */
-    @Query("SELECT f FROM Factura f WHERE f.cliente.id = :clienteId AND " +
-           "(f.estado = 'PENDIENTE' OR f.estado = 'PAGADA_PARCIALMENTE') " +
-           "ORDER BY f.fechaEmision ASC")
-    List<Factura> findFacturasImpagasByCliente(@Param("clienteId") Long clienteId);
+    List<Factura> findByClienteIdAndEstadoInOrderByFechaEmisionAsc(Long clienteId, List<EstadoFactura> estados);
+    
+    /**
+     * Verifica si existe una factura no anulada para un cliente en un período específico.
+     * Se usa para evitar emitir más de una factura por período al mismo cliente.
+     * @param clienteId ID del cliente
+     * @param periodo Período de facturación (primer día del mes)
+     * @return true si existe una factura no anulada para ese cliente y período
+     */
+    boolean existsByClienteIdAndPeriodoAndEstadoNot(Long clienteId, LocalDate periodo, EstadoFactura estado);
 }

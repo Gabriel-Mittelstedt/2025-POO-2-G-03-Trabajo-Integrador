@@ -35,79 +35,172 @@
             Esta opción permite facturar servicios calculando el monto proporcional según el período de días contratado.
         </div>
 
+        <!-- Mensaje de error -->
+        <div th:if="${error}" class="alert alert-danger alert-dismissible fade show mt-3" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            <span th:text="${error}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
         <div class="card mt-3">
             <div class="card-body">
-                <form method="post" action="/facturas/nueva-proporcional">
-                <form method="post" action="/facturas/nueva-proporcional">
-            <div class="row">
-                <div class="col-md-12 mb-3">
-                    <label for="clienteId" class="form-label"><i class="bi bi-person me-1"></i>Cliente *</label>
-                    <select name="clienteId" id="clienteId" class="form-select" required>
-                        <option value="">Seleccione un cliente...</option>
-                        <option th:each="cliente : ${clientes}" 
-                                th:value="${cliente.id}" 
-                                th:text="${cliente.nombre + ' - ' + cliente.cuitDni}"></option>
-                    </select>
-                    <small class="text-muted">Seleccione el cliente para facturar</small>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label for="fechaInicioServicio" class="form-label"><i class="bi bi-calendar-event me-1"></i>Fecha Inicio del Servicio *</label>
-                    <input type="date" name="fechaInicioServicio" id="fechaInicioServicio" class="form-control" required>
-                    <small class="text-muted">Primer día del servicio</small>
-                </div>
-
-                <div class="col-md-6 mb-3">
-                    <label for="fechaFinServicio" class="form-label"><i class="bi bi-calendar-x me-1"></i>Fecha Fin del Servicio *</label>
-                    <input type="date" name="fechaFinServicio" id="fechaFinServicio" class="form-control" required>
-                    <small class="text-muted">Último día del servicio</small>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label for="fechaEmision" class="form-label"><i class="bi bi-calendar me-1"></i>Fecha de Emisión *</label>
-                    <input type="date" name="fechaEmision" id="fechaEmision" class="form-control" required>
-                    <small class="text-muted">Fecha de emisión de la factura</small>
-                </div>
-
-                <div class="col-md-6 mb-3">
-                    <label for="fechaVencimiento" class="form-label"><i class="bi bi-calendar-check me-1"></i>Fecha de Vencimiento *</label>
-                    <input type="date" name="fechaVencimiento" id="fechaVencimiento" class="form-control" required>
-                    <small class="text-muted">Fecha límite de pago</small>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label for="descuento" class="form-label"><i class="bi bi-tag me-1"></i>Descuento (opcional)</label>
-                    <div class="input-group">
-                        <span class="input-group-text">$</span>
-                        <input type="number" step="0.01" name="descuento" id="descuento" class="form-control">
+                <form method="post" action="/facturas/nueva-proporcional" id="formFacturaProporcional">
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label for="clienteId" class="form-label"><i class="bi bi-person me-1"></i>Cliente *</label>
+                            <select name="clienteId" id="clienteId" class="form-select" required 
+                                    th:value="${clienteId}">
+                                <option value="">Seleccione un cliente...</option>
+                                <option th:each="cliente : ${clientes}" 
+                                        th:value="${cliente.id}" 
+                                        th:selected="${clienteId != null && clienteId == cliente.id}"
+                                        th:text="${cliente.nombre + ' - ' + cliente.cuitDni}"></option>
+                            </select>
+                            <small class="text-muted">Seleccione el cliente para facturar</small>
+                        </div>
                     </div>
-                    <small class="text-muted">Monto del descuento a aplicar</small>
-                </div>
 
-                <div class="col-md-6 mb-3">
-                    <label for="motivoDescuento" class="form-label"><i class="bi bi-chat-left-text me-1"></i>Motivo del Descuento</label>
-                    <input type="text" name="motivoDescuento" id="motivoDescuento" class="form-control">
-                    <small class="text-muted">Razón del descuento aplicado</small>
-                </div>
-            </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="inicioPeriodo" class="form-label"><i class="bi bi-calendar-event me-1"></i>Fecha Inicio del Período *</label>
+                            <input type="date" name="inicioPeriodo" id="inicioPeriodo" class="form-control" required
+                                   th:value="${inicioPeriodo}">
+                            <small class="text-muted">Primer día del período a facturar</small>
+                        </div>
 
-            <div class="mt-4">
-                <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-check-circle me-1"></i>Generar Factura Proporcional
-                </button>
-                <a href="/facturas" class="btn btn-secondary">
-                    <i class="bi bi-x-circle me-1"></i>Cancelar
-                </a>
-            </div>
-        </form>
+                        <div class="col-md-6 mb-3">
+                            <label for="finPeriodo" class="form-label"><i class="bi bi-calendar-x me-1"></i>Fecha Fin del Período *</label>
+                            <input type="date" name="finPeriodo" id="finPeriodo" class="form-control" required
+                                   th:value="${finPeriodo}">
+                            <small class="text-muted">Último día del período a facturar</small>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="fechaEmision" class="form-label"><i class="bi bi-calendar me-1"></i>Fecha de Emisión *</label>
+                            <input type="date" name="fechaEmision" id="fechaEmision" class="form-control" required
+                                   th:value="${fechaEmision}">
+                            <small class="text-muted">Fecha de emisión de la factura</small>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="fechaVencimiento" class="form-label"><i class="bi bi-calendar-check me-1"></i>Fecha de Vencimiento *</label>
+                            <input type="date" name="fechaVencimiento" id="fechaVencimiento" class="form-control" required
+                                   th:value="${fechaVencimiento}">
+                            <small class="text-muted">Fecha límite de pago</small>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="porcentajeDescuento" class="form-label"><i class="bi bi-tag me-1"></i>Descuento (opcional)</label>
+                            <div class="input-group">
+                                <input type="number" step="0.01" min="0" max="100" name="porcentajeDescuento" 
+                                       id="porcentajeDescuento" class="form-control"
+                                       th:value="${porcentajeDescuento}">
+                                <span class="input-group-text">%</span>
+                            </div>
+                            <small class="text-muted">Porcentaje de descuento a aplicar (0-100)</small>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="motivoDescuento" class="form-label"><i class="bi bi-chat-left-text me-1"></i>Motivo del Descuento</label>
+                            <input type="text" name="motivoDescuento" id="motivoDescuento" class="form-control"
+                                   th:value="${motivoDescuento}">
+                            <small class="text-muted">Razón del descuento aplicado (obligatorio si hay descuento)</small>
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle me-1"></i>Generar Factura Proporcional
+                        </button>
+                        <a href="/facturas" class="btn btn-secondary">
+                            <i class="bi bi-x-circle me-1"></i>Cancelar
+                        </a>
+                    </div>
+                </form>
             </div>
         </div>
+    </div>
+
+    <script>
+        // Validación de fechas
+        document.addEventListener('DOMContentLoaded', function() {
+            const inicioPeriodo = document.getElementById('inicioPeriodo');
+            const finPeriodo = document.getElementById('finPeriodo');
+            const fechaEmision = document.getElementById('fechaEmision');
+            const fechaVencimiento = document.getElementById('fechaVencimiento');
+            const porcentajeDescuento = document.getElementById('porcentajeDescuento');
+            const motivoDescuento = document.getElementById('motivoDescuento');
+            const form = document.getElementById('formFacturaProporcional');
+
+            // Establecer fecha de emisión actual por defecto
+            if (!fechaEmision.value) {
+                fechaEmision.value = new Date().toISOString().split('T')[0];
+            }
+
+            // Validar que fin de período sea posterior a inicio
+            function validarPeriodo() {
+                if (inicioPeriodo.value && finPeriodo.value) {
+                    if (new Date(finPeriodo.value) < new Date(inicioPeriodo.value)) {
+                        finPeriodo.setCustomValidity('La fecha fin debe ser posterior a la fecha inicio');
+                        return false;
+                    } else {
+                        finPeriodo.setCustomValidity('');
+                        return true;
+                    }
+                }
+                return true;
+            }
+
+            // Validar que fecha de vencimiento sea posterior a emisión
+            function validarFechasFactura() {
+                if (fechaEmision.value && fechaVencimiento.value) {
+                    if (new Date(fechaVencimiento.value) <= new Date(fechaEmision.value)) {
+                        fechaVencimiento.setCustomValidity('La fecha de vencimiento debe ser posterior a la emisión');
+                        return false;
+                    } else {
+                        fechaVencimiento.setCustomValidity('');
+                        return true;
+                    }
+                }
+                return true;
+            }
+
+            // Validar que si hay descuento, debe haber motivo
+            function validarDescuento() {
+                const descuento = parseFloat(porcentajeDescuento.value);
+                if (descuento && descuento > 0) {
+                    if (!motivoDescuento.value || motivoDescuento.value.trim() === '') {
+                        motivoDescuento.setCustomValidity('Debe especificar el motivo del descuento');
+                        return false;
+                    } else {
+                        motivoDescuento.setCustomValidity('');
+                        return true;
+                    }
+                } else {
+                    motivoDescuento.setCustomValidity('');
+                    return true;
+                }
+            }
+
+            inicioPeriodo.addEventListener('change', validarPeriodo);
+            finPeriodo.addEventListener('change', validarPeriodo);
+            fechaEmision.addEventListener('change', validarFechasFactura);
+            fechaVencimiento.addEventListener('change', validarFechasFactura);
+            porcentajeDescuento.addEventListener('change', validarDescuento);
+            motivoDescuento.addEventListener('input', validarDescuento);
+
+            form.addEventListener('submit', function(e) {
+                if (!validarPeriodo() || !validarFechasFactura() || !validarDescuento()) {
+                    e.preventDefault();
+                    form.reportValidity();
+                }
+            });
+        });
+    </script>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

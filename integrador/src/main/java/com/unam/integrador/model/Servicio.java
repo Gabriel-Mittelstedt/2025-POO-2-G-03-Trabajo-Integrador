@@ -34,7 +34,7 @@ public class Servicio {
      * Nombre del servicio.
      * Debe ser único en el sistema.
      */
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false, unique = true, length = 100)
     private String nombre; 
     
      /**
@@ -42,6 +42,7 @@ public class Servicio {
      * <p>Proporciona información adicional sobre las características 
      * o condiciones del servicio.</p>
      */
+    @Column(length = 255)
     private String descripcion;
     
     /**
@@ -79,6 +80,14 @@ public class Servicio {
     public void validar() {
         if (nombre == null || nombre.trim().isEmpty()) {
             throw new IllegalArgumentException("El nombre del servicio es obligatorio");
+        }
+        
+        if (nombre.length() > 100) {
+            throw new IllegalArgumentException("El nombre no puede superar los 100 caracteres");
+        }
+        
+        if (descripcion != null && descripcion.length() > 255) {
+            throw new IllegalArgumentException("La descripción no puede superar los 255 caracteres");
         }
         
         if (precio == null || precio.compareTo(BigDecimal.ZERO) <= 0) {

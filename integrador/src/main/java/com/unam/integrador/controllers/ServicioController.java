@@ -185,4 +185,26 @@ public class ServicioController {
             return "redirect:/servicios";
         }
     }
+    
+    /**
+     * Reactiva un servicio previamente desactivado.
+     * @param id ID del servicio a reactivar
+     * @param redirectAttributes Atributos para redirección
+     * @return Redirección al listado
+     */
+    @PostMapping("/{id}/reactivar")
+    public String reactivar(@PathVariable Long id, 
+                           RedirectAttributes redirectAttributes) {
+        try {
+            Servicio servicio = servicioService.reactivarServicio(id);
+            redirectAttributes.addFlashAttribute("mensaje", 
+                "Servicio '" + servicio.getNombre() + "' reactivado exitosamente");
+            redirectAttributes.addFlashAttribute("tipoMensaje", "success");
+            return "redirect:/servicios";
+        } catch (IllegalArgumentException e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+            redirectAttributes.addFlashAttribute("tipoMensaje", "danger");
+            return "redirect:/servicios";
+        }
+    }
 }

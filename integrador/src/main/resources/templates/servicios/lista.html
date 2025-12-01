@@ -108,9 +108,15 @@
                                            title="Dar de Baja">
                                             <i class="bi bi-trash"></i>
                                         </a>
-                                        <span th:if="${!servicio.activo}" class="badge bg-secondary" title="Servicio inactivo">
-                                            <i class="bi bi-x-circle"></i> Inactivo
-                                        </span>
+                                        <!-- Reactivar (solo si está inactivo) -->
+                                        <form th:if="${!servicio.activo}" 
+                                              th:action="@{/servicios/{id}/reactivar(id=${servicio.IDServicio})}" 
+                                              method="post" 
+                                              style="display: inline;">
+                                            <button type="submit" class="btn btn-sm btn-success" title="Reactivar">
+                                                <i class="bi bi-arrow-clockwise"></i> 
+                                            </button>
+                                        </form>
                                     </div>
                                 </td>
                             </tr>

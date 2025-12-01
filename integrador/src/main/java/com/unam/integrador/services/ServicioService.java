@@ -126,4 +126,17 @@ public class ServicioService {
         servicio.desactivar();
         return servicioRepository.save(servicio);
     }
+    
+    /**
+     * Reactiva un servicio previamente desactivado.
+     * @param id ID del servicio a reactivar
+     * @return el servicio reactivado
+     * @throws IllegalArgumentException si no se encuentra el servicio
+     */
+    @Transactional
+    public Servicio reactivarServicio(Long id) {
+        Servicio servicio = buscarPorId(id);
+        servicio.activar();
+        return servicioRepository.save(servicio);
+    }
 }

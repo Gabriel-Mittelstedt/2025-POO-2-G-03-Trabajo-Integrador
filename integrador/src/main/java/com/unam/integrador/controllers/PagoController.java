@@ -128,8 +128,8 @@ public class PagoController {
 
     /**
      * Muestra un formulario simple para buscar cliente por nombre.
-     */
-    /**
+     *
+     *
      * Procesa el formulario de búsqueda por nombre y redirige a la pantalla
      * de facturas mostrando la ventana emergente. No existe una página
      * independiente para buscar cliente: toda la interacción ocurre en el
@@ -158,7 +158,7 @@ public class PagoController {
 
     /**
      * Muestra la pantalla de selección de facturas impagas para un cliente.
-     * (UI-only: permite seleccionar varias facturas, sin procesar el pago)
+     * Permite seleccionar varias facturas, sin procesar el pago)
      */
     @GetMapping("/seleccionar-facturas/{clienteId}")
     public String mostrarSeleccionFacturas(@PathVariable Long clienteId,
@@ -168,6 +168,7 @@ public class PagoController {
         java.util.List<Factura> facturasImpagas = pagoService.listarFacturasImpagasPorCliente(clienteId);
         model.addAttribute("cliente", cliente);
         model.addAttribute("facturas", facturasImpagas);
+        
         // Agregar métodos de pago disponibles (sin SALDO_A_FAVOR) y total adeudado para prellenar el formulario
         List<MetodoPago> metodosPagoDisponibles = new java.util.ArrayList<>();
         for (MetodoPago m : MetodoPago.values()) {

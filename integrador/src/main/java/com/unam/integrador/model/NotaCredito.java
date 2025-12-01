@@ -5,9 +5,19 @@ import java.time.LocalDate;
 
 import com.unam.integrador.model.enums.TipoFactura;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 /**
  * Representa una nota de crédito emitida para anular una factura.
@@ -61,7 +71,8 @@ public class NotaCredito {
 
     /** Factura que se anula con esta nota de crédito. */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "factura_id", nullable = false) 
+    @JoinColumn(name = "factura_id", nullable = false)
+    @ToString.Exclude
     private Factura factura;
 
     /**

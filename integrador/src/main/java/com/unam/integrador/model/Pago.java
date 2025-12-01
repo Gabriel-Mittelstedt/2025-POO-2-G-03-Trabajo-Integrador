@@ -20,6 +20,7 @@ import jakarta.persistence.OneToMany;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 /**
  * Entidad de dominio que representa un Pago realizado sobre una Factura.
@@ -66,6 +67,7 @@ public class Pago {
      * Un pago puede aplicarse a múltiples facturas (pago combinado).
      */
     @OneToMany(mappedBy = "pago", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ToString.Exclude
     private final List<DetallePago> detallesPago = new ArrayList<>();
 
     /**

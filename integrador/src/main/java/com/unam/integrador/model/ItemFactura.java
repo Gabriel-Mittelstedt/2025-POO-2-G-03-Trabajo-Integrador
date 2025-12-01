@@ -4,9 +4,19 @@ import java.math.BigDecimal;
 
 import com.unam.integrador.model.enums.TipoAlicuotaIVA;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 /**
  * Representa una línea de detalle en una factura.
@@ -68,6 +78,7 @@ public class ItemFactura {
     /** Factura a la que pertenece este item. */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "factura_id")
+    @ToString.Exclude
     private Factura factura;
 
     /**

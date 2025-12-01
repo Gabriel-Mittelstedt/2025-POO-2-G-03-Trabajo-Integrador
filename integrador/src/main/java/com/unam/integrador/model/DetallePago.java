@@ -14,6 +14,7 @@ import jakarta.persistence.ManyToOne;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 /**
  * Entidad de asociación entre Pago y Factura (Clase Intermedia).
@@ -55,6 +56,7 @@ public class DetallePago {
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "pago_id", nullable = false)
+    @ToString.Exclude
     private Pago pago;
     
     /**
@@ -62,6 +64,7 @@ public class DetallePago {
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "factura_id", nullable = false)
+    @ToString.Exclude
     private Factura factura;
     
     /**

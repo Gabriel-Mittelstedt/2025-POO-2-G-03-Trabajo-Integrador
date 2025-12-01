@@ -24,10 +24,9 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
-import lombok.AccessLevel;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.ToString;
 
 /**
  * Entidad que representa una factura en el sistema.
@@ -87,7 +86,7 @@ public class Factura {
     
     /** Estado actual de la factura (PENDIENTE, VENCIDA, PAGADA_PARCIALMENTE, PAGADA_TOTALMENTE, ANULADA). */
     @Enumerated(EnumType.STRING)
-    @Setter(AccessLevel.NONE)
+    //@Setter(AccessLevel.NONE)
     private EstadoFactura estado;
 
     // --- Campos Calculados y Opcionales ---
@@ -114,11 +113,13 @@ public class Factura {
     
     /** Líneas de detalle de la factura (servicios facturados). */
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    @JoinColumn(name = "factura_id") 
+    @JoinColumn(name = "factura_id")
+    @ToString.Exclude
     private final List<ItemFactura> detalleFactura = new ArrayList<>();
 
     /** Notas de crédito asociadas (generadas por anulaciones). */
     @OneToMany(mappedBy = "factura", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @ToString.Exclude
     private final List<NotaCredito> notasCredito = new ArrayList<>();
 
     /**
@@ -126,6 +127,7 @@ public class Factura {
      * Una factura puede tener múltiples pagos (pagos parciales).
      */
     @OneToMany(mappedBy = "factura", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @ToString.Exclude
     private final List<DetallePago> detallesPago = new ArrayList<>();
 
     /**
@@ -134,6 +136,7 @@ public class Factura {
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "lote_facturacion_id")
+    @ToString.Exclude
     private LoteFacturacion loteFacturacion;
 
     /**

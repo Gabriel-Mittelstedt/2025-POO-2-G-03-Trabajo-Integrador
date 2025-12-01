@@ -49,7 +49,7 @@ public class DetallePago {
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long idDetallePago;
     
     /**
      * Pago del cual se toma el monto.

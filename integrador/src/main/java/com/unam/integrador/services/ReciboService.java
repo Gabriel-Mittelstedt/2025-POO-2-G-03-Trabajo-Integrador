@@ -52,7 +52,7 @@ public class ReciboService {
         }
         
         // Obtener los detalles de pago asociados
-        List<DetallePago> detalles = detallePagoRepository.findByPagoIDPago(pago.getIDPago());
+        List<DetallePago> detalles = detallePagoRepository.findByPagoIdPago(pago.getIdPago());
         
         if (detalles.isEmpty()) {
             throw new IllegalStateException("El pago no tiene facturas asociadas");
@@ -89,7 +89,7 @@ public class ReciboService {
         // Generar número de recibo
         String numeroRecibo = (pago.getNumeroRecibo() != null) 
             ? pago.getNumeroRecibo() 
-            : String.format("%08d", pago.getIDPago());
+            : String.format("%08d", pago.getIdPago());
         
         // Generar desglose de pagos (un pago puede tener múltiples detalles aplicados a diferentes facturas)
         List<ReciboDTO.DetallePagoDTO> desglosePagos = new ArrayList<>();
@@ -117,7 +117,7 @@ public class ReciboService {
             .clienteNombre(clienteNombre)
             .clienteCuitDni(clienteCuitDni)
             .clienteId(clienteId)
-            .pagoId(pago.getIDPago())
+            .pagoId(pago.getIdPago())
             .observaciones(null)
             .desglosePagos(desglosePagos)
             .build();
@@ -210,7 +210,7 @@ public class ReciboService {
         Long clienteId = null;
         
         for (Pago pago : pagos) {
-            List<DetallePago> detalles = detallePagoRepository.findByPagoIDPago(pago.getIDPago());
+            List<DetallePago> detalles = detallePagoRepository.findByPagoIdPago(pago.getIdPago());
             
             for (DetallePago detalle : detalles) {
                 Factura factura = detalle.getFactura();
@@ -240,7 +240,7 @@ public class ReciboService {
         // Generar desglose de pagos consolidado
         List<ReciboDTO.DetallePagoDTO> desglosePagos = new ArrayList<>();
         for (Pago pago : pagos) {
-            List<DetallePago> detalles = detallePagoRepository.findByPagoIDPago(pago.getIDPago());
+            List<DetallePago> detalles = detallePagoRepository.findByPagoIdPago(pago.getIdPago());
             
             if (detalles.isEmpty()) {
                 // Pago sin detalles (ej: excedente que se convierte en saldo a favor)
@@ -278,7 +278,7 @@ public class ReciboService {
             .clienteNombre(clienteNombre)
             .clienteCuitDni(clienteCuitDni)
             .clienteId(clienteId)
-            .pagoId(pagos.get(0).getIDPago()) // ID del primer pago para referencia
+            .pagoId(pagos.get(0).getIdPago()) // ID del primer pago para referencia
             .observaciones(null)
             .desglosePagos(desglosePagos)
             .build();
@@ -296,7 +296,7 @@ public class ReciboService {
         boolean tieneSaldoAFavorAplicado = false;
         for (Pago pago : pagos) {
             if (pago.getMetodoPago() == MetodoPago.SALDO_A_FAVOR) {
-                List<DetallePago> detalles = detallePagoRepository.findByPagoIDPago(pago.getIDPago());
+                List<DetallePago> detalles = detallePagoRepository.findByPagoIdPago(pago.getIdPago());
                 if (!detalles.isEmpty()) {
                     tieneSaldoAFavorAplicado = true;
                     break;
@@ -357,7 +357,7 @@ public class ReciboService {
         String nombreBusqueda = clienteNombre.toLowerCase();
         
         for (Pago pago : pagos) {
-            List<DetallePago> detalles = detallePagoRepository.findByPagoIDPago(pago.getIDPago());
+            List<DetallePago> detalles = detallePagoRepository.findByPagoIdPago(pago.getIdPago());
             boolean coincide = false;
             
             for (DetallePago detalle : detalles) {

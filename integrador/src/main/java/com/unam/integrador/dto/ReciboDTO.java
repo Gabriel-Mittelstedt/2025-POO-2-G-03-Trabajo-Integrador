@@ -12,7 +12,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * DTO (Data Transfer Object) para representar un Recibo.
+ * DTO para representar un Recibo.
  * 
  * Esta clase NO es una entidad de JPA - representa un comprobante
  * generado dinámicamente desde los datos de Pago.

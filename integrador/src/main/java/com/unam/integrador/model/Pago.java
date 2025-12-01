@@ -42,7 +42,7 @@ public class Pago {
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long IDPago;
+    private Long idPago;
     
     @Column(nullable = false)
     private LocalDate fechaPago;

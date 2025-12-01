@@ -11,6 +11,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import lombok.Data;
+import lombok.ToString;
 
 /**
  * Representa la contratación de un servicio por parte de un cliente.
@@ -41,6 +42,7 @@ public class ServicioContratado {
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cliente_id", nullable = false)
+    @ToString.Exclude
     private CuentaCliente cliente;
     
     @ManyToOne(fetch = FetchType.LAZY)

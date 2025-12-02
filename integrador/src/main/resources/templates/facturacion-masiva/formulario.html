@@ -52,8 +52,9 @@
                     <div class="mb-3">
                         <label for="fechaVencimiento" class="form-label"><i class="bi bi-calendar-check me-1"></i>Fecha de Vencimiento *</label>
                         <input type="date" class="form-control" id="fechaVencimiento" th:field="*{fechaVencimiento}" required>
-                        <small class="text-muted">Fecha límite para el pago de todas las facturas</small>
+                        <small class="text-muted">Fecha límite para el pago de todas las facturas (debe ser posterior a hoy)</small>
                         <div th:if="${#fields.hasErrors('fechaVencimiento')}" class="text-danger" th:errors="*{fechaVencimiento}"></div>
+                        <div th:if="${#fields.hasErrors('fechaVencimientoValida')}" class="text-danger" th:errors="*{fechaVencimientoValida}"></div>
                     </div>
 
                     <div class="alert alert-warning">

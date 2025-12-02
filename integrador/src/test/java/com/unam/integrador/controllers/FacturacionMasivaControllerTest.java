@@ -114,15 +114,15 @@ class FacturacionMasivaControllerTest {
 
         // Act & Assert
         mockMvc.perform(post("/facturacion-masiva/nuevo")
-                .param("periodo", "Noviembre 2025")
-                .param("fechaVencimiento", "2025-11-30"))
+                .param("periodo", "Enero 2026")
+                .param("fechaVencimiento", "2026-01-31"))
             .andExpect(status().is3xxRedirection())
             .andExpect(redirectedUrl("/facturacion-masiva/1"))
             .andExpect(flash().attributeExists("mensaje"));
 
         verify(facturaService).ejecutarFacturacionMasiva(
-            eq("Noviembre 2025"), 
-            eq(LocalDate.of(2025, 11, 30))
+            eq("Enero 2026"), 
+            eq(LocalDate.of(2026, 1, 31))
         );
     }
 
@@ -135,8 +135,8 @@ class FacturacionMasivaControllerTest {
 
         // Act & Assert
         mockMvc.perform(post("/facturacion-masiva/nuevo")
-                .param("periodo", "Noviembre 2025")
-                .param("fechaVencimiento", "2025-11-30"))
+                .param("periodo", "Enero 2026")
+                .param("fechaVencimiento", "2026-01-31"))
             .andExpect(status().isOk())
             .andExpect(view().name("facturacion-masiva/formulario"))
             .andExpect(model().attributeExists("error"))
@@ -148,7 +148,7 @@ class FacturacionMasivaControllerTest {
     void testEjecutarFacturacionMasivaSinPeriodo() throws Exception {
         // Act & Assert
         mockMvc.perform(post("/facturacion-masiva/nuevo")
-                .param("fechaVencimiento", "2025-11-30"))
+                .param("fechaVencimiento", "2026-01-31"))
             .andExpect(status().isOk())
             .andExpect(view().name("facturacion-masiva/formulario"))
             .andExpect(model().attributeExists("periodos"));
@@ -258,9 +258,9 @@ class FacturacionMasivaControllerTest {
     void testEjecutarFacturacionMasivaMultiplesClientes() throws Exception {
         // Arrange
         LoteFacturacion loteGrande = new LoteFacturacion(
-            "Diciembre 2025",
-            LocalDate.of(2025, 12, 1),
-            LocalDate.of(2025, 12, 31)
+            "Febrero 2026",
+            LocalDate.of(2026, 2, 1),
+            LocalDate.of(2026, 2, 28)
         );
         loteGrande.setId(2L);
         
@@ -283,16 +283,16 @@ class FacturacionMasivaControllerTest {
 
         // Act & Assert
         mockMvc.perform(post("/facturacion-masiva/nuevo")
-                .param("periodo", "Diciembre 2025")
-                .param("fechaVencimiento", "2025-12-31"))
+                .param("periodo", "Febrero 2026")
+                .param("fechaVencimiento", "2026-02-28"))
             .andExpect(status().is3xxRedirection())
             .andExpect(redirectedUrl("/facturacion-masiva/2"))
             .andExpect(flash().attributeExists("mensaje"));
 
         // Verificar que el mensaje menciona la cantidad de facturas
         verify(facturaService).ejecutarFacturacionMasiva(
-            eq("Diciembre 2025"),
-            eq(LocalDate.of(2025, 12, 31))
+            eq("Febrero 2026"),
+            eq(LocalDate.of(2026, 2, 28))
         );
     }
 

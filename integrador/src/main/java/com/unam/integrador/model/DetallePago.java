@@ -25,26 +25,12 @@ import lombok.ToString;
  * 
  * Esta clase almacena información específica de la relación:
  * - Monto específico del pago aplicado a esta factura
- * - Fecha y hora de aplicación del pago
+ * - Fecha aplicación del pago
  * 
- * Responsabilidades:
- * - Almacenar datos de la asociación Pago-Factura
- * - Validar la integridad de los datos (montos, referencias no nulas, etc.)
- * - Garantizar que el monto aplicado no exceda el saldo pendiente de la factura
- * 
- * NO es responsable de:
- * - Lógica de negocio sobre tipos de pago (total/parcial) → Ver Factura
- * - Cálculos de porcentajes y distribuciones → Ver Pago y Factura
- * - Gestión del flujo de pagos → Ver PagoService
- * 
- * Implementa el patrón de Modelo Rico (Rich Domain Model):
- * - Constructor privado con factory methods
- * - Validaciones de reglas de negocio
- * - Encapsulación completa
  */
 @Getter
 @Entity
-@NoArgsConstructor(access = AccessLevel.PROTECTED) // Solo para JPA
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class DetallePago {
     
     @Id
@@ -83,7 +69,6 @@ public class DetallePago {
     @Column(nullable = false)
     private LocalDateTime fechaAplicacion;
     
-    // --- Constructor privado (fuerza uso de factory methods) ---
     
     /**
      * Constructor privado que inicializa un DetallePago.
@@ -105,14 +90,13 @@ public class DetallePago {
         this.fechaAplicacion = LocalDateTime.now();
     }
     
-    // --- Factory Methods (Métodos de Fábrica) ---
     
     /**
      * Crea un nuevo DetallePago validando todas las reglas de negocio.
      * 
-     * @param pago Pago que se aplica (no puede ser nulo)
-     * @param factura Factura a la que se aplica (no puede ser nula)
-     * @param montoAplicado Monto específico aplicado (debe ser > 0 y <= saldoPendiente)
+     * @param pago Pago que se aplica 
+     * @param factura Factura a la que se aplica 
+     * @param montoAplicado Monto específico aplicado
      * @return Nueva instancia de DetallePago validada
      * @throws IllegalArgumentException si alguna validación falla
      */
@@ -126,7 +110,6 @@ public class DetallePago {
         return detalle;
     }
     
-    // --- Métodos de Validación Privados ---
     
     /**
      * Valida que el pago no sea nulo.

@@ -2,7 +2,6 @@ package com.unam.integrador.model;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,20 +23,10 @@ import lombok.ToString;
 
 /**
  * Entidad de dominio que representa un Pago realizado sobre una Factura.
- * 
- * Implementa el patrón de Modelo Rico (Rich Domain Model) donde la entidad
- * contiene tanto datos como comportamiento/lógica de negocio.
- * 
- * Características del modelo rico:
- * - Constructor privado que fuerza el uso de factory methods
- * - Factory methods que validan y establecen el estado inicial correcto
- * - Validaciones de reglas de negocio dentro de la entidad
- * - Métodos de dominio para operaciones complejas
- * - Encapsulación: solo getters públicos, sin setters directos
  */
 @Getter
 @Entity
-@NoArgsConstructor(access = AccessLevel.PROTECTED) // Solo para JPA
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Pago {
     
     @Id
@@ -46,9 +35,6 @@ public class Pago {
     
     @Column(nullable = false)
     private LocalDate fechaPago;
-    
-    @Column(nullable = false)
-    private LocalDateTime fechaHoraRegistro;
     
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal monto;
@@ -78,11 +64,9 @@ public class Pago {
     @Column(length = 50)
     private String numeroRecibo;
     
-    // --- Constructor privado (fuerza uso de factory methods) ---
     
     /**
      * Constructor privado que inicializa un Pago.
-     * Solo accesible a través de los factory methods estáticos.
      * 
      * @param monto Monto del pago
      * @param metodoPago Método de pago utilizado
@@ -97,10 +81,8 @@ public class Pago {
         this.metodoPago = metodoPago;
         this.referencia = referencia;
         this.fechaPago = LocalDate.now();
-        this.fechaHoraRegistro = LocalDateTime.now();
     }
     
-    // --- Factory Methods (Métodos de Fábrica) ---
     
     /**
      * Crea un nuevo pago validando todas las reglas de negocio.
@@ -116,11 +98,9 @@ public class Pago {
         return new Pago(monto, metodoPago, referencia);
     }
     
-    // --- Métodos de Dominio (Comportamiento) ---
     
     /**
      * Agrega un detalle de pago manteniendo la coherencia bidireccional.
-     * Método package-private para uso interno.
      */
     void agregarDetallePago(DetallePago detalle) {
         if (!this.detallesPago.contains(detalle)) {
@@ -128,24 +108,6 @@ public class Pago {
         }
     }
     
-    /**
-     * Calcula el monto total aplicado de este pago.
-     * Suma todos los montos aplicados en los detalles de pago.
-     * 
-     * @return Monto total aplicado
-     */
-    public BigDecimal calcularMontoTotalAplicado() {
-        BigDecimal total = BigDecimal.ZERO;
-        
-        for (DetallePago detalle : detallesPago) {
-            BigDecimal montoDetalle = detalle.getMontoAplicado();
-            total = total.add(montoDetalle);
-        }
-        
-        return total;
-    }
-    
-    // --- Métodos de Validación Privados ---
     
     /**
      * Valida que el monto sea mayor a cero.
@@ -185,15 +147,7 @@ public class Pago {
             throw new IllegalArgumentException("La referencia no puede exceder 500 caracteres");
         }
     }
-    
-    // --- Setters controlados solo para uso interno/JPA ---
-    // Estos métodos son package-private para permitir su uso desde el service
-    // pero evitar el uso indiscriminado desde fuera del paquete
 
-    /**
-     * Setter package-private para asignar el número de recibo cuando un recibo
-     * agrupa varios pagos (pagos combinados). No expuesto públicamente.
-     */
     public void setNumeroRecibo(String numeroRecibo) {
         this.numeroRecibo = numeroRecibo;
     }

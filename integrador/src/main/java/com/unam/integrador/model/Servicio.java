@@ -2,6 +2,8 @@ package com.unam.integrador.model;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.unam.integrador.model.enums.TipoAlicuotaIVA;
 
@@ -12,6 +14,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
@@ -74,7 +77,13 @@ public class Servicio {
      * Indica si el servicio está activo y disponible para contratar.
      */
     @Column(nullable = false)
-    private boolean activo = true; 
+    private boolean activo = true;
+    
+    /**
+     * Contratos de clientes que tienen este servicio.
+     */
+    @OneToMany(mappedBy = "servicio")
+    private List<ServicioContratado> contratos = new ArrayList<>();
 
     // --- Constructor ---
  

@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.unam.integrador.model.Servicio;
+import com.unam.integrador.model.ServicioContratado;
 import com.unam.integrador.repositories.ServicioRepository;
 
 /**
@@ -76,6 +77,8 @@ public class ServicioService {
     
     /**
      * HU-18: Modifica un servicio existente validando sus datos.
+     * Si el precio cambia, actualiza también los contratos activos.
+     * Las facturas ya emitidas NO se modifican.
      * @param id ID del servicio a modificar
      * @param servicioActualizado Servicio con los nuevos datos
      * @return el servicio modificado
@@ -83,7 +86,6 @@ public class ServicioService {
      */
     @Transactional
     public Servicio modificarServicio(Long id, Servicio servicioActualizado) {
-        // Buscar el servicio existente
         Servicio servicio = buscarPorId(id);
         
         // Verificar que el nombre no esté en uso por otro servicio
@@ -97,13 +99,20 @@ public class ServicioService {
                 });
         }
         
-        // Delegar la modificación al modelo rico
+        // Modificar servicio
         servicio.modificar(
             servicioActualizado.getNombre(),
             servicioActualizado.getDescripcion(),
             servicioActualizado.getPrecio(),
             servicioActualizado.getAlicuotaIVA()
         );
+        
+        // Actualizar contratos activos si el precio cambió
+        for (ServicioContratado contrato : servicio.getContratos()) {
+            if (contrato.getActivo()) {
+                contrato.setPrecioContratado(servicio.getPrecio());
+            }
+        }
         
         // Persistir cambios
         return servicioRepository.save(servicio);

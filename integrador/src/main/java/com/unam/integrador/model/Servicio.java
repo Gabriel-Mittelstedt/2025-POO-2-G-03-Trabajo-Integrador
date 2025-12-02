@@ -2,8 +2,6 @@ package com.unam.integrador.model;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.ArrayList;
-import java.util.List;
 
 import com.unam.integrador.model.enums.TipoAlicuotaIVA;
 
@@ -14,11 +12,16 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Digits;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
-
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
 @Entity
 public class Servicio {
     
@@ -35,6 +38,8 @@ public class Servicio {
      * Debe ser único en el sistema.
      */
     @Column(nullable = false, unique = true, length = 100)
+    @NotBlank(message = "El nombre del servicio es obligatorio")
+    @Size(max = 100, message = "El nombre no puede superar los 100 caracteres")
     private String nombre; 
     
      /**
@@ -43,12 +48,16 @@ public class Servicio {
      * o condiciones del servicio.</p>
      */
     @Column(length = 255)
+    @Size(max = 255, message = "La descripción no puede superar los 255 caracteres")
     private String descripcion;
     
     /**
      * Precio base del servicio sin IVA incluido.
      */
     @Column(nullable = false, precision = 10, scale = 2)
+    @NotNull(message = "El precio es obligatorio")
+    @DecimalMin(value = "0.01", message = "El precio debe ser mayor a cero")
+    @Digits(integer = 8, fraction = 2, message = "El precio no puede superar los 99,999,999.99")
     private BigDecimal precio; 
 
     /**
@@ -58,6 +67,7 @@ public class Servicio {
      */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    @NotNull(message = "La alícuota de IVA es obligatoria")
     private TipoAlicuotaIVA alicuotaIVA; 
     
     /**
@@ -65,39 +75,18 @@ public class Servicio {
      */
     @Column(nullable = false)
     private boolean activo = true; 
-    
-    // --- Relaciones ---
-    
-    //Un servicio puede estar en muchos contratos
-    @OneToMany(mappedBy = "servicio")
-    private List<ServicioContratado> contratos = new ArrayList<>();
-    
-    
-    /**
-     * Valida que el servicio tenga datos válidos antes de guardarse.
-     * @throws IllegalArgumentException si los datos son inválidos
-     */
-    public void validar() {
-        if (nombre == null || nombre.trim().isEmpty()) {
-            throw new IllegalArgumentException("El nombre del servicio es obligatorio");
-        }
-        
-        if (nombre.length() > 100) {
-            throw new IllegalArgumentException("El nombre no puede superar los 100 caracteres");
-        }
-        
-        if (descripcion != null && descripcion.length() > 255) {
-            throw new IllegalArgumentException("La descripción no puede superar los 255 caracteres");
-        }
-        
-        if (precio == null || precio.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("El precio debe ser mayor a cero");
-        }
-        
-        if (alicuotaIVA == null) {
-            throw new IllegalArgumentException("La alícuota de IVA es obligatoria");
-        }
+
+    // --- Constructor ---
+ 
+    public Servicio(String nombre, String descripcion, BigDecimal precio, TipoAlicuotaIVA alicuotaIVA) {
+        this.nombre = nombre;
+        this.descripcion = descripcion;
+        this.precio = precio;
+        this.alicuotaIVA = alicuotaIVA;
+        this.activo = true;
     }
+
+    // --- Métodos de negocio ---
     
     /**
      * Calcula el monto de IVA según la alícuota configurada.
@@ -178,23 +167,18 @@ public class Servicio {
     }
     
     /**
-     * Modifica los datos del servicio con validaciones.
+     * Modifica los datos del servicio.
      * Permite actualizar nombre, descripción, precio y alícuota IVA.
      * @param nuevoNombre Nuevo nombre del servicio
      * @param nuevaDescripcion Nueva descripción del servicio
      * @param nuevoPrecio Nuevo precio del servicio
      * @param nuevaAlicuota Nueva alícuota de IVA
-     * @throws IllegalArgumentException si los datos son inválidos
      */
     public void modificar(String nuevoNombre, String nuevaDescripcion, 
                           BigDecimal nuevoPrecio, TipoAlicuotaIVA nuevaAlicuota) {
-        // Actualizar los campos
         this.nombre = nuevoNombre;
         this.descripcion = nuevaDescripcion;
         this.precio = nuevoPrecio;
         this.alicuotaIVA = nuevaAlicuota;
-        
-        // Validar los nuevos datos
-        this.validar();
     }
 }

@@ -19,16 +19,13 @@ public class ServicioService {
     private ServicioRepository servicioRepository;
     
     /**
-     * Crea un nuevo servicio validando sus datos.
+     * Crea un nuevo servicio.
      * @param servicio el servicio a crear (debe tener nombre, precio y alícuota IVA)
      * @return el servicio guardado
-     * @throws IllegalArgumentException si los datos son inválidos o el nombre ya existe
+     * @throws IllegalArgumentException si el nombre ya existe
      */
     @Transactional
     public Servicio crearServicio(Servicio servicio) {
-        // Validar datos del servicio
-        servicio.validar();
-        
         // Verificar que no exista otro servicio con el mismo nombre
         if (servicioRepository.findByNombre(servicio.getNombre()).isPresent()) {
             throw new IllegalArgumentException(

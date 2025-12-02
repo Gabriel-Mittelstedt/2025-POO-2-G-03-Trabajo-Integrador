@@ -5,12 +5,15 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.unam.integrador.model.Servicio;
 import com.unam.integrador.model.enums.TipoAlicuotaIVA;
 import com.unam.integrador.services.ServicioService;
+
+import jakarta.validation.Valid;
 
 /**
  * Controlador para gestionar operaciones sobre Servicios.
@@ -63,8 +66,16 @@ public class ServicioController {
      * @return Redirección al listado
      */
     @PostMapping("/nuevo")
-    public String guardarNuevo(@ModelAttribute Servicio servicio,
+    public String guardarNuevo(@Valid @ModelAttribute Servicio servicio,
+                               BindingResult result,
                                RedirectAttributes redirectAttributes) {
+        if (result.hasErrors()) {
+            redirectAttributes.addFlashAttribute("error", 
+                result.getAllErrors().get(0).getDefaultMessage());
+            redirectAttributes.addFlashAttribute("tipoMensaje", "danger");
+            return "redirect:/servicios/nuevo";
+        }
+        
         try {
             servicioService.crearServicio(servicio);
             redirectAttributes.addFlashAttribute("mensaje", 
@@ -128,8 +139,16 @@ public class ServicioController {
      */
     @PostMapping("/{id}/editar")
     public String guardarEdicion(@PathVariable Long id,
-                                @ModelAttribute Servicio servicio,
+                                @Valid @ModelAttribute Servicio servicio,
+                                BindingResult result,
                                 RedirectAttributes redirectAttributes) {
+        if (result.hasErrors()) {
+            redirectAttributes.addFlashAttribute("error", 
+                result.getAllErrors().get(0).getDefaultMessage());
+            redirectAttributes.addFlashAttribute("tipoMensaje", "danger");
+            return "redirect:/servicios/" + id + "/editar";
+        }
+        
         try {
             Servicio servicioModificado = servicioService.modificarServicio(id, servicio);
             redirectAttributes.addFlashAttribute("mensaje", 

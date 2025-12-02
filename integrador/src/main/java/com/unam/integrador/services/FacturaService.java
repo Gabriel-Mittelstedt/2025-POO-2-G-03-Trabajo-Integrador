@@ -554,19 +554,25 @@ public class FacturaService {
                 for (ServicioContratado servicioContratado : cliente.getServiciosContratadosActivos()) {
                     Servicio servicio = servicioContratado.getServicio();
                     
-                    ItemFactura item = new ItemFactura(
-                        servicio.getNombre(),
-                        servicioContratado.getPrecioContratado(),
-                        1,
-                        servicio.getAlicuotaIVA()
-                    );
-                    
-                    factura.agregarItem(item);
+                    // Solo facturar servicios activos
+                    if (servicio != null && servicio.puedeFacturarse()) {
+                        ItemFactura item = new ItemFactura(
+                            servicio.getNombre(),
+                            servicioContratado.getPrecioContratado(),
+                            1,
+                            servicio.getAlicuotaIVA()
+                        );
+                        
+                        factura.agregarItem(item);
+                    }
                 }
                 
-                // Agregar factura al lote
-                lote.agregarFactura(factura);
-                facturasGeneradas++;
+                if (!factura.getDetalleFactura().isEmpty()) {
+                    lote.agregarFactura(factura);
+                    facturasGeneradas++;
+                } else {
+                    errores.add("Cliente " + cliente.getNombre() + " no tiene servicios activos para facturar");
+                }
                 
             } catch (Exception e) {
                 errores.add("Error al generar factura para cliente " + cliente.getNombre() + ": " + e.getMessage());

@@ -239,3 +239,53 @@ Era necesario validar datos tanto en formularios como en la lógica de dominio, 
 ## Conclusiones finales
 
 Las tres historias de usuario implementadas completaron la gestión integral de clientes y sus servicios. La arquitectura basada en modelo rico demostró su valor al centralizar validaciones de negocio en el dominio, y la conservación de históricos garantiza trazabilidad completa del sistema.
+
+## Integrante: Marcos Daubermann
+
+Esta retrospectiva documenta mi experiencia implementando las historias de usuario **HU-07: Emisión de facturación masiva por período** (deuda técnica de la Iteración 1), **HU-08: Anulación de facturación masiva** y **HU-09: Consulta de facturación masiva** durante la segunda iteración del proyecto.
+
+### ¿Qué se logró?
+
+- ✅ Saldé la deuda técnica implementando la lógica completa de facturación masiva (`LoteFacturacion`), orquestando la generación de múltiples facturas en una sola ejecución.
+- ✅ Implementé la **anulación en cascada** (HU-08): al anular un lote, el sistema anula automáticamente todas las facturas asociadas y genera las notas de crédito correspondientes.
+- ✅ Garanticé la integridad de datos mediante el uso estricto de `@Transactional`: si falla la generación de una sola factura dentro del lote, se realiza un rollback completo.
+- ✅ Desarrollé las vistas de consulta (HU-09) permitiendo visualizar el estado de los lotes, montos totales y el desglose de comprobantes generados.
+- ✅ Reutilicé la lógica de negocio de facturación individual (HU-04) creada por Gabriel para evitar duplicación de código en el cálculo de impuestos y totales.
+
+## Desafíos encontrados
+
+### Gestión de la Deuda Técnica
+
+**Problema:**
+Comenzar la iteración con una funcionalidad compleja pendiente (HU-07) generó presión inicial y requirió coordinar muy bien los tiempos para no bloquear las nuevas tareas de anulación (HU-08).
+
+**Cómo lo resolví:**
+- Prioricé la HU-07 durante los primeros días de la iteración.
+- Me apoyé en el código ya existente de `FacturaService` para no "reinventar la rueda" en la creación de cada factura individual dentro del bucle masivo.
+
+### Transaccionalidad y Manejo de Errores en Lote
+
+**Problema:**
+El mayor desafío técnico fue decidir qué hacer si fallaba una factura en medio de un proceso masivo de 100 clientes. ¿Se guardan las anteriores o se cancela todo?
+
+**Cómo lo resolví:**
+- Implementé una estrategia de "todo o nada" usando la anotación `@Transactional` de Spring.
+- Agregué validaciones previas (ej. verificar que el período no estuviera ya facturado) para fallar rápido antes de iniciar el procesamiento pesado.
+
+### Validaciones de Anulación Masiva
+
+**Problema:**
+La anulación de un lote (HU-08) tiene una regla de negocio estricta: no puede anularse si alguna factura del lote ya recibió un pago. Verificar esto eficientemente sin iterar innecesariamente fue un reto.
+
+**Cómo lo resolví:**
+- Implementé el método rico `puedeSerAnulado()` en la entidad `LoteFacturacion`.
+- Utilicé *Query Methods* optimizados para verificar la existencia de pagos en las facturas asociadas al lote antes de proceder con la anulación.
+
+## Lecciones aprendidas
+
+- **El costo de la deuda técnica:** Arrastrar una funcionalidad *core* de una iteración a otra complica la planificación. Es vital cerrar los flujos principales lo antes posible.
+
+## Conclusiones finales
+
+A pesar de haber comenzado con desventaja por la carga pendiente, logré completar el módulo de Facturación Masiva en su totalidad.
+Debo tratar de organizar mejor los tiempos, pero a veces con las otras materias es difícil.

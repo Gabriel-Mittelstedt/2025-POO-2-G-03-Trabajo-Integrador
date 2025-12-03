@@ -4,8 +4,10 @@ import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -516,7 +518,15 @@ public class FacturaService {
             );
         }
         
-        // 7. Generar factura para cada cliente
+        // 7. Inicializar contadores de número de factura por serie
+        // Esto evita que todas las facturas de la misma serie obtengan el mismo número
+        // cuando se generan múltiples facturas antes de persistirlas
+        Map<Integer, Integer> contadoresNumeroFactura = new HashMap<>();
+        contadoresNumeroFactura.put(SERIE_FACTURA_A, obtenerSiguienteNumeroFactura(SERIE_FACTURA_A));
+        contadoresNumeroFactura.put(SERIE_FACTURA_B, obtenerSiguienteNumeroFactura(SERIE_FACTURA_B));
+        contadoresNumeroFactura.put(SERIE_FACTURA_C, obtenerSiguienteNumeroFactura(SERIE_FACTURA_C));
+        
+        // 8. Generar factura para cada cliente
         List<String> errores = new ArrayList<>();
         int facturasGeneradas = 0;
         
@@ -535,9 +545,11 @@ public class FacturaService {
                     cliente.getCondicionIva()
                 );
                 
-                // Obtener serie y número
+                // Obtener serie y número desde los contadores en memoria
                 int serie = obtenerSerie(tipoFactura);
-                int numero = obtenerSiguienteNumeroFactura(serie);
+                int numero = contadoresNumeroFactura.get(serie);
+                // Incrementar el contador para la próxima factura de esta serie
+                contadoresNumeroFactura.put(serie, numero + 1);
                 
                 // Crear factura
                 Factura factura = new Factura(
@@ -579,7 +591,7 @@ public class FacturaService {
             }
         }
         
-        // 8. Verificar que se haya generado al menos una factura
+        // 9. Verificar que se haya generado al menos una factura
         if (facturasGeneradas == 0) {
             String mensajeError = "No se pudo generar ninguna factura.";
             if (!errores.isEmpty()) {
@@ -588,7 +600,7 @@ public class FacturaService {
             throw new IllegalStateException(mensajeError);
         }
         
-        // 9. Guardar el lote con todas sus facturas
+        // 10. Guardar el lote con todas sus facturas
         lote = loteFacturacionRepository.save(lote);
         
         return lote;

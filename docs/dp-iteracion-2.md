@@ -36,8 +36,6 @@
 
 ### Implementacion realizada por Axel Agustin Limberger
 
-**Limberger Axel Agustin:**
-
 - **HU-13 — Gestión de saldo a favor:** Lógica en la entidad `CuentaCliente` (métodos ricos: `getSaldoAFavor()`, `aplicarSaldoAFavor()`, `registrarSaldoAFavor()`), servicio en `PagoService` para aplicar saldo en transacciones y vistas para visualizar y aplicar el saldo disponible.
 
 - **HU-14 — Registrar pago combinado (múltiples facturas):** `PagoService.registrarPagoCombinado()` que distribuye montos entre facturas, crea `Pago` y `DetallePago`, y genera un recibo único; vista `seleccionar-facturas.html` para seleccionar facturas (checkboxes), usar saldo a favor y registrar el pago en una sola transacción atómica.
@@ -71,6 +69,29 @@
 - JavaDocs en `Factura`, `ItemFactura`, `NotaCredito`
 
 
+### Implementación realizada por Marcos Daubermann
+
+#### HU-07: Emisión de facturación masiva (Deuda técnica)
+- **Modelo de Dominio:** Entidad `LoteFacturacion` que agrupa las facturas generadas en un proceso masivo.
+- **Servicio:** Método `ejecutarFacturacionMasiva(Periodo)` que orquesta el proceso: filtra clientes activos, delega la creación de facturas individuales (reutilizando lógica de HU-04) y calcula totales del lote.
+- **Transaccionalidad:** Uso de `@Transactional` para asegurar que si falla la generación de una factura, se revierta todo el lote.
+- **Vista:** `nueva-facturacion.html` para seleccionar el período y confirmar la ejecución.
+
+#### HU-09: Consulta de facturación masiva
+- **Repositorio:** `LoteFacturacionRepository` con métodos para ordenar por fecha de ejecución descendente.
+- **Vistas:**
+    - `lotes/lista.html`: Tabla con historial de ejecuciones, montos totales y estado (Activo/Anulado).
+    - `lotes/detalle.html`: Visualización del encabezado del lote y lista paginada de las facturas que lo componen.
+- **Cálculos:** Métodos en la entidad para obtener la cantidad de facturas y el monto acumulado en tiempo real.
+
+#### HU-08: Anulación de facturación masiva
+- **Lógica de Anulación:** Método `anular()` que itera sobre las facturas del lote, generando automáticamente las `NotaCredito` correspondientes y cambiando el estado del lote.
+- **Validación:** Bloqueo de la operación si existen pagos parciales o totales en alguna factura del lote.
+- **Vista:** `confirmar-anulacion.html` con advertencia explícita sobre la cantidad de notas de crédito que se generarán.
+
+ 
+
+
 ### Implementación realizada por Leandro Escalada
 
 #### HU-18: Modificación de servicio existente
@@ -100,7 +121,7 @@
 
  
 ## Diseño OO
-
+![Diagrama de Clases - Iteración 2](imagenes/DC_Iteracion2.png)
 
 ## Wireframe y Casos de Uso
 
@@ -499,6 +520,140 @@ La lista de servicios muestra:
 - [x] Comprobar que servicio desvinculado no aparece en lista de activos
 - [x] Verificar que servicio desvinculado aparece en histórico con estado "Inactivo"
 - [x] Validar conservación de datos históricos (fecha alta, precio contratado)
+
+---
+
+### HU-13: Gestión de Saldo a Favor (Axel Limberger)
+
+**Modelo**
+- [x] Agregar campo `saldoAFavor` en entidad `CuentaCliente` (tipo BigDecimal)
+- [x] Crear método `getSaldoAFavor()` en `CuentaCliente`
+- [x] Crear método `tieneSaldoAFavor()` en `CuentaCliente`
+- [x] Crear método `aplicarSaldoAFavor(BigDecimal monto)` con validaciones
+- [x] Crear método `registrarSaldoAFavor(BigDecimal monto)` para acumular crédito
+- [x] Validar que el monto a aplicar no supere el saldo disponible
+- [x] Implementar lógica de resta del saldo al aplicar
+
+**Repositorio**
+- [x] Verificar que `CuentaClienteRepository` soporta actualización de saldo
+
+**Servicio**
+- [x] Modificar `PagoService` para incluir lógica de saldo a favor
+- [x] Crear método para calcular distribución de montos (saldo + pago adicional)
+- [x] Implementar validación de saldo disponible antes de aplicar
+- [x] Actualizar método de registro de pago para considerar saldo a favor
+
+**Controlador**
+- [x] Modificar controlador de pagos para recibir parámetro de saldo a aplicar
+- [x] Validar que el monto de saldo ingresado no supere el disponible
+- [x] Manejar excepciones relacionadas con saldo insuficiente
+
+**Vistas**
+- [x] Modificar `detalle.html` del cliente para mostrar saldo a favor
+- [x] Agregar visualización destacada del monto disponible
+- [x] Modificar `seleccionar-facturas.html` para incluir campo de saldo a aplicar
+- [x] Mostrar saldo disponible antes del campo de entrada
+- [x] Modificar `recibo-detalle.html` para mostrar saldo a favor como método de pago
+
+---
+
+### HU-14: Registrar Pago Combinado - Múltiples Facturas (Axel Limberger)
+
+**Modelo**
+- [x] Configurar relación `@OneToMany` con `DetallePago`
+- [x] Crear entidad `DetallePago` para relación N:M con `Factura`
+- [x] Definir campos en `DetallePago`: id, pago, factura, montoAplicado
+
+**Repositorio**
+- [x] Crear `PagoRepository` extendiendo `JpaRepository`
+- [x] Crear `DetallePagoRepository` extendiendo `JpaRepository`
+- [x] Agregar Query Method para buscar pagos por cliente y rango de fechas
+- [x] Agregar Query Method `findByFactura()` para obtener detalles por factura
+
+**Servicio**
+- [x] Crear método `registrarPagoCombinado()` en `PagoService`
+- [x] Implementar lógica de distribución proporcional de montos entre facturas
+- [x] Crear un objeto `Pago` consolidado para múltiples facturas
+- [x] Crear múltiples `DetallePago` (uno por cada factura afectada)
+- [x] Actualizar estado de facturas (PAGADA si saldo=0, PARCIAL si queda saldo)
+- [x] Aplicar saldo a favor si está presente en el pago
+- [x] Garantizar atomicidad con `@Transactional`
+- [x] Calcular y registrar excedente como saldo a favor
+- [x] Crear método `ReciboService.generarReciboDesdeMultiplesPagos()` para consolidar
+
+**Controlador**
+- [x] Crear endpoint GET `/pagos/cliente/{clienteId}/seleccionar-facturas`
+
+
+**Vistas**
+- [x] Crear vista `seleccionar-facturas.html` completa
+- [x] Mostrar información del cliente en encabezado
+- [x] Mostrar saldo a favor disponible (si existe)
+- [x] Crear tabla de facturas impagas con checkboxes
+- [x] Incluir columnas: checkbox, número, fecha emisión, vencimiento, monto, saldo pendiente
+- [x] Agregar campo para monto de saldo a favor a aplicar
+- [x] Agregar validación JavaScript de saldo disponible
+- [x] Crear sección para ingresar monto adicional y método de pago
+- [x] Agregar select con opciones: efectivo, transferencia, tarjeta débito, tarjeta crédito
+- [x] Agregar campo de referencia (opcional)
+- [x] Implementar cálculo dinámico del total a pagar con JavaScript
+
+---
+
+### HU-15: Consulta de Pagos y Recibos (Axel Limberger)
+
+**Modelo**
+- [x] Crear DTO `ReciboDTO` para representación de recibos consolidados
+- [x] Definir campos en `ReciboDTO`: numeroRecibo, fecha, cliente, montoTotal, metodoPago, referencia
+- [x] Crear clase interna `ReciboDTO.DetallePagoDTO` para ítems del recibo
+- [x] Definir campos en `DetallePagoDTO`: numeroFactura, montoAplicado, enlaceFactura
+
+**Repositorio**
+- [x] Agregar Query Method `findByClienteNombreContainingIgnoreCase()` en `PagoRepository`
+- [x] Agregar Query Method `findByFechaBetween()` para filtro de rango de fechas
+- [x] Combinar filtros: `findByClienteNombreContainingIgnoreCaseAndFechaBetween()`
+- [x] Ordenar resultados por fecha descendente
+
+**Servicio**
+- [x] Crear `ReciboService` para lógica de generación de recibos
+- [x] Crear método `generarReciboDesdePago(Pago pago)` para pago individual
+- [x] Crear método `generarReciboDesdeMultiplesPagos(List<Pago> pagos)` para combinados
+- [x] Crear método `generarReciboConsolidado(Cliente cliente)` para agrupar pagos
+- [x] Implementar lógica de agrupación de pagos por recibo
+- [x] Determinar método de pago: "Combinado" si usa saldo + otro método
+- [x] Crear método `listarFiltrados()` en `PagoService` para búsqueda
+- [x] Implementar filtro por nombre de cliente (opcional)
+- [x] Implementar filtro por rango de fechas (opcional)
+- [x] Retornar lista de `ReciboDTO` ordenada
+
+**Controlador**
+- [x] Crear endpoint GET `/pagos/lista` para vista de listado
+- [x] Recibir parámetros de filtro: nombre, fechaDesde, fechaHasta (todos opcionales)
+- [x] Invocar servicio de listado con filtros
+- [x] Pasar lista de recibos al modelo
+- [x] Crear endpoint GET `/pagos/recibo/{pagoId}` para detalle
+- [x] Buscar pago por ID y validar existencia
+- [x] Generar DTO del recibo con todos los detalles
+- [x] Retornar vista `recibo-detalle.html`
+
+**Vistas**
+- [x] Crear vista `lista.html` en carpeta `pagos/`
+- [x] Crear formulario de filtros con campos: nombre, fecha desde, fecha hasta
+- [x] Agregar botón "Buscar" y botón "Limpiar filtros"
+- [x] Crear tabla responsive de recibos
+- [x] Incluir columnas: número recibo, fecha, cliente, monto, método pago, referencia, acciones
+- [x] Agregar botón "Ver" que enlaza al detalle del recibo
+- [x] Mostrar badge de método de pago con color según tipo
+- [x] Crear vista `recibo-detalle.html` en carpeta `pagos/`
+- [x] Mostrar encabezado con número de recibo y fecha
+- [x] Mostrar información del cliente (nombre, CUIT/DNI)
+- [x] Crear sección de información del pago (monto total, método, referencia)
+- [x] Crear tabla de desglose de pagos aplicados
+- [x] Incluir columnas: factura (con enlace), monto aplicado
+- [x] Mostrar subtotales por método de pago si es combinado
+- [x] Agregar botones de navegación: volver a lista, ir a facturas
+
+
 
 ---
 

@@ -38,7 +38,7 @@ Durante esta primera iteración, el equipo se distribuyó las historias de usuar
 
 ## Diseño OO
 
-(Insertar DC de la primera iteración)
+![Diagrama de Clases - Iteración 1](imagenes/DC_Iteracion1.png)
 ---
 
 ## Wireframe y Casos de Uso

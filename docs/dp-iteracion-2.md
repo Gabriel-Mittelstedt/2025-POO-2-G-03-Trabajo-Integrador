@@ -523,6 +523,147 @@ La lista de servicios muestra:
 
 ---
 
+### HU-05: Anulación de Factura Individual (Gabriel Mittelstedt)
+
+**Modelo**
+- [x] Crear método `puedeSerAnulada()` en `Factura` que valida estado PENDIENTE o VENCIDA y sin pagos
+- [x] Crear método `anular()` en `Factura` que cambia estado a ANULADA
+- [x] Crear método `agregarNotaCredito()` en `Factura` para asociar nota de crédito
+- [x] Crear entidad `NotaCredito` con campos: id, serie, numero, tipo, monto, motivo, fechaEmision
+- [x] Configurar relación `@ManyToOne` con `Factura`
+- [x] Agregar validaciones Bean Validation en `NotaCredito`
+
+**Repositorio**
+- [x] Crear `NotaCreditoRepository` extendiendo `JpaRepository`
+- [x] Agregar Query Method `findFirstBySerieOrderByNumeroDesc()` para numeración automática
+- [x] Agregar Query Methods para búsqueda por factura
+
+**Servicio**
+- [x] Crear método `anularFactura()` en `FacturaService`
+- [x] Buscar factura por ID y validar existencia
+- [x] Invocar `Factura.puedeSerAnulada()` para validar reglas de negocio
+- [x] Crear `NotaCredito` con numeración automática por serie
+- [x] Obtener último número de nota de crédito de la serie y sumar 1
+- [x] Invocar `Factura.anular()` para cambiar estado
+- [x] Persistir nota de crédito y factura actualizada
+- [x] Garantizar atomicidad con `@Transactional`
+
+**Controlador**
+- [x] Crear endpoint GET `/facturas/{id}/confirmar-anulacion` para mostrar vista de confirmación
+- [x] Cargar datos de la factura y pasarlos al modelo
+- [x] Crear endpoint POST `/facturas/{id}/anular` para procesar anulación
+- [x] Recibir motivo de anulación como parámetro
+- [x] Manejar excepciones y mostrar mensajes flash de error o éxito
+- [x] Redirigir al detalle de la factura tras éxito
+
+**Vistas**
+- [x] Crear vista `confirmar-anulacion.html` en carpeta `facturas/`
+- [x] Mostrar datos completos de la factura a anular
+- [x] Agregar alerta de advertencia sobre operación irreversible
+- [x] Agregar campo textarea para motivo de anulación (obligatorio, máx. 500 caracteres)
+- [x] Agregar botón "Confirmar Anulación" (rojo) y botón "Cancelar"
+- [x] Modificar `detalle.html` para agregar botón "Anular Factura" (visible si estado=PENDIENTE o VENCIDA)
+- [x] Agregar sección de notas de crédito asociadas en `detalle.html`
+
+**Pruebas**
+- [x] Probar anulación exitosa de factura PENDIENTE
+- [x] Probar anulación exitosa de factura VENCIDA
+- [x] Verificar generación de nota de crédito con numeración correlativa
+- [x] Validar error al intentar anular factura con pagos registrados
+- [x] Validar error al intentar anular factura ya ANULADA o PAGADA
+- [x] Verificar trazabilidad (relación bidireccional Factura-NotaCredito)
+
+---
+
+### HU-20: Facturación Proporcional Individual (Gabriel Mittelstedt)
+
+**Modelo**
+- [x] Crear Value Object `PeriodoFacturacion` con campos: fechaInicio, fechaFin
+- [x] Implementar método `getDiasEfectivos()` para calcular días del período
+- [x] Implementar método `getDiasTotalesMes()` para obtener días del mes
+- [x] Implementar método `getDescripcion()` para generar texto: "del DD al DD de MMMM YYYY (X días)"
+- [x] Crear Factory Method `ItemFactura.crearProporcional()` para crear ítems con cálculo proporcional
+- [x] Implementar fórmula: `(días_efectivos / días_mes) × precio_mensual`
+- [x] Generar descripción automática del ítem con el período facturado
+- [x] Crear método `validarFechas()` en `Factura` para validaciones de fechas
+
+**Repositorio**
+- [x] Migrar consultas `@Query` a Query Methods: `findFirstBySerieOrderByNroFacturaDesc()`
+- [x] Verificar funcionamiento de numeración automática por serie
+
+**Servicio**
+- [x] Crear método `emitirFacturaProporcional()` en `FacturaService`
+- [x] Recibir parámetros: clienteId, fechaInicio, fechaFin, fechaEmision, fechaVencimiento, descuento, motivo
+- [x] Buscar cliente por ID y validar existencia
+- [x] Validar que cliente esté ACTIVO con `puedeFacturar()`
+- [x] Crear objeto `PeriodoFacturacion` con las fechas del período
+- [x] Obtener servicios contratados activos del cliente
+- [x] Para cada servicio, invocar `ItemFactura.crearProporcional()` con el período
+- [x] Determinar tipo de factura según reglas AFIP
+- [x] Asignar serie y obtener número correlativo
+- [x] Calcular totales (subtotal, IVA, descuento, total)
+- [x] Persistir factura con estado PENDIENTE
+- [x] Garantizar atomicidad con `@Transactional`
+
+**Controlador**
+- [x] Crear endpoint GET `/facturas/proporcional` para mostrar formulario
+- [x] Cargar lista de clientes activos para el select
+- [x] Crear endpoint POST `/facturas/proporcional` para procesar generación
+- [x] Validar datos con `@Valid` y manejar errores
+- [x] Manejar excepciones de negocio y mostrar mensajes flash
+- [x] Redirigir al detalle de la factura tras éxito
+
+**Vistas**
+- [x] Crear vista `formulario-proporcional.html` en carpeta `facturas/`
+- [x] Agregar campo select para cliente (clientes activos)
+- [x] Agregar campos date para fecha inicio y fecha fin del período
+- [x] Agregar campos date para fecha emisión y fecha vencimiento
+- [x] Agregar campo number para porcentaje de descuento (0-100, opcional)
+- [x] Agregar campo text para motivo de descuento (obligatorio si hay descuento)
+- [x] Implementar validaciones JavaScript: fin > inicio, vencimiento > emisión
+- [x] Agregar validación JavaScript: motivo obligatorio si descuento > 0
+- [x] Modificar `lista.html` para agregar botón "Factura Proporcional"
+
+**Pruebas**
+- [x] Probar generación exitosa de factura proporcional
+- [x] Verificar cálculo correcto de precio proporcional (días_efectivos / días_mes × precio)
+- [x] Validar descripción automática del período en ítems
+- [x] Validar error si fecha fin ≤ fecha inicio
+- [x] Validar error si vencimiento ≤ emisión
+- [x] Validar error si descuento > 0 sin motivo
+- [x] Validar error si cliente no tiene servicios activos
+
+---
+
+### Correcciones y Mejoras (Gabriel Mittelstedt)
+
+**Validación de Fechas**
+- [x] Implementar validación de fechas en frontend con JavaScript
+- [x] Crear método `validarFechas()` en backend para validación adicional
+- [x] Integrar validación en formularios de facturación
+
+**Actualización de Estado VENCIDA**
+- [x] Crear método `actualizarSiEstaVencida()` en `Factura`
+- [x] Verificar si fecha actual > fecha vencimiento y estado = PENDIENTE
+- [x] Cambiar automáticamente estado a VENCIDA si corresponde
+- [x] Invocar método al listar facturas para actualizar estados
+
+**Refactorización de Repositorios**
+- [x] Migrar consultas `@Query` a Query Methods estándar de Spring Data
+- [x] Implementar `findFirstBySerieOrderByNroFacturaDesc()` para numeración
+
+**Inclusión de VENCIDA en Pagos**
+- [x] Modificar consultas de facturas impagas para incluir estado VENCIDA
+- [x] Permitir pago de facturas vencidas además de pendientes
+
+**Documentación**
+- [x] Agregar JavaDocs completos en `Factura`
+- [x] Agregar JavaDocs completos en `ItemFactura`
+- [x] Agregar JavaDocs completos en `NotaCredito`
+- [x] Documentar patrones aplicados: Rich Model, Factory Method, Value Object
+
+---
+
 ### HU-13: Gestión de Saldo a Favor (Axel Limberger)
 
 **Modelo**

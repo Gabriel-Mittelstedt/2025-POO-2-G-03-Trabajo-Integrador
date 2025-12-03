@@ -93,25 +93,28 @@
                                 </td>
                                 <td class="text-center">
                                     <div class="action-buttons justify-content-center">
+                                        <!-- Ver detalle -->
                                         <a th:href="@{/servicios/{id}(id=${servicio.IDServicio})}" class="btn btn-sm btn-info" title="Ver">
                                             <i class="bi bi-eye"></i>
                                         </a>
+                                        <!-- HU-18: Editar -->
                                         <a th:href="@{/servicios/{id}/editar(id=${servicio.IDServicio})}" class="btn btn-sm btn-primary" title="Editar">
                                             <i class="bi bi-pencil"></i>
                                         </a>
-                                        <form th:if="${servicio.activo}" 
-                                              th:action="@{/servicios/{id}/desactivar(id=${servicio.IDServicio})}" 
-                                              method="post" style="display:inline;"
-                                              onsubmit="return confirm('¿Desactivar este servicio?');">
-                                            <button type="submit" class="btn btn-sm btn-warning" title="Desactivar">
-                                                <i class="bi bi-x-circle"></i>
-                                            </button>
-                                        </form>
+                                        <!-- HU-19: Dar de baja (solo si está activo) -->
+                                        <a th:if="${servicio.activo}" 
+                                           th:href="@{/servicios/{id}/confirmar-eliminar(id=${servicio.IDServicio})}" 
+                                           class="btn btn-sm btn-danger" 
+                                           title="Dar de Baja">
+                                            <i class="bi bi-trash"></i>
+                                        </a>
+                                        <!-- Reactivar (solo si está inactivo) -->
                                         <form th:if="${!servicio.activo}" 
-                                              th:action="@{/servicios/{id}/activar(id=${servicio.IDServicio})}" 
-                                              method="post" style="display:inline;">
-                                            <button type="submit" class="btn btn-sm btn-success" title="Activar">
-                                                <i class="bi bi-check-circle"></i>
+                                              th:action="@{/servicios/{id}/reactivar(id=${servicio.IDServicio})}" 
+                                              method="post" 
+                                              style="display: inline;">
+                                            <button type="submit" class="btn btn-sm btn-success" title="Reactivar">
+                                                <i class="bi bi-arrow-clockwise"></i> 
                                             </button>
                                         </form>
                                     </div>

@@ -124,21 +124,32 @@ public class FacturaService {
         // 8. Validar cliente activo (delegar al dominio)
         factura.validarClienteActivo();
         
-        // 9. Agregar items desde servicios contratados
+        // 9. Agregar items solo de servicios facturables (modelo rico)
         for (ServicioContratado servicioContratado : serviciosContratados) {
             Servicio servicio = servicioContratado.getServicio();
             
-            ItemFactura item = new ItemFactura(
-                servicio.getNombre(),                       // descripcion
-                servicioContratado.getPrecioContratado(),   // precioUnitario (precio específico del contrato)
-                1,                                          // cantidad (siempre 1 para servicios mensuales)
-                servicio.getAlicuotaIVA()                   // alicuotaIVA
-            );
-            
-            factura.agregarItem(item);
+            // Solo facturar servicios activos
+            if (servicio != null && servicio.puedeFacturarse()) {
+                ItemFactura item = new ItemFactura(
+                    servicio.getNombre(),                       // descripcion
+                    servicioContratado.getPrecioContratado(),   // precioUnitario (precio específico del contrato)
+                    1,                                          // cantidad (siempre 1 para servicios mensuales)
+                    servicio.getAlicuotaIVA()                   // alicuotaIVA
+                );
+                
+                factura.agregarItem(item);
+            }
         }
         
-        // 10. Aplicar descuento si existee
+        // Validar que se haya agregado al menos un item
+        if (factura.getDetalleFactura().isEmpty()) {
+            throw new IllegalArgumentException(
+                "No se puede emitir una factura sin servicios activos. "
+                + "Todos los servicios contratados están inactivos."
+            );
+        }
+        
+        // 10. Aplicar descuento si existe
         if (porcentajeDescuento != null && porcentajeDescuento > 0) {
             if (motivoDescuento == null || motivoDescuento.isBlank()) {
                 throw new IllegalArgumentException("El motivo del descuento es obligatorio");
@@ -543,19 +554,25 @@ public class FacturaService {
                 for (ServicioContratado servicioContratado : cliente.getServiciosContratadosActivos()) {
                     Servicio servicio = servicioContratado.getServicio();
                     
-                    ItemFactura item = new ItemFactura(
-                        servicio.getNombre(),
-                        servicioContratado.getPrecioContratado(),
-                        1,
-                        servicio.getAlicuotaIVA()
-                    );
-                    
-                    factura.agregarItem(item);
+                    // Solo facturar servicios activos
+                    if (servicio != null && servicio.puedeFacturarse()) {
+                        ItemFactura item = new ItemFactura(
+                            servicio.getNombre(),
+                            servicioContratado.getPrecioContratado(),
+                            1,
+                            servicio.getAlicuotaIVA()
+                        );
+                        
+                        factura.agregarItem(item);
+                    }
                 }
                 
-                // Agregar factura al lote
-                lote.agregarFactura(factura);
-                facturasGeneradas++;
+                if (!factura.getDetalleFactura().isEmpty()) {
+                    lote.agregarFactura(factura);
+                    facturasGeneradas++;
+                } else {
+                    errores.add("Cliente " + cliente.getNombre() + " no tiene servicios activos para facturar");
+                }
                 
             } catch (Exception e) {
                 errores.add("Error al generar factura para cliente " + cliente.getNombre() + ": " + e.getMessage());

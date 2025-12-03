@@ -69,6 +69,35 @@
 #### Documentación
 - Diagrama de clases con patrones explicitados (Rich Model, Factory Method, Value Object)
 - JavaDocs en `Factura`, `ItemFactura`, `NotaCredito`
+
+
+### Implementación realizada por Leandro Escalada
+
+#### HU-18: Modificación de servicio existente
+- Modelo rico: método `modificar()` en `Servicio` que actualiza nombre, descripción, precio y alícuota IVA
+- Bean Validation: `@NotBlank`, `@Size`, `@NotNull`, `@DecimalMin`, `@Digits` para validaciones declarativas
+- Servicio `modificarServicio()` con validación de unicidad de nombre y propagación de precio a contratos activos
+- Vista `formulario.html` reutilizada para alta y edición con atributo `accion` (Crear/Editar)
+- Controlador con endpoints GET `/{id}/editar` y POST `/{id}/editar` con manejo de errores
+- Propagación automática: al cambiar el precio, se actualiza `precioContratado` en `ServicioContratado` activos
+- Facturas históricas: conservan el `precioUnitario` original en `ItemFactura` (no se modifican)
+
+#### HU-19: Baja de servicio (baja lógica)
+- Modelo rico: métodos `activar()`, `desactivar()` y `puedeFacturarse()` en `Servicio`
+- Atributo `activo` (boolean) para baja lógica sin eliminar registros
+- Servicio `darDeBajaServicio()` y `reactivarServicio()` para gestión de estado
+- Vista `confirmar-eliminar.html` con información del servicio y advertencias
+- Controlador con endpoints GET `/{id}/confirmar-eliminar` y POST `/{id}/eliminar`
+- Endpoint adicional POST `/{id}/reactivar` para reactivar servicios dados de baja
+- Impacto en facturación: servicios con `activo=false` se excluyen de facturación masiva e individual mediante `puedeFacturarse()`
+- Conservación del histórico: servicios dados de baja visibles en listado y en contratos existentes
+
+#### Refactorización aplicada
+- Mover lógica de porcentaje IVA al enum `TipoAlicuotaIVA` con método `getPorcentaje()`
+- Eliminar switch/case en `Servicio.obtenerPorcentajeIva()` a favor de polimorfismo en enum
+- Enum enriquecido: `TipoAlicuotaIVA` con campos `porcentaje` y `descripcion`
+- Métodos de cálculo de IVA delegados al enum: `alicuotaIVA.getPorcentaje()`
+
  
 ## Diseño OO
 
@@ -284,6 +313,58 @@ La vista `pagos/recibo-detalle.html` muestra la información completa de un reci
 
 ---
 
+### Wireframe: Modificación de Servicio (HU-18)
+
+**Vista: lista.html**
+![ListaServicio](imagenes/Wireframe_ListaServicio3.png)
+**Vista: formulario.html (modo edición)**
+![ModificacionServicio](imagenes/Wireframe_MOdificacionServicio.png)
+
+El formulario reutiliza la misma vista que el alta de servicio, cambiando dinámicamente:
+- Título: "Editar Servicio" en lugar de "Crear Servicio"
+- Botón: "Actualizar Servicio" en lugar de "Crear Servicio"
+- Campos prellenados con los datos actuales del servicio
+
+**Caso de Uso: Modificación de Servicio (HU-18)**
+
+| Elemento | Descripción |
+|----------|-------------|
+| **Actor** | Administrador |
+| **Precondición** | El servicio ya existe en el sistema |
+| **Flujo Principal** | 1. El administrador accede al detalle del servicio<br>2. El administrador hace clic en "Editar"<br>3. El sistema muestra el formulario de edición prellenado con los datos actuales<br>4. El administrador modifica los campos editables: nombre, descripción, precio, alícuota IVA<br>5. El administrador hace clic en "Actualizar Servicio"<br>6. El sistema valida los datos ingresados<br>7. El sistema verifica que el nuevo nombre no esté en uso por otro servicio<br>8. El sistema ejecuta `Servicio.modificar()` con los nuevos datos<br>9. El sistema actualiza los datos del servicio<br>10. El sistema persiste los cambios en la base de datos<br>11. El sistema muestra mensaje de éxito "Servicio modificado exitosamente"<br>12. El sistema redirige al detalle del servicio |
+| **Flujos Alternativos** | **6a.** Si hay errores de validación (nombre vacío, precio inválido):<br>&nbsp;&nbsp;1. El sistema muestra los errores en mensaje flash<br>&nbsp;&nbsp;2. Redirige al formulario de edición<br>&nbsp;&nbsp;3. Vuelve al paso 4<br><br>**7a.** Si el nombre ya existe en otro servicio:<br>&nbsp;&nbsp;1. El sistema muestra el mensaje "Ya existe otro servicio con el nombre: [nombre]"<br>&nbsp;&nbsp;2. Muestra mensaje de error flash<br>&nbsp;&nbsp;3. Redirige al formulario de edición<br>&nbsp;&nbsp;4. Vuelve al paso 4 |
+| **Postcondición** | Los datos del servicio quedan actualizados en el sistema<br>Los contratos activos tienen el nuevo precio<br>Las facturas ya emitidas conservan el precio original |
+
+---
+
+### Wireframe: Baja de Servicio (HU-19)
+
+**Vista: confirmar-eliminar.html**
+![BajaServicio](imagenes/Wireframe_BajaServicio.png)
+La vista muestra:
+- Información del servicio a dar de baja (nombre, descripción, precio, IVA)
+- Alerta de advertencia sobre las consecuencias
+- Botón "Confirmar Baja" y "Cancelar"
+
+**Vista: lista.html (con estado del servicio)**
+
+La lista de servicios muestra:
+- Badge verde "Activo" para servicios disponibles
+- Badge rojo "Inactivo" para servicios dados de baja
+- Botón "Reactivar" visible solo para servicios inactivos
+
+**Caso de Uso: Baja de Servicio (HU-19)**
+
+| Elemento | Descripción |
+|----------|-------------|
+| **Actor** | Administrador |
+| **Precondición** | El servicio existe en el sistema con estado activo |
+| **Flujo Principal** | 1. El administrador accede al detalle del servicio<br>2. El administrador hace clic en "Dar de Baja"<br>3. El sistema muestra la vista de confirmación con:<br>&nbsp;&nbsp;- Datos completos del servicio<br>&nbsp;&nbsp;- Alerta de advertencia sobre las consecuencias<br>&nbsp;&nbsp;- Lista de impactos: no disponible para nuevas contrataciones, excluido de facturación<br>4. El administrador hace clic en "Confirmar Baja"<br>5. El sistema cambia el estado del servicio a "Inactivo"<br>6. El sistema persiste los cambios <br>7. El sistema muestra mensaje de éxito "Servicio dado de baja exitosamente"<br>8. El sistema redirige al listado de servicios |
+| **Flujos Alternativos** | **4a.** Si el administrador cancela la operación:<br>&nbsp;&nbsp;1. El administrador hace clic en "Cancelar"<br>&nbsp;&nbsp;2. El sistema redirige al detalle del servicio sin realizar cambios |
+| **Postcondición** | El servicio queda marcado como inactivo<br>El servicio NO se incluirá en facturación masiva ni individual<br>El servicio NO estará disponible para nuevas contrataciones<br>Los contratos existentes conservan el servicio en su histórico |
+
+---
+
 ## Backlog de Iteración 2
 * **HU-02:** Modificación de cliente (Responsable: Axel Dos Santos)
 * **HU-03:** Gestión de estado de cuenta (Responsable: Axel Dos Santos)
@@ -418,3 +499,92 @@ La vista `pagos/recibo-detalle.html` muestra la información completa de un reci
 - [x] Comprobar que servicio desvinculado no aparece en lista de activos
 - [x] Verificar que servicio desvinculado aparece en histórico con estado "Inactivo"
 - [x] Validar conservación de datos históricos (fecha alta, precio contratado)
+
+---
+
+### HU-18: Modificación de Servicio (Leandro Escalada)
+
+**Modelo**
+- [x] Crear método `modificar()` en `Servicio` que recibe nuevos valores y actualiza campos
+- [x] Implementar Bean Validation: `@NotBlank`, `@Size(max=100)` para nombre
+- [x] Implementar Bean Validation: `@Size(max=500)` para descripción
+- [x] Implementar Bean Validation: `@NotNull`, `@DecimalMin("0.01")`, `@Digits(integer=8, fraction=2)` para precio
+- [x] Implementar Bean Validation: `@NotNull` para alícuota IVA
+- [x] Crear constructores: completo con todos los parámetros y mínimo solo con nombre
+
+**Repositorio**
+- [x] Verificar que `ServicioRepository` tiene método `findByNombreIgnoreCase()` existente
+- [x] Validar funcionamiento para verificar unicidad del nombre
+
+**Servicio**
+- [x] Crear método `modificarServicio()` en `ServicioService`
+- [x] Buscar servicio por ID y validar existencia
+- [x] Validar que el nuevo nombre no esté en uso por otro servicio (unicidad)
+- [x] Invocar método de dominio `modificar()` con los nuevos valores
+- [x] Implementar propagación de precio: actualizar `precioContratado` en `ServicioContratado` activos
+- [x] Guardar cambios en servicio y contratos afectados
+
+**Controlador**
+- [x] Crear endpoint GET `/servicios/{id}/editar` para mostrar formulario en modo edición
+- [x] Prellenar formulario con datos actuales del servicio
+- [x] Crear endpoint POST `/servicios/{id}/editar` para procesar actualización
+- [x] Validar datos con `@Valid` y `BindingResult`
+- [x] Manejar excepciones de validación y unicidad con mensajes en `RedirectAttributes`
+
+**Vista**
+- [x] Modificar `formulario.html` para soportar modo edición (atributo `servicio.id`)
+- [x] Cambiar título dinámicamente según atributo `accion`: "Crear Servicio" vs "Editar Servicio"
+- [x] Mostrar errores de validación junto a cada campo
+- [x] Agregar botón "Editar" en tabla de `lista.html` que enlaza a `/servicios/{id}/editar`
+
+**Pruebas**
+- [x] Probar modificación exitosa de nombre, descripción, precio y alícuota IVA
+- [x] Verificar error al intentar usar nombre duplicado
+- [x] Validar propagación de precio a contratos activos
+- [x] Verificar que facturas históricas conservan `precioUnitario` original
+- [x] Probar validaciones Bean Validation (campo vacío, precio negativo, etc.)
+
+---
+
+### HU-19: Baja de Servicio (Leandro Escalada)
+
+**Modelo**
+- [x] Agregar atributo `activo` (boolean, default `true`) en `Servicio`
+- [x] Crear método `desactivar()` que establece `activo = false`
+- [x] Crear método `activar()` que establece `activo = true`
+- [x] Crear método `puedeFacturarse()` que retorna `activo` (para filtros de facturación)
+- [x] Configurar relación `@OneToMany` con `ServicioContratado` (campo `contratos`)
+
+**Repositorio**
+- [x] Verificar que `ServicioRepository` no requiere cambios adicionales
+
+**Servicio**
+- [x] Crear método `darDeBajaServicio()` en `ServicioService` que invoca `desactivar()`
+- [x] Crear método `reactivarServicio()` en `ServicioService` que invoca `activar()`
+- [x] Ambos métodos buscan servicio por ID y validan existencia
+
+**Controlador**
+- [x] Crear endpoint GET `/servicios/{id}/confirmar-eliminar` para vista de confirmación
+- [x] Crear endpoint POST `/servicios/{id}/eliminar` para ejecutar baja lógica
+- [x] Crear endpoint POST `/servicios/{id}/reactivar` para reactivar servicio
+- [x] Redirigir a lista de servicios tras éxito con mensaje informativo
+
+**Vista**
+- [x] Crear vista `confirmar-eliminar.html` con información del servicio a dar de baja
+- [x] Mostrar advertencias sobre impacto (contratos activos, exclusión de facturación)
+- [x] Agregar botón "Dar de Baja" (rojo) en `lista.html` para servicios activos
+- [x] Agregar botón "Reactivar" (verde) en `lista.html` para servicios inactivos
+- [x] Mostrar estado "Activo"/"Inactivo" con badge de color en tabla
+
+**Impacto en Facturación**
+- [x] Modificar `FacturaService.generarFacturaMasiva()`: verificar `servicio.puedeFacturarse()` antes de crear ítems
+- [x] Los servicios con `activo=false` no generan ítems de factura
+- [x] Los contratos asociados a servicios inactivos permanecen en base de datos (histórico)
+
+**Pruebas**
+- [x] Probar baja lógica exitosa de servicio activo
+- [x] Verificar que servicio dado de baja tiene `activo=false`
+- [x] Probar reactivación exitosa de servicio dado de baja
+- [x] Validar que servicio inactivo no aparece en facturación masiva
+- [x] Verificar que servicio inactivo sigue visible en listado con estado "Inactivo"
+- [x] Validar que histórico de servicios contratados muestra servicios dados de baja

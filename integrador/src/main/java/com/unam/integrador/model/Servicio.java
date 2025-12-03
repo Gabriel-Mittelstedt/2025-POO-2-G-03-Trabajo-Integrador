@@ -106,8 +106,7 @@ public class Servicio {
             return BigDecimal.ZERO;
         }
         
-        BigDecimal porcentaje = obtenerPorcentajeIva();
-        return precio.multiply(porcentaje)
+        return precio.multiply(alicuotaIVA.getPorcentaje())
                      .divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
     }
     
@@ -130,25 +129,9 @@ public class Servicio {
             return BigDecimal.ZERO;
         }
         
-        BigDecimal porcentaje = obtenerPorcentajeIva();
-        BigDecimal iva = precioBase.multiply(porcentaje)
+        BigDecimal iva = precioBase.multiply(alicuotaIVA.getPorcentaje())
                                    .divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
         return precioBase.add(iva);
-    }
-    
-    /**
-     * Obtiene el porcentaje numérico de la alícuota de IVA.
-     * @return Porcentaje de IVA
-     */
-    private BigDecimal obtenerPorcentajeIva() {
-        switch (alicuotaIVA) {
-            case IVA_21: return new BigDecimal("21");
-            case IVA_10_5: return new BigDecimal("10.5");
-            case IVA_27: return new BigDecimal("27");
-            case IVA_2_5: return new BigDecimal("2.5");
-            case EXENTO: return BigDecimal.ZERO;
-            default: return BigDecimal.ZERO;
-        }
     }
     
     /**

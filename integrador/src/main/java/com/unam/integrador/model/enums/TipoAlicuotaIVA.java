@@ -1,5 +1,7 @@
 package com.unam.integrador.model.enums;
 
+import java.math.BigDecimal;
+
 /**
  * Enumeración de las alícuotas de IVA.
  * <p>Define los diferentes porcentajes de IVA que pueden aplicarse 
@@ -14,16 +16,26 @@ package com.unam.integrador.model.enums;
  * </ul>
  */ 
 public enum TipoAlicuotaIVA {
-    IVA_21("IVA 21%"),
-    IVA_10_5("IVA 10.5%"),
-    IVA_27("IVA 27%"),
-    IVA_2_5("IVA 2.5%"),
-    EXENTO("Exento");
+    IVA_21(new BigDecimal("21"), "IVA 21%"),
+    IVA_10_5(new BigDecimal("10.5"), "IVA 10.5%"),
+    IVA_27(new BigDecimal("27"), "IVA 27%"),
+    IVA_2_5(new BigDecimal("2.5"), "IVA 2.5%"),
+    EXENTO(BigDecimal.ZERO, "Exento");
     
+    private final BigDecimal porcentaje;
     private final String descripcion;
     
-    TipoAlicuotaIVA(String descripcion) {
+    TipoAlicuotaIVA(BigDecimal porcentaje, String descripcion) {
+        this.porcentaje = porcentaje;
         this.descripcion = descripcion;
+    }
+    
+    /**
+     * Obtiene el porcentaje numérico de la alícuota.
+     * @return Porcentaje de IVA como BigDecimal
+     */
+    public BigDecimal getPorcentaje() {
+        return porcentaje;
     }
     
     public String getDescripcion() {

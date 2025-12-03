@@ -93,19 +93,21 @@ class FacturaViewControllerTest {
     @DisplayName("GET /facturas - Debería aplicar filtros correctamente")
     void testListarFacturasConFiltros() throws Exception {
         // Arrange
-        when(facturaService.listarFacturasFiltradas("PENDIENTE", "A", "Noviembre"))
+        when(facturaService.listarFacturasFiltradas("PENDIENTE", "A", "Noviembre 2025"))
             .thenReturn(Arrays.asList(factura));
 
         // Act & Assert
         mockMvc.perform(get("/facturas")
                 .param("estado", "PENDIENTE")
                 .param("tipoFactura", "A")
-                .param("periodo", "Noviembre"))
+                .param("mes", "11")
+                .param("anio", "2025"))
             .andExpect(status().isOk())
             .andExpect(view().name("facturas/lista"))
             .andExpect(model().attribute("estado", "PENDIENTE"))
             .andExpect(model().attribute("tipoFactura", "A"))
-            .andExpect(model().attribute("periodo", "Noviembre"));
+            .andExpect(model().attribute("mesSeleccionado", 11))
+            .andExpect(model().attribute("anioSeleccionado", 2025));
     }
 
     @Test

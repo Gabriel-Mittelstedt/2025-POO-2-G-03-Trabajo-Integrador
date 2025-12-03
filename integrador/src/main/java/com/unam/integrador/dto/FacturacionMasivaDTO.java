@@ -2,6 +2,7 @@ package com.unam.integrador.dto;
 
 import java.time.LocalDate;
 
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -24,4 +25,18 @@ public class FacturacionMasivaDTO {
      */
     @NotNull(message = "La fecha de vencimiento es obligatoria")
     private LocalDate fechaVencimiento;
+    
+    /**
+     * Valida que la fecha de vencimiento sea posterior a la fecha actual (fecha de emisión).
+     * Esta validación se ejecuta como parte de la validación del DTO.
+     * 
+     * @return true si la fecha de vencimiento es válida (posterior a hoy), false en caso contrario
+     */
+    @AssertTrue(message = "La fecha de vencimiento debe ser posterior a la fecha de emisión (hoy)")
+    public boolean isFechaVencimientoValida() {
+        if (fechaVencimiento == null) {
+            return true; // La validación de @NotNull se encarga de este caso
+        }
+        return fechaVencimiento.isAfter(LocalDate.now());
+    }
 }

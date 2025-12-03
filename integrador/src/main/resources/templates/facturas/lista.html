@@ -109,7 +109,20 @@
                     </select>
                 </div>
                 <div class="col-md-3">
-                    <input type="text" name="periodo" class="form-control" placeholder="Período (ej: Noviembre 2024)" th:value="${periodo}">
+                    <div class="d-flex gap-2">
+                        <select name="mes" class="form-select">
+                            <option th:each="m : ${meses}" 
+                                    th:value="${m[0]}" 
+                                    th:text="${m[1]}"
+                                    th:selected="${m[0] == mesSeleccionado.toString()}"></option>
+                        </select>
+                        <select name="anio" class="form-select">
+                            <option th:each="a : ${anios}" 
+                                    th:value="${a}" 
+                                    th:text="${a}"
+                                    th:selected="${a == anioSeleccionado}"></option>
+                        </select>
+                    </div>
                 </div>
                 <div class="col-md-3">
                     <button type="submit" class="btn btn-primary w-100">

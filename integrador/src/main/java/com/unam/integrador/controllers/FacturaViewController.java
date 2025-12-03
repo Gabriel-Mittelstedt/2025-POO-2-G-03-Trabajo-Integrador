@@ -42,7 +42,8 @@ public class FacturaViewController {
     public String listarFacturas(
             @RequestParam(required = false) String estado,
             @RequestParam(required = false) String tipoFactura,
-            @RequestParam(required = false) String periodo,
+            @RequestParam(required = false) Integer mes,
+            @RequestParam(required = false) Integer anio,
             Model model) {
 
         // Actualizar facturas vencidas antes de mostrar el listado
@@ -52,8 +53,14 @@ public class FacturaViewController {
         model.addAttribute("estados", com.unam.integrador.model.enums.EstadoFactura.values());
         model.addAttribute("tipos", com.unam.integrador.model.enums.TipoFactura.values());
 
+        // Construir el período a partir de mes y año si ambos están presentes
+        String periodo = construirPeriodo(mes, anio);
+
         model.addAttribute("facturas", facturaService.listarFacturasFiltradas(estado, tipoFactura, periodo));
-        model.addAttribute("periodo", periodo);
+        model.addAttribute("meses", generarOpcionesMeses());
+        model.addAttribute("anios", generarOpcionesAnios());
+        model.addAttribute("mesSeleccionado", mes != null ? mes : LocalDate.now().getMonthValue());
+        model.addAttribute("anioSeleccionado", anio != null ? anio : LocalDate.now().getYear());
         model.addAttribute("estado", estado);
         model.addAttribute("tipoFactura", tipoFactura);
         return "facturas/lista";
@@ -93,6 +100,49 @@ public class FacturaViewController {
         }
         
         return periodos;
+    }
+
+    /**
+     * Genera la lista de meses para el selector de filtro.
+     * @return Lista de arrays [número, nombre] para cada mes
+     */
+    private List<String[]> generarOpcionesMeses() {
+        List<String[]> meses = new ArrayList<>();
+        String[] nombresMeses = {"Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+                                 "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"};
+        for (int i = 0; i < 12; i++) {
+            meses.add(new String[]{String.valueOf(i + 1), nombresMeses[i]});
+        }
+        return meses;
+    }
+
+    /**
+     * Genera la lista de años para el selector de filtro.
+     * Incluye desde el año actual hasta 5 años hacia atrás.
+     * @return Lista de años en orden decreciente
+     */
+    private List<Integer> generarOpcionesAnios() {
+        List<Integer> anios = new ArrayList<>();
+        int anioActual = LocalDate.now().getYear();
+        for (int i = 0; i <= 5; i++) {
+            anios.add(anioActual - i);
+        }
+        return anios;
+    }
+
+    /**
+     * Construye el string de período a partir de mes y año.
+     * @param mes Número del mes (1-12)
+     * @param anio Año
+     * @return String del período en formato "Mes Año" o null si algún parámetro es null
+     */
+    private String construirPeriodo(Integer mes, Integer anio) {
+        if (mes == null || anio == null) {
+            return null;
+        }
+        String[] nombresMeses = {"Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+                                 "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"};
+        return nombresMeses[mes - 1] + " " + anio;
     }
 
     /**

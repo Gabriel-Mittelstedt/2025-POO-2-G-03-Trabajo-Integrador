@@ -1,0 +1,119 @@
+# Retrospectiva - Iteración 2
+
+## Integrante: Limberger Axel Agustin
+
+Esta retrospectiva documenta mi experiencia personal implementando las historias de usuario **HU-13: Gestión de saldo a favor**, **HU-14: Registrar pago combinado (múltiples facturas)** y **HU-15: Consulta de pagos y recibos** durante la segunda iteración del proyecto de facturación de servicios.
+
+---
+
+### Historia HU-13: Gestión de Saldo a Favor
+
+**Logros principales:**
+- ✅ Implementé la lógica para gestionar el saldo a favor de los clientes cuando realizan pagos que exceden el monto de las facturas
+- ✅ Desarrollé la funcionalidad para aplicar automáticamente el saldo a favor en nuevas facturas
+- ✅ Integré la gestión de saldo con el módulo de pagos existente de la iteración 1
+
+### Historia HU-14: Registrar Pago Combinado (Múltiples Facturas)
+
+**Logros principales:**
+- ✅ Implementé la funcionalidad para seleccionar y pagar múltiples facturas en una sola transacción
+- ✅ Desarrollé la lógica de distribución de pagos entre varias facturas pendientes
+- ✅ Creé las vistas Thymeleaf necesarias para la selección y confirmación de facturas a pagar
+- ✅ Integré la generación de recibos que documentan el pago combinado
+
+### Historia HU-15: Consulta de Pagos y Recibos
+
+**Logros principales:**
+- ✅ Implementé el sistema de generación de recibos a partir de los datos de pagos existentes
+- ✅ Desarrollé las vistas para consultar el historial de pagos y recibos de cada cliente
+- ✅ Creé la vista de detalle de recibo con toda la información del pago realizado
+- ✅ Implementé toda la lógica de gestión de pagos utilizando el patrón de modelo rico
+
+---
+
+## Desafíos y dificultades encontradas
+
+### Desafío 1: Mala selección de HU en la Iteración 1
+
+**Problema:**
+En la iteración 1 solo seleccioné las historias de pago parcial y pago total (HU-11 y HU-12), sin considerar que las funcionalidades de saldo a favor, pago combinado y consulta de recibos estaban estrechamente relacionadas. Esto generó que en la iteración 2 tuviera que realizar muchas modificaciones y refactorizaciones al código existente.
+
+**Impacto:**
+- Tuve que reescribir partes significativas del módulo de pagos
+- La integración con las nuevas funcionalidades requirió más tiempo del esperado
+- Algunos cambios afectaron código que ya estaba funcionando correctamente
+
+**Aprendizaje:**
+Al planificar las iteraciones es fundamental analizar las dependencias entre historias de usuario. Las funcionalidades relacionadas deberían agruparse en la misma iteración para evitar refactorizaciones costosas posteriormente.
+
+### Desafío 2: Gestión del tiempo con otras materias
+
+**Problema:**
+La carga académica de otras materias consumió gran parte del tiempo disponible para el proyecto, lo que impidió implementar todas las funcionalidades al 100% como hubiera querido.
+
+**Impacto:**
+- No pude dedicar el tiempo suficiente para pulir algunos detalles de la implementación
+- Algunas pruebas quedaron pendientes
+- La documentación del código no quedó tan completa como en la iteración anterior
+
+**Cómo lo manejé:**
+- Prioricé las funcionalidades core de cada historia de usuario
+- Me enfoqué en que el flujo principal funcionara correctamente
+- Dejé documentados los puntos pendientes para futuras mejoras
+
+---
+
+## Reflexiones sobre el trabajo realizado
+
+### Aspectos positivos
+
+1. **Consolidación del módulo de pagos:** A pesar de los desafíos, logré completar toda la gestión de pagos del sistema, integrando pagos totales, parciales, combinados y la gestión de saldo a favor.
+
+2. **Implementación de modelo rico:** Mantuve la lógica de negocio centralizada en el dominio, siguiendo el patrón de modelo rico que iniciamos en la iteración 1.
+
+3. **Integración con módulos existentes:** Las nuevas funcionalidades se integraron correctamente con el módulo de clientes y facturas desarrollado por otros integrantes del equipo.
+
+### Aspectos a mejorar
+
+1. **Testing:** No implementé pruebas unitarias ni de integración. Las pruebas fueron principalmente manuales a través de la interfaz.
+
+2. **Planificación de historias:** Debí haber analizado mejor las dependencias entre HU al inicio del proyecto para agruparlas de forma más eficiente.
+
+3. **Funcionalidad de impresión:** No pude implementar la generación de PDF para recibos y facturas.
+
+---
+
+## Plan de mejoras para futuras iteraciones
+
+### Prioridad Alta
+
+1. **Implementar pruebas unitarias y de integración:**
+   - Crear tests para la lógica de distribución de pagos
+   - Probar casos límite en pagos combinados y saldo a favor
+   - Alcanzar una cobertura de código aceptable
+
+### Prioridad Media
+
+2. **Generación de PDF para recibos y facturas:**
+   - Implementar funcionalidad para imprimir/exportar recibos en formato PDF
+   - Permitir la descarga de facturas en PDF para los clientes
+
+3. **Excepciones de negocio específicas:**
+   - Crear excepciones personalizadas (`SaldoInsuficienteException`, `FacturaYaPagadaException`)
+   - Mejorar el manejo de errores en el módulo de pagos
+
+### Prioridad Baja
+
+4. **Mejoras de UX:**
+   - Agregar confirmaciones visuales antes de procesar pagos
+   - Mostrar preview de distribución de pagos antes de confirmar
+
+---
+
+## Conclusiones finales
+
+Esta segunda iteración me permitió completar el módulo de pagos del sistema de facturación. Aunque enfrenté desafíos relacionados con la planificación inicial y la gestión del tiempo, logré implementar las tres historias de usuario asignadas.
+
+La principal lección aprendida es la importancia de analizar las dependencias entre funcionalidades al momento de planificar las iteraciones. Las historias de usuario relacionadas deberían desarrollarse juntas para minimizar el retrabajo.
+
+El módulo de pagos ahora soporta pagos totales, parciales, combinados, gestión de saldo a favor y consulta de recibos, cumpliendo con los requerimientos del sistema de facturación.

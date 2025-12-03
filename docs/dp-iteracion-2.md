@@ -339,7 +339,7 @@ La vista `pagos/recibo-detalle.html` muestra la información completa de un reci
 **Vista: lista.html**
 ![ListaServicio](imagenes/Wireframe_ListaServicio3.png)
 **Vista: formulario.html (modo edición)**
-![ModificacionServicio](imagenes/Wireframe_MOdificacionServicio.png)
+![ModificacionServicio](imagenes/Wireframe_ModificarServicio.png)
 
 El formulario reutiliza la misma vista que el alta de servicio, cambiando dinámicamente:
 - Título: "Editar Servicio" en lugar de "Crear Servicio"

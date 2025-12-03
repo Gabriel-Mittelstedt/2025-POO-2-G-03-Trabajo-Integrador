@@ -204,3 +204,38 @@ La segunda iteración fue más fluida. La experiencia previa permitió enfocarme
 
 ### Conclusión
 Logré entregar las funcionalidades críticas asignadas respetando la arquitectura establecida y las buenas prácticas del modelo de dominio. Como lección aprendida, para futuros proyectos es indispensable **planificar con un margen de holgura mayor** que contemple la carga académica externa, para así poder garantizar una mayor cobertura de pruebas y entregar un producto más robusto desde la primera iteración.
+
+## Integrante: Axel Dos Santos
+
+Esta retrospectiva documenta mi experiencia implementando las historias de usuario **HU-02: Modificación de cliente**, **HU-03: Gestión de estado de cuenta** y **HU-22: Desvincular servicio de un cliente** durante la segunda iteración.
+
+### ¿Qué se logró?
+
+- ✅ Implementé el método `actualizarDatos()` en `CuentaCliente` siguiendo el patrón de modelo rico
+- ✅ Creé la entidad `CambioEstadoCuenta` con auditoría automática y relación bidireccional
+- ✅ Desarrollé el método `cambiarEstado()` con validaciones de negocio en el dominio
+- ✅ Implementé la baja lógica de servicios mediante `desvincularServicio()` y conservación del histórico
+- ✅ Integré Bean Validation completo en formularios y entidades
+- ✅ Creé vistas de confirmación con información detallada y advertencias para operaciones críticas
+
+## Desafíos encontrados
+
+### Validaciones en múltiples capas
+
+**Problema:**
+Era necesario validar datos tanto en formularios como en la lógica de dominio, evitando duplicación de código.
+
+**Cómo lo resolví:**
+- Utilicé Bean Validation (`@NotBlank`, `@Size`, `@NotNull`) en entidades
+- Delegué validaciones de negocio específicas al dominio (modelo rico)
+- Manejé excepciones del dominio en el servicio para mostrar mensajes amigables
+
+## Lecciones aprendidas
+
+- La inmutabilidad de ciertos campos (como CUIT/DNI) se puede manejar eficientemente ocultando el campo en el formulario de edición
+- Los históricos son fundamentales para trazabilidad y auditoría en sistemas de gestión
+- Las vistas de confirmación con información detallada mejoran la UX en operaciones irreversibles
+
+## Conclusiones finales
+
+Las tres historias de usuario implementadas completaron la gestión integral de clientes y sus servicios. La arquitectura basada en modelo rico demostró su valor al centralizar validaciones de negocio en el dominio, y la conservación de históricos garantiza trazabilidad completa del sistema.

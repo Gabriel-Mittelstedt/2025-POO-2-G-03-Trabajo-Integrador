@@ -69,6 +69,28 @@
 #### Documentación
 - Diagrama de clases con patrones explicitados (Rich Model, Factory Method, Value Object)
 - JavaDocs en `Factura`, `ItemFactura`, `NotaCredito`
+
+
+### Implementación realizada por Marcos Daubermann
+
+#### HU-07: Emisión de facturación masiva (Deuda técnica)
+- **Modelo de Dominio:** Entidad `LoteFacturacion` que agrupa las facturas generadas en un proceso masivo.
+- **Servicio:** Método `ejecutarFacturacionMasiva(Periodo)` que orquesta el proceso: filtra clientes activos, delega la creación de facturas individuales (reutilizando lógica de HU-04) y calcula totales del lote.
+- **Transaccionalidad:** Uso de `@Transactional` para asegurar que si falla la generación de una factura, se revierta todo el lote.
+- **Vista:** `nueva-facturacion.html` para seleccionar el período y confirmar la ejecución.
+
+#### HU-09: Consulta de facturación masiva
+- **Repositorio:** `LoteFacturacionRepository` con métodos para ordenar por fecha de ejecución descendente.
+- **Vistas:**
+    - `lotes/lista.html`: Tabla con historial de ejecuciones, montos totales y estado (Activo/Anulado).
+    - `lotes/detalle.html`: Visualización del encabezado del lote y lista paginada de las facturas que lo componen.
+- **Cálculos:** Métodos en la entidad para obtener la cantidad de facturas y el monto acumulado en tiempo real.
+
+#### HU-08: Anulación de facturación masiva
+- **Lógica de Anulación:** Método `anular()` que itera sobre las facturas del lote, generando automáticamente las `NotaCredito` correspondientes y cambiando el estado del lote.
+- **Validación:** Bloqueo de la operación si existen pagos parciales o totales en alguna factura del lote.
+- **Vista:** `confirmar-anulacion.html` con advertencia explícita sobre la cantidad de notas de crédito que se generarán.
+
  
 ## Diseño OO
 

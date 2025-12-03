@@ -184,3 +184,23 @@ La dificultad disminuyó en comparación con la iteración anterior:
 ## Conclusiones finales
 
 La segunda iteración fue más fluida. La experiencia previa permitió enfocarme en funcionalidades de negocio más complejas (propagación de precios, integración con facturación) sin perder tiempo en curvas de aprendizaje.
+
+---
+
+## Integrante: Gabriel Leonardo Mittelstedt
+### Tareas cumplidas
+* **HU-05 (Anulación de factura individual):** Implementé la lógica de negocio para anular facturas, incluyendo la generación automática de la entidad `NotaCredito` y asegurando la trazabilidad bidireccional en el modelo rico.
+* **HU-20 (Facturación proporcional):** Desarrollé el cálculo de importes proporcionales basado en fechas utilizando el patrón *Value Object* (`PeriodoFacturacion`) y un *Factory Method* en `ItemFactura` para encapsular la lógica matemática.
+* **Refactorización técnica:** Migré las consultas personalizadas de SQL nativo (`@Query`) a **Query Methods** estándar de Spring Data en los repositorios, mejorando la legibilidad y mantenibilidad del código.
+* **Mejoras generales:** Implementé la actualización automática del estado de facturas a "VENCIDA" y reforcé las validaciones de consistencia de fechas tanto en el backend como en el frontend.
+
+### Tareas incumplidas
+* **Testing exhaustivo:** Debido a la falta de tiempo, no pude extender la cobertura de pruebas unitarias e integración para cubrir todos los casos borde complejos (ej. años bisiestos en proporcionales), limitándome a validar los flujos principales.
+* **Feedback visual dinámico:** Quedó pendiente implementar una mejora en la interfaz de usuario para que el cálculo del monto proporcional se previsualice en tiempo real en el formulario antes de confirmar la emisión de la factura.
+
+### Dificultades
+* **Gestión de tiempos:** La principal dificultad fue la concurrencia de fechas con exámenes y entregas finales de otras asignaturas, lo que redujo significativamente el tiempo disponible para etapas de refactorización y pruebas.
+* **Lógica de fechas:** La implementación precisa del cálculo de días efectivos requirió un esfuerzo de análisis mayor al estimado inicialmente.
+
+### Conclusión
+Logré entregar las funcionalidades críticas asignadas respetando la arquitectura establecida y las buenas prácticas del modelo de dominio. Como lección aprendida, para futuros proyectos es indispensable **planificar con un margen de holgura mayor** que contemple la carga académica externa, para así poder garantizar una mayor cobertura de pruebas y entregar un producto más robusto desde la primera iteración.

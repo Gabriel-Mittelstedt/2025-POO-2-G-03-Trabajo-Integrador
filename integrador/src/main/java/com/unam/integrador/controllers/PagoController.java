@@ -207,24 +207,6 @@ public class PagoController {
         return "pagos/seleccionar-facturas";
     }
     
-    /**
-     * Muestra el formulario para registrar un pago total de una factura.
-     */
-    @GetMapping("/nuevo-total/{facturaId}")
-    public String mostrarFormularioPagoTotal(@PathVariable Long facturaId, Model model) {
-        // Redirigir al flujo unificado de Registrar Pago (selección de facturas)
-        try {
-            Factura factura = facturaService.obtenerFacturaPorId(facturaId);
-            if (factura != null && factura.getCliente() != null) {
-                Long clienteId = factura.getCliente().getId();
-                return "redirect:/pagos/seleccionar-facturas/" + clienteId + "?facturaId=" + facturaId;
-            }
-        } catch (Exception e) {
-            // Si hay algún problema, volver al detalle de la factura
-        }
-        return "redirect:/facturas/" + facturaId;
-    }
-    
     // Nota: Los endpoints y vistas de pago total/parcial fueron removidos
     // en favor del flujo unificado de Pago Combinado. Las operaciones
     // siguen disponibles vía POST a /pagos/registrar-combinado usando una
@@ -238,42 +220,6 @@ public class PagoController {
         Pago pago = pagoService.buscarPorId(id);
         model.addAttribute("pago", pago);
         return "pagos/detalle";
-    }
-    
-    /**
-     * Muestra el formulario para registrar un pago combinado (múltiples facturas).
-     */
-    @GetMapping("/nuevo-combinado/{clienteId}")
-    public String mostrarFormularioPagoCombinado(@PathVariable Long clienteId, Model model) {
-        // Obtener el cliente
-        CuentaCliente cliente = cuentaClienteService.obtenerClientePorId(clienteId);
-        
-        // Obtener facturas impagas del cliente
-        List<Factura> facturasImpagas = pagoService.listarFacturasImpagasPorCliente(clienteId);
-        
-        if (facturasImpagas.isEmpty()) {
-            model.addAttribute("error", "El cliente no tiene facturas impagas para pagar");
-        }
-        
-        // Calcular el total adeudado
-        BigDecimal totalAdeudado = BigDecimal.ZERO;
-        for (Factura factura : facturasImpagas) {
-            totalAdeudado = totalAdeudado.add(factura.getSaldoPendiente());
-        }
-        
-        model.addAttribute("cliente", cliente);
-        model.addAttribute("facturas", facturasImpagas);
-        model.addAttribute("totalAdeudado", totalAdeudado);
-        
-        List<MetodoPago> metodosPagoDisponibles = new java.util.ArrayList<>();
-        for (MetodoPago m : MetodoPago.values()) {
-            if (m != MetodoPago.SALDO_A_FAVOR) {
-                metodosPagoDisponibles.add(m);
-            }
-        }
-        model.addAttribute("metodosPago", metodosPagoDisponibles.toArray(new MetodoPago[0]));
-        
-        return "pagos/formulario-combinado";
     }
     
     /**

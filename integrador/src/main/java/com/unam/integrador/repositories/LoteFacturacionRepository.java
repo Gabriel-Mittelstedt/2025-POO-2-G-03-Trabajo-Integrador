@@ -5,8 +5,6 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.unam.integrador.model.LoteFacturacion;
@@ -47,13 +45,4 @@ public interface LoteFacturacionRepository extends JpaRepository<LoteFacturacion
      * @return true si existe un lote activo para ese período
      */
     boolean existsByPeriodoFechaAndAnuladoFalse(LocalDate periodoFecha);
-    
-    /**
-     * Cuenta la cantidad de facturas en un lote específico.
-     * 
-     * @param loteId ID del lote
-     * @return Cantidad de facturas
-     */
-    @Query("SELECT l.cantidadFacturas FROM LoteFacturacion l WHERE l.id = :loteId")
-    int countFacturasEnLote(@Param("loteId") Long loteId);
 }

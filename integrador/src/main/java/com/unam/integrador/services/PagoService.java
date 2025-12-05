@@ -3,6 +3,8 @@ package com.unam.integrador.services;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -194,6 +196,14 @@ public class PagoService {
             throw new IllegalArgumentException("No se encontraron facturas");
         }
         
+        // Ordenar facturas por fecha de emisión (más antiguas primero)
+        Collections.sort(facturas, new Comparator<Factura>() {
+            @Override
+            public int compare(Factura f1, Factura f2) {
+                return f1.getFechaEmision().compareTo(f2.getFechaEmision());
+            }
+        });
+        
         CuentaCliente cliente = facturas.get(0).getCliente();
         
         // 3. Descontar saldo a favor del cliente
@@ -225,7 +235,7 @@ public class PagoService {
         
         // 5. Distribuir los pagos entre las facturas usando DetallePago
         BigDecimal saldoAFavorRestante = saldoAFavorAplicar;
-        BigDecimal dineroRestante = dineroTotal;
+        BigDecimal dineroRestante = montoTotal;
         
         for (Factura factura : facturas) {
             BigDecimal totalDisponible = saldoAFavorRestante.add(dineroRestante);
